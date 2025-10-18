@@ -1,9 +1,3 @@
----
-
-# 📄 `docs/sprint-tracker.md`
-
-```markdown
-# 🏃 MANTIS Sprint Plan
 
 Each sprint = 2 weeks.
 
