@@ -52,10 +52,52 @@ export default async function AdminLayout({
                   Users
                 </Link>
                 <Link
+                  href="/admin/locations"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Locations
+                </Link>
+                <Link
+                  href="/admin/teams"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Teams
+                </Link>
+                <Link
+                  href="/admin/routes"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Routes
+                </Link>
+                <Link
+                  href="/admin/categories"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Categories
+                </Link>
+                <Link
+                  href="/admin/types"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Types
+                </Link>
+                <Link
+                  href="/admin/infringements"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Infringements
+                </Link>
+                <Link
                   href="/admin/reports"
                   className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 >
                   Reports
+                </Link>
+                <Link
+                  href="/admin/audit-logs"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Audit Logs
                 </Link>
               </nav>
             </div>

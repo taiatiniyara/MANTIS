@@ -82,7 +82,7 @@ export default async function AdminUsersPage({
   }
 
   // Fetch agencies for filters (super admin only)
-  let agencies: Array<{ id: number; name: string }> = [];
+  let agencies: Array<{ id: string; name: string }> = [];
   if (isSuperAdmin) {
     const { data: agenciesData } = await supabase
       .from("agencies")
@@ -90,6 +90,21 @@ export default async function AdminUsersPage({
       .order("name");
     agencies = agenciesData || [];
   }
+
+  // Fetch locations for assignment
+  let locationsQuery = supabase
+    .from("locations")
+    .select(`
+      *,
+      parent:locations!parent_id(id, name, type)
+    `)
+    .order("name");
+
+  if (isAgencyAdmin && currentUser.agency_id) {
+    locationsQuery = locationsQuery.eq("agency_id", currentUser.agency_id);
+  }
+
+  const { data: locations } = await locationsQuery;
 
   return (
     <div className="flex-1 w-full flex flex-col gap-6">
@@ -106,6 +121,7 @@ export default async function AdminUsersPage({
           isSuperAdmin={isSuperAdmin}
           currentAgencyId={currentUser.agency_id}
           agencies={agencies}
+          locations={locations || []}
         />
       </div>
 
@@ -118,6 +134,8 @@ export default async function AdminUsersPage({
         users={users || []}
         isSuperAdmin={isSuperAdmin}
         currentUserId={user.id}
+        agencies={agencies}
+        locations={locations || []}
       />
     </div>
   );

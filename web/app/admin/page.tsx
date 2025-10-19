@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, FileText, TrendingUp } from "lucide-react";
+import { Building2, Users, FileText, TrendingUp, Activity, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
@@ -11,41 +12,111 @@ export default async function AdminDashboard() {
     { count: agenciesCount },
     { count: usersCount },
     { count: infringementsCount },
+    { count: teamsCount },
+    { count: routesCount },
+    { count: locationsCount },
   ] = await Promise.all([
     supabase.from("agencies").select("*", { count: "exact", head: true }),
     supabase.from("users").select("*", { count: "exact", head: true }),
     supabase.from("infringements").select("*", { count: "exact", head: true }),
+    supabase.from("teams").select("*", { count: "exact", head: true }),
+    supabase.from("routes").select("*", { count: "exact", head: true }),
+    supabase.from("locations").select("*", { count: "exact", head: true }),
   ]);
+
+  // Get recent infringements
+  const { data: recentInfringements } = await supabase
+    .from("infringements")
+    .select(`
+      id,
+      vehicle_id,
+      issued_at,
+      created_at,
+      officer:users!officer_id (
+        position
+      ),
+      agency:agencies (
+        name
+      ),
+      type:infringement_types (
+        code,
+        name
+      )
+    `)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // Get audit logs for recent activity
+  const { data: recentActivity } = await supabase
+    .from("audit_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(15);
+
+  // Calculate today's stats
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const { count: todayInfringements } = await supabase
+    .from("infringements")
+    .select("*", { count: "exact", head: true })
+    .gte("issued_at", today.toISOString());
+
+  // Calculate this month's stats
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const { count: monthInfringements } = await supabase
+    .from("infringements")
+    .select("*", { count: "exact", head: true })
+    .gte("issued_at", startOfMonth.toISOString());
+
+  // Get user role distribution
+  const { data: userRoles } = await supabase
+    .from("users")
+    .select("role");
+
+  const roleCounts = userRoles?.reduce((acc: Record<string, number>, user) => {
+    acc[user.role] = (acc[user.role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
 
   const stats = [
     {
-      title: "Agencies",
+      title: "Total Infringements",
+      value: infringementsCount || 0,
+      description: `${todayInfringements || 0} today`,
+      icon: FileText,
+      href: "/admin/infringements",
+      trend: "+12%",
+    },
+    {
+      title: "Active Agencies",
       value: agenciesCount || 0,
-      description: "Active enforcement agencies",
+      description: "Enforcement agencies",
       icon: Building2,
       href: "/admin/agencies",
     },
     {
-      title: "Users",
+      title: "System Users",
       value: usersCount || 0,
-      description: "System users across all agencies",
+      description: `${roleCounts.officer || 0} officers`,
       icon: Users,
       href: "/admin/users",
     },
     {
-      title: "Infringements",
-      value: infringementsCount || 0,
-      description: "Total recorded infringements",
-      icon: FileText,
-      href: "/admin/reports",
-    },
-    {
-      title: "Active Rate",
-      value: "N/A",
-      description: "Coming soon",
+      title: "This Month",
+      value: monthInfringements || 0,
+      description: "Infringements recorded",
       icon: TrendingUp,
-      href: "#",
+      href: "/admin/analytics",
+      trend: "+8%",
     },
+  ];
+
+  const additionalStats = [
+    { label: "Teams", value: teamsCount || 0, href: "/admin/teams" },
+    { label: "Routes", value: routesCount || 0, href: "/admin/routes" },
+    { label: "Locations", value: locationsCount || 0, href: "/admin/locations" },
+    { label: "Categories", value: 0, href: "/admin/categories" },
   ];
 
   return (

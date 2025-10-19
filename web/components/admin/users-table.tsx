@@ -17,18 +17,39 @@ import { RoleBadge } from "./role-badge";
 import { EditUserDialog } from "./edit-user-dialog";
 import { DeleteUserDialog } from "./delete-user-dialog";
 
+type LocationType = 'division' | 'station' | 'post' | 'region' | 'office' | 'council' | 'department' | 'zone';
+
 type User = Database["public"]["Tables"]["users"]["Row"] & {
-  agencies?: { id: number; name: string } | null;
-  locations?: { id: number; name: string } | null;
+  agencies?: { id: string; name: string } | null;
+  locations?: { id: string; name: string } | null;
 };
+
+interface Agency {
+  id: string;
+  name: string;
+}
+
+interface Location {
+  id: string;
+  name: string;
+  type: LocationType;
+  agency_id: string | null;
+  parent?: {
+    id: string;
+    name: string;
+    type: LocationType;
+  } | null;
+}
 
 interface UsersTableProps {
   users: User[];
   isSuperAdmin: boolean;
   currentUserId: string;
+  agencies: Agency[];
+  locations: Location[];
 }
 
-export function UsersTable({ users, isSuperAdmin, currentUserId }: UsersTableProps) {
+export function UsersTable({ users, isSuperAdmin, currentUserId, agencies, locations }: UsersTableProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
@@ -107,6 +128,8 @@ export function UsersTable({ users, isSuperAdmin, currentUserId }: UsersTablePro
           open={!!editingUser}
           onOpenChange={(open: boolean) => !open && setEditingUser(null)}
           isSuperAdmin={isSuperAdmin}
+          agencies={agencies}
+          locations={locations}
         />
       )}
 

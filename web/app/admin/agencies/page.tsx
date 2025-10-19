@@ -31,10 +31,17 @@ export default async function AdminAgenciesPage({
     redirect("/protected");
   }
 
-  // Build query with search filter
+  // Build query with search filter - include admin users
   let query = supabase
     .from("agencies")
-    .select("*")
+    .select(`
+      *,
+      admin_users:users!users_agency_id_fkey(
+        id,
+        position,
+        role
+      )
+    `)
     .order("name");
 
   // Apply search filter if provided
@@ -48,6 +55,12 @@ export default async function AdminAgenciesPage({
   if (error) {
     console.error("Error fetching agencies:", error);
   }
+
+  // Get available users for admin assignment
+  const { data: availableUsers } = await supabase
+    .from("users")
+    .select("id, position, agency_id, role")
+    .order("position");
 
   return (
     <div className="flex-1 w-full flex flex-col gap-6">
@@ -63,7 +76,10 @@ export default async function AdminAgenciesPage({
 
       <AgenciesSearch />
 
-      <AgenciesTable agencies={agencies || []} />
+      <AgenciesTable 
+        agencies={agencies || []}
+        availableUsers={availableUsers || []}
+      />
     </div>
   );
 }
