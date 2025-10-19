@@ -18,6 +18,7 @@ import {
 import { FinanceReportsTable } from "@/components/admin/finance-reports-table";
 import { AnalyticsCharts } from "@/components/admin/analytics-charts";
 import { ReportsSearch } from "@/components/admin/reports-search";
+import { ReportBuilder } from "@/components/admin/report-builder";
 
 export default async function ReportsPage({
   searchParams,
@@ -100,6 +101,18 @@ export default async function ReportsPage({
     .select("id, name")
     .order("name");
 
+  // Fetch infringement types
+  const { data: infringementTypes } = await supabase
+    .from("infringement_types")
+    .select("id, code, name")
+    .eq("is_active", true);
+
+  // Fetch users for filtering
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, full_name, role")
+    .in("role", ["officer", "supervisor", "manager"]);
+
   // Calculate statistics
   const stats = calculateStatistics(infringements as any);
 
@@ -115,6 +128,21 @@ export default async function ReportsPage({
       </div>
 
       <ReportsSearch agencies={agencies || []} userRole={userData.role} />
+
+      {/* Advanced Report Builder */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Report Builder</h2>
+          <p className="text-muted-foreground">
+            Create custom reports with advanced filtering and comparisons
+          </p>
+        </div>
+        <ReportBuilder
+          agencies={agencies || []}
+          infringementTypes={infringementTypes || []}
+          users={users || []}
+        />
+      </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

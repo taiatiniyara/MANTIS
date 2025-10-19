@@ -104,7 +104,10 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("Export error:", error);
-    return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch data" },
+      { status: 500 }
+    );
   }
 
   const exportType = searchParams.get("export") || "csv";
@@ -155,7 +158,9 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csvContent, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="infringements-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="infringements-${
+          new Date().toISOString().split("T")[0]
+        }.csv"`,
       },
     });
   } else if (exportType === "pdf") {
@@ -210,7 +215,9 @@ export async function GET(request: NextRequest) {
           <td>${inf.type?.category?.name || ""}</td>
           <td>R ${inf.type?.fine_amount || "0"}</td>
           <td>${inf.officer?.position || ""}</td>
-          <td>${inf.location ? `${inf.location.name} (${inf.location.type})` : ""}</td>
+          <td>${
+            inf.location ? `${inf.location.name} (${inf.location.type})` : ""
+          }</td>
         </tr>
       `
         )
