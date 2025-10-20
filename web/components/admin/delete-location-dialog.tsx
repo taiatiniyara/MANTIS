@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Location {
   id: string;
@@ -41,7 +42,7 @@ export function DeleteLocationDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Check if location has child locations
       const { data: children } = await supabase

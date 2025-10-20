@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+
 import { Database } from "@/lib/database.types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase/client";
 
 type Agency = Database["public"]["Tables"]["agencies"]["Row"];
 
@@ -48,7 +49,7 @@ export function EditAgencyDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
       const { error: updateError } = await supabase
         .from("agencies")
         .update({ name: name.trim() })

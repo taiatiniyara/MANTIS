@@ -2,13 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { RoutesTable } from "@/components/admin/routes-table";
 import { CreateRouteDialog } from "@/components/admin/create-route-dialog";
-import { RoutesSearch } from "@/components/admin/routes-search";
 
-export default async function RoutesPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; agency?: string; location?: string };
-}) {
+export default async function RoutesPage() {
   const supabase = await createClient();
 
   // Check authentication
@@ -39,7 +34,7 @@ export default async function RoutesPage({
     return redirect("/protected");
   }
 
-  // Build query based on role
+  // Build query based on role - fetch all routes (filtering will be done client-side)
   let query = supabase
     .from("routes")
     .select(`
@@ -52,21 +47,6 @@ export default async function RoutesPage({
   // Agency admins only see their agency's routes
   if (isAgencyAdmin && profile.agency_id) {
     query = query.eq("agency_id", profile.agency_id);
-  }
-
-  // Apply search filter
-  if (searchParams.search) {
-    query = query.ilike("name", `%${searchParams.search}%`);
-  }
-
-  // Apply agency filter (super admin only)
-  if (searchParams.agency && isSuperAdmin) {
-    query = query.eq("agency_id", searchParams.agency);
-  }
-
-  // Apply location filter
-  if (searchParams.location) {
-    query = query.eq("location_id", searchParams.location);
   }
 
   const { data: routes, error } = await query;
@@ -127,12 +107,6 @@ export default async function RoutesPage({
           userAgencyId={profile.agency_id}
         />
       </div>
-
-      <RoutesSearch
-        agencies={agencies || []}
-        locations={locations || []}
-        userRole={profile.role}
-      />
 
       <RoutesTable
         routes={routes || []}

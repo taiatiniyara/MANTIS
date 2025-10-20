@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { supabase } from '@/lib/supabase/client';
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     const apiKey = authHeader.substring(7);
-    const supabase = await createClient();
+    
 
     // Hash the API key
     const keyHash = crypto
@@ -124,7 +125,7 @@ export async function GET(request: Request) {
     }
 
     const apiKey = authHeader.substring(7);
-    const supabase = await createClient();
+    
 
     // Hash the API key
     const keyHash = crypto
@@ -209,7 +210,7 @@ async function logRequest(
   if (!apiKeyId) return;
 
   try {
-    const supabase = await createClient();
+    
     await supabase.rpc('log_api_request', {
       p_api_key_id: apiKeyId,
       p_endpoint: endpoint,

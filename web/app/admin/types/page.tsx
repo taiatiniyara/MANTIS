@@ -3,14 +3,9 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { TypesTable } from "@/components/admin/types-table";
-import { TypesSearch } from "@/components/admin/types-search";
 import { CreateTypeDialog } from "@/components/admin/create-type-dialog";
 
-export default async function TypesPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; category?: string };
-}) {
+export default async function TypesPage() {
   const supabase = await createClient();
 
   const {
@@ -38,8 +33,8 @@ export default async function TypesPage({
     .select("id, name")
     .order("name");
 
-  // Fetch infringement types
-  let query = supabase
+  // Fetch all infringement types (filtering will be done client-side)
+  const { data: types, error } = await supabase
     .from("infringement_types")
     .select(
       `
@@ -51,18 +46,6 @@ export default async function TypesPage({
     `
     )
     .order("code");
-
-  if (searchParams.search) {
-    query = query.or(
-      `name.ilike.%${searchParams.search}%,code.ilike.%${searchParams.search}%`
-    );
-  }
-
-  if (searchParams.category) {
-    query = query.eq("category_id", searchParams.category);
-  }
-
-  const { data: types, error } = await query;
 
   if (error) {
     console.error("Error fetching types:", error);
@@ -86,8 +69,6 @@ export default async function TypesPage({
           </Button>
         </CreateTypeDialog>
       </div>
-
-      <TypesSearch categories={categories || []} />
 
       <TypesTable types={(types as any) || []} categories={categories || []} />
     </div>

@@ -20,10 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+
 import { Database } from "@/lib/database.types";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector } from "./location-selector";
+import { supabase } from "@/lib/supabase/client";
 
 type User = Database["public"]["Tables"]["users"]["Row"];
 type LocationType = 'division' | 'station' | 'post' | 'region' | 'office' | 'council' | 'department' | 'zone';
@@ -85,7 +86,7 @@ export function EditUserDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
       const { error: updateError } = await supabase
         .from("users")
         .update({
@@ -171,7 +172,7 @@ export function EditUserDialog({
                       <SelectValue placeholder="Select agency (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None (Unassigned)</SelectItem>
+                      <SelectItem value="none">None (Unassigned)</SelectItem>
                       {agencies.map((agency) => (
                         <SelectItem key={agency.id} value={agency.id}>
                           {agency.name}

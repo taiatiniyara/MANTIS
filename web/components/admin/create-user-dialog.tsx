@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector } from "./location-selector";
 
@@ -75,7 +75,7 @@ export function CreateUserDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Call server action to create user via Supabase Auth Admin API
       const response = await fetch('/api/admin/create-user', {
@@ -199,7 +199,7 @@ export function CreateUserDialog({
                     <SelectValue placeholder="Select an agency (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Agency</SelectItem>
+                    <SelectItem value="none">No Agency</SelectItem>
                     {agencies.map((agency) => (
                       <SelectItem key={agency.id} value={agency.id}>
                         {agency.name}

@@ -1,36 +1,47 @@
 -- ============================
--- Enable Row Level Security
+-- Fix RLS Helper Functions to use users table
+-- This migration fixes two issues:
+-- 1. Functions were in auth schema (permission denied)
+-- 2. Need to move functions to public schema
 -- ============================
 
-alter table agencies enable row level security;
-alter table locations enable row level security;
-alter table users enable row level security;
-alter table teams enable row level security;
-alter table routes enable row level security;
-alter table team_routes enable row level security;
-alter table team_members enable row level security;
-alter table infringement_categories enable row level security;
-alter table infringement_types enable row level security;
-alter table infringements enable row level security;
+-- Step 1: Drop ALL existing RLS policies FIRST (before dropping functions)
+-- This prevents dependency errors
+do $$ 
+declare
+  r record;
+begin
+  for r in (
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+  ) loop
+    execute 'drop policy if exists "' || r.policyname || '" on ' || r.schemaname || '.' || r.tablename;
+  end loop;
+end $$;
 
--- ============================
--- Helper Functions
--- ============================
+-- Step 2: Now drop the helper functions (both auth and public schemas)
+drop function if exists auth.user_role() cascade;
+drop function if exists auth.user_agency_id() cascade;
+drop function if exists auth.is_super_admin() cascade;
+drop function if exists public.user_role() cascade;
+drop function if exists public.user_agency_id() cascade;
+drop function if exists public.is_super_admin() cascade;
+drop function if exists public.is_agency_admin() cascade;
 
--- Get the current user's role
+-- Step 3: Create new helper functions in public schema, using users table
+-- Get the current user's role from users table
 create or replace function public.user_role()
 returns text
-language sql security definer
-set search_path = public
+language sql security definer stable
 as $$
   select role from public.users where id = auth.uid();
 $$;
 
--- Get the current user's agency_id
+-- Get the current user's agency_id from users table
 create or replace function public.user_agency_id()
 returns uuid
-language sql security definer
-set search_path = public
+language sql security definer stable
 as $$
   select agency_id from public.users where id = auth.uid();
 $$;
@@ -38,8 +49,7 @@ $$;
 -- Check if user is super admin
 create or replace function public.is_super_admin()
 returns boolean
-language sql security definer
-set search_path = public
+language sql security definer stable
 as $$
   select exists (
     select 1 from public.users
@@ -48,11 +58,26 @@ as $$
   );
 $$;
 
+-- Check if user is agency admin
+create or replace function public.is_agency_admin()
+returns boolean
+language sql security definer stable
+as $$
+  select exists (
+    select 1 from public.users
+    where id = auth.uid()
+    and role = 'agency_admin'
+  );
+$$;
+
 -- ============================
--- Agencies Policies
+-- Step 4: Recreate ALL RLS policies with correct function references
 -- ============================
 
--- Super admins can do everything with agencies
+-- ============================
+-- Recreate Agencies Policies
+-- ============================
+
 create policy "Super admins can view all agencies"
   on agencies for select
   to authenticated
@@ -73,81 +98,81 @@ create policy "Super admins can delete agencies"
   to authenticated
   using (public.is_super_admin());
 
--- Agency admins and officers can view their own agency
 create policy "Users can view their agency"
   on agencies for select
   to authenticated
-  using (
-    id = public.user_agency_id()
-  );
+  using (id = public.user_agency_id());
+
+create policy "Agency admins can view all agencies for joins"
+  on agencies for select
+  to authenticated
+  using (public.is_agency_admin());
 
 -- ============================
--- Users Policies
+-- Recreate Users Policies (not profiles)
 -- ============================
 
--- Super admins can view all users
+alter table users enable row level security;
+
 create policy "Super admins can view all users"
   on users for select
   to authenticated
   using (public.is_super_admin());
 
--- Super admins can insert users
 create policy "Super admins can insert users"
   on users for insert
   to authenticated
   with check (public.is_super_admin());
 
--- Super admins can update users
-create policy "Super admins can update users"
+create policy "Super admins can update all users"
   on users for update
   to authenticated
   using (public.is_super_admin());
 
--- Agency admins can view users in their agency
 create policy "Agency admins can view users in their agency"
   on users for select
   to authenticated
   using (
     agency_id = public.user_agency_id()
-    and public.user_role() in ('agency_admin', 'officer')
+    and public.is_agency_admin()
   );
 
--- Agency admins can insert users in their agency
 create policy "Agency admins can insert users in their agency"
   on users for insert
   to authenticated
   with check (
     agency_id = public.user_agency_id()
-    and public.user_role() = 'agency_admin'
+    and public.is_agency_admin()
   );
 
--- Agency admins can update users in their agency (except super admins)
 create policy "Agency admins can update users in their agency"
   on users for update
   to authenticated
   using (
     agency_id = public.user_agency_id()
-    and public.user_role() = 'agency_admin'
+    and public.is_agency_admin()
     and role != 'super_admin'
   );
 
--- Users can view their own record
-create policy "Users can view their own record"
+create policy "Users can view their own profile"
   on users for select
   to authenticated
   using (id = auth.uid());
 
+create policy "Users can update their own profile"
+  on users for update
+  to authenticated
+  using (id = auth.uid());
+
 -- ============================
--- Locations Policies
+-- Recreate Locations Policies
 -- ============================
 
--- Super admins can do everything with locations
 create policy "Super admins can manage all locations"
   on locations for all
   to authenticated
   using (public.is_super_admin());
 
--- Agency admins can manage locations in their agency
 create policy "Agency admins can view locations in their agency"
   on locations for select
   to authenticated
@@ -173,16 +198,14 @@ create policy "Agency admins can update locations in their agency"
   );
 
 -- ============================
--- Teams Policies
+-- Recreate Teams Policies
 -- ============================
 
--- Super admins can view all teams
 create policy "Super admins can view all teams"
   on teams for select
   to authenticated
   using (public.is_super_admin());
 
--- Agency admins can manage teams in their agency
 create policy "Agency admins can view teams in their agency"
   on teams for select
   to authenticated
@@ -213,16 +236,14 @@ create policy "Agency admins can delete teams in their agency"
   );
 
 -- ============================
--- Routes Policies
+-- Recreate Routes Policies
 -- ============================
 
--- Super admins can view all routes
 create policy "Super admins can view all routes"
   on routes for select
   to authenticated
   using (public.is_super_admin());
 
--- Agency admins can manage routes in their agency
 create policy "Agency admins can view routes in their agency"
   on routes for select
   to authenticated
@@ -253,10 +274,9 @@ create policy "Agency admins can delete routes in their agency"
   );
 
 -- ============================
--- Team Routes & Team Members Policies
+-- Recreate Team Routes & Team Members Policies
 -- ============================
 
--- Allow viewing team_routes if user can see the team
 create policy "Users can view team routes for their agency teams"
   on team_routes for select
   to authenticated
@@ -271,7 +291,6 @@ create policy "Users can view team routes for their agency teams"
     )
   );
 
--- Allow agency admins to manage team routes
 create policy "Agency admins can manage team routes"
   on team_routes for all
   to authenticated
@@ -284,7 +303,6 @@ create policy "Agency admins can manage team routes"
     )
   );
 
--- Allow viewing team_members if user can see the team
 create policy "Users can view team members for their agency teams"
   on team_members for select
   to authenticated
@@ -299,7 +317,6 @@ create policy "Users can view team members for their agency teams"
     )
   );
 
--- Allow agency admins to manage team members
 create policy "Agency admins can manage team members"
   on team_members for all
   to authenticated
@@ -313,10 +330,9 @@ create policy "Agency admins can manage team members"
   );
 
 -- ============================
--- Infringement Categories & Types Policies
+-- Recreate Infringement Categories & Types Policies
 -- ============================
 
--- Everyone can view categories and types (read-only)
 create policy "Authenticated users can view infringement categories"
   on infringement_categories for select
   to authenticated
@@ -327,34 +343,50 @@ create policy "Authenticated users can view infringement types"
   to authenticated
   using (true);
 
--- Only super admins can manage categories and types
-create policy "Super admins can manage infringement categories"
-  on infringement_categories for all
+create policy "Super admins can insert infringement categories"
+  on infringement_categories for insert
+  to authenticated
+  with check (public.is_super_admin());
+
+create policy "Super admins can update infringement categories"
+  on infringement_categories for update
   to authenticated
   using (public.is_super_admin());
 
-create policy "Super admins can manage infringement types"
-  on infringement_types for all
+create policy "Super admins can delete infringement categories"
+  on infringement_categories for delete
+  to authenticated
+  using (public.is_super_admin());
+
+create policy "Super admins can insert infringement types"
+  on infringement_types for insert
+  to authenticated
+  with check (public.is_super_admin());
+
+create policy "Super admins can update infringement types"
+  on infringement_types for update
+  to authenticated
+  using (public.is_super_admin());
+
+create policy "Super admins can delete infringement types"
+  on infringement_types for delete
   to authenticated
   using (public.is_super_admin());
 
 -- ============================
--- Infringements Policies
+-- Recreate Infringements Policies
 -- ============================
 
--- Super admins can view all infringements
 create policy "Super admins can view all infringements"
   on infringements for select
   to authenticated
   using (public.is_super_admin());
 
--- Users can view infringements from their agency
 create policy "Users can view infringements from their agency"
   on infringements for select
   to authenticated
   using (agency_id = public.user_agency_id());
 
--- Officers can insert infringements
 create policy "Officers can insert infringements"
   on infringements for insert
   to authenticated
@@ -363,13 +395,11 @@ create policy "Officers can insert infringements"
     and agency_id = public.user_agency_id()
   );
 
--- Officers can update their own infringements
 create policy "Officers can update their own infringements"
   on infringements for update
   to authenticated
   using (officer_id = auth.uid());
 
--- Agency admins can update infringements in their agency
 create policy "Agency admins can update infringements in their agency"
   on infringements for update
   to authenticated

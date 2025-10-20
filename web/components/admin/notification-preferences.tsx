@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+
 
 interface NotificationPreferencesProps {
   userId: string;
@@ -58,7 +58,7 @@ export function NotificationPreferences({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // In a real implementation, you would save these to a database
       // For now, we'll just show a success message

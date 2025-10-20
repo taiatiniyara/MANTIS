@@ -79,7 +79,7 @@ export function LocationSelector({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {!required && <SelectItem value="">None (Unassigned)</SelectItem>}
+          {!required && <SelectItem value="none">None (Unassigned)</SelectItem>}
           
           {filteredLocations.length === 0 ? (
             <div className="px-2 py-6 text-center text-sm text-muted-foreground">

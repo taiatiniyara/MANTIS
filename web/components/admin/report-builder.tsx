@@ -230,7 +230,7 @@ export function ReportBuilder({
                   <SelectValue placeholder="All agencies" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All agencies</SelectItem>
+                  <SelectItem value="all">All agencies</SelectItem>
                   {agencies.map((agency) => (
                     <SelectItem key={agency.id} value={agency.id}>
                       {agency.name}
@@ -252,7 +252,7 @@ export function ReportBuilder({
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   {infringementTypes.map((type) => (
                     <SelectItem key={type.id} value={type.id}>
                       {type.code} - {type.name}
@@ -274,7 +274,7 @@ export function ReportBuilder({
                   <SelectValue placeholder="All officers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All officers</SelectItem>
+                  <SelectItem value="all">All officers</SelectItem>
                   {users
                     .filter((u) => u.role === "officer")
                     .map((user) => (

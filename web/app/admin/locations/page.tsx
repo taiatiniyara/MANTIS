@@ -2,13 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { LocationsTable } from "@/components/admin/locations-table";
 import { CreateLocationDialog } from "@/components/admin/create-location-dialog";
-import { LocationsSearch } from "@/components/admin/locations-search";
 
-export default async function LocationsPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; type?: string; agency?: string };
-}) {
+export default async function LocationsPage() {
   const supabase = await createClient();
 
   // Check authentication
@@ -31,7 +26,7 @@ export default async function LocationsPage({
     return redirect("/auth/login");
   }
 
-  // Build query based on role
+  // Build query based on role - fetch all locations (filtering will be done client-side)
   let query = supabase
     .from("locations")
     .select(`
@@ -44,21 +39,6 @@ export default async function LocationsPage({
   // Agency admins only see their agency's locations
   if (profile.role === "agency_admin" && profile.agency_id) {
     query = query.eq("agency_id", profile.agency_id);
-  }
-
-  // Apply search filter
-  if (searchParams.search) {
-    query = query.ilike("name", `%${searchParams.search}%`);
-  }
-
-  // Apply type filter
-  if (searchParams.type) {
-    query = query.eq("type", searchParams.type);
-  }
-
-  // Apply agency filter (super admin only)
-  if (searchParams.agency && profile.role === "super_admin") {
-    query = query.eq("agency_id", searchParams.agency);
   }
 
   const { data: locations, error } = await query;
@@ -95,11 +75,6 @@ export default async function LocationsPage({
           userAgencyId={profile.agency_id}
         />
       </div>
-
-      <LocationsSearch
-        agencies={agencies || []}
-        userRole={profile.role}
-      />
 
       <LocationsTable
         locations={locations || []}

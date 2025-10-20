@@ -2,13 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { TeamsTable } from "@/components/admin/teams-table";
 import { CreateTeamDialog } from "@/components/admin/create-team-dialog";
-import { TeamsSearch } from "@/components/admin/teams-search";
 
-export default async function TeamsPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; agency?: string };
-}) {
+export default async function TeamsPage() {
   const supabase = await createClient();
 
   // Check authentication
@@ -39,7 +34,7 @@ export default async function TeamsPage({
     return redirect("/protected");
   }
 
-  // Build query based on role
+  // Build query based on role - fetch all teams (filtering will be done client-side)
   let query = supabase
     .from("teams")
     .select(`
@@ -52,16 +47,6 @@ export default async function TeamsPage({
   // Agency admins only see their agency's teams
   if (isAgencyAdmin && profile.agency_id) {
     query = query.eq("agency_id", profile.agency_id);
-  }
-
-  // Apply search filter
-  if (searchParams.search) {
-    query = query.ilike("name", `%${searchParams.search}%`);
-  }
-
-  // Apply agency filter (super admin only)
-  if (searchParams.agency && isSuperAdmin) {
-    query = query.eq("agency_id", searchParams.agency);
   }
 
   const { data: teams, error } = await query;
@@ -109,11 +94,6 @@ export default async function TeamsPage({
           userAgencyId={profile.agency_id}
         />
       </div>
-
-      <TeamsSearch
-        agencies={agencies || []}
-        userRole={profile.role}
-      />
 
       <TeamsTable
         teams={teams || []}

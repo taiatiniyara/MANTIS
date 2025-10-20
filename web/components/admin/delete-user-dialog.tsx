@@ -17,9 +17,10 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
 import { Database } from "@/lib/database.types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase/client";
 
 type User = Database["public"]["Tables"]["users"]["Row"];
 
@@ -44,7 +45,7 @@ export function DeleteUserDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Check if user has associated infringements
       const { count: infringementsCount } = await supabase

@@ -17,9 +17,10 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
 import { Database } from "@/lib/database.types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase/client";
 
 type Agency = Database["public"]["Tables"]["agencies"]["Row"];
 
@@ -44,7 +45,7 @@ export function DeleteAgencyDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
       
       // Check if agency has associated users
       const { count: usersCount } = await supabase

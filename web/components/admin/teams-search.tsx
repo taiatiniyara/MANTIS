@@ -37,7 +37,7 @@ export function TeamsSearch({ agencies, userRole }: TeamsSearchProps) {
 
   const handleAgencyFilter = (agency: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (agency) {
+    if (agency && agency !== "all") {
       params.set("agency", agency);
     } else {
       params.delete("agency");
@@ -66,7 +66,7 @@ export function TeamsSearch({ agencies, userRole }: TeamsSearchProps) {
             <SelectValue placeholder="All Agencies" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Agencies</SelectItem>
+            <SelectItem value="all">All Agencies</SelectItem>
             {agencies.map((agency) => (
               <SelectItem key={agency.id} value={agency.id}>
                 {agency.name}

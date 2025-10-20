@@ -3,25 +3,9 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { InfringementsTable } from "@/components/admin/infringements-table";
-import { InfringementsSearch } from "@/components/admin/infringements-search";
 import { CreateInfringementDialog } from "@/components/admin/create-infringement-dialog";
 
-export default async function InfringementsPage({
-  searchParams,
-}: {
-  searchParams: {
-    search?: string;
-    agency?: string;
-    type?: string;
-    category?: string;
-    officer?: string;
-    team?: string;
-    route?: string;
-    location?: string;
-    from?: string;
-    to?: string;
-  };
-}) {
+export default async function InfringementsPage() {
   const supabase = await createClient();
 
   const {
@@ -59,7 +43,7 @@ export default async function InfringementsPage({
         .order("position"),
     ]);
 
-  // Fetch infringements with all relationships
+  // Fetch all infringements (filtering will be done client-side)
   let query = supabase
     .from("infringements")
     .select(
@@ -103,56 +87,9 @@ export default async function InfringementsPage({
     )
     .order("issued_at", { ascending: false });
 
-  // Apply filters
+  // Agency admins only see their agency's infringements
   if (userData.role === "agency_admin" && userData.agency_id) {
     query = query.eq("agency_id", userData.agency_id);
-  } else if (searchParams.agency) {
-    query = query.eq("agency_id", searchParams.agency);
-  }
-
-  if (searchParams.type) {
-    query = query.eq("type_id", searchParams.type);
-  }
-
-  if (searchParams.category) {
-    // Filter by category through type
-    const categoryTypes = typesResult.data?.filter(
-      (t) => t.category_id === searchParams.category
-    );
-    if (categoryTypes && categoryTypes.length > 0) {
-      query = query.in(
-        "type_id",
-        categoryTypes.map((t) => t.id)
-      );
-    }
-  }
-
-  if (searchParams.officer) {
-    query = query.eq("officer_id", searchParams.officer);
-  }
-
-  if (searchParams.team) {
-    query = query.eq("team_id", searchParams.team);
-  }
-
-  if (searchParams.route) {
-    query = query.eq("route_id", searchParams.route);
-  }
-
-  if (searchParams.location) {
-    query = query.eq("location_id", searchParams.location);
-  }
-
-  if (searchParams.search) {
-    query = query.ilike("vehicle_id", `%${searchParams.search}%`);
-  }
-
-  if (searchParams.from) {
-    query = query.gte("issued_at", searchParams.from);
-  }
-
-  if (searchParams.to) {
-    query = query.lte("issued_at", searchParams.to);
   }
 
   const { data: infringements, error } = await query;
@@ -187,17 +124,6 @@ export default async function InfringementsPage({
           </Button>
         </CreateInfringementDialog>
       </div>
-
-      <InfringementsSearch
-        agencies={agenciesResult.data || []}
-        categories={categoriesResult.data || []}
-        types={typesResult.data || []}
-        teams={teamsResult.data || []}
-        routes={routesResult.data || []}
-        locations={locationsResult.data || []}
-        officers={officersResult.data || []}
-        userRole={userData.role}
-      />
 
       <InfringementsTable
         infringements={(infringements as any) || []}

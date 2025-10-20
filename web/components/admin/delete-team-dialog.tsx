@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Team {
   id: string;
@@ -40,7 +41,7 @@ export function DeleteTeamDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Check if team has members
       const { data: members } = await supabase

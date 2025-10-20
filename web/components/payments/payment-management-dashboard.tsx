@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { createClient } from '@/lib/supabase/client';
+
 import { CreditCard, DollarSign, RefreshCw, Download, Search, Calendar, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabase/client';
 
 interface Payment {
   id: string;
@@ -80,7 +81,7 @@ export function PaymentManagementDashboard() {
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
-  const supabase = createClient();
+  
 
   useEffect(() => {
     loadPayments();

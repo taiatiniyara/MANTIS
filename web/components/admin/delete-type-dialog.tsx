@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createClient } from "@/lib/supabase/client";
+
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
@@ -34,7 +34,7 @@ export function DeleteTypeDialog({
 }: DeleteTypeDialogProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  
 
   async function handleDelete() {
     setLoading(true);

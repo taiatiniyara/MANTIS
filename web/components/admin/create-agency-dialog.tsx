@@ -15,8 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase/client";
 
 export function CreateAgencyDialog() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export function CreateAgencyDialog() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
       const { error: insertError } = await supabase
         .from("agencies")
         .insert({ name: name.trim() });

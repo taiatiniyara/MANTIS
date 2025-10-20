@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +31,7 @@ import {
   combineValidations,
 } from "@/lib/validations";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Agency {
   id: string;
@@ -142,7 +143,7 @@ export function EditInfringementDialog({
     issued_at: new Date(infringement.issued_at).toISOString().slice(0, 16),
   });
   const router = useRouter();
-  const supabase = createClient();
+  
 
   // Filter types by selected category
   const filteredTypes = formData.category_id
@@ -428,7 +429,7 @@ export function EditInfringementDialog({
                     <SelectValue placeholder="Select team (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Team</SelectItem>
+                    <SelectItem value="none">No Team</SelectItem>
                     {filteredTeams.map((team) => (
                       <SelectItem key={team.id} value={team.id}>
                         {team.name}
@@ -450,7 +451,7 @@ export function EditInfringementDialog({
                     <SelectValue placeholder="Select route (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Route</SelectItem>
+                    <SelectItem value="none">No Route</SelectItem>
                     {filteredRoutes.map((route) => (
                       <SelectItem key={route.id} value={route.id}>
                         {route.name}
@@ -484,7 +485,7 @@ export function EditInfringementDialog({
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Parent</SelectItem>
+                    <SelectItem value="none">No Parent</SelectItem>
                     {filteredLocations
                       .filter((loc) => !loc.parent_id && (loc.type === "division" || loc.type === "region"))
                       .map((location) => (
@@ -514,7 +515,7 @@ export function EditInfringementDialog({
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Child</SelectItem>
+                    <SelectItem value="none">No Child</SelectItem>
                     {filteredLocations
                       .filter(
                         (loc) =>

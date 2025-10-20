@@ -3,14 +3,9 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { CategoriesTable } from "@/components/admin/categories-table";
-import { CategoriesSearch } from "@/components/admin/categories-search";
 import { CreateCategoryDialog } from "@/components/admin/create-category-dialog";
 
-export default async function CategoriesPage({
-  searchParams,
-}: {
-  searchParams: { search?: string };
-}) {
+export default async function CategoriesPage() {
   const supabase = await createClient();
 
   const {
@@ -32,17 +27,11 @@ export default async function CategoriesPage({
     redirect("/protected");
   }
 
-  // Fetch categories
-  let query = supabase
+  // Fetch all categories (filtering will be done client-side)
+  const { data: categories, error } = await supabase
     .from("infringement_categories")
     .select("*")
     .order("name");
-
-  if (searchParams.search) {
-    query = query.ilike("name", `%${searchParams.search}%`);
-  }
-
-  const { data: categories, error } = await query;
 
   if (error) {
     console.error("Error fetching categories:", error);
@@ -66,8 +55,6 @@ export default async function CategoriesPage({
           </Button>
         </CreateCategoryDialog>
       </div>
-
-      <CategoriesSearch />
 
       <CategoriesTable categories={categories || []} />
     </div>

@@ -18,9 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/client";
+
 import { toast } from "sonner";
 import { X } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Route {
   id: string;
@@ -57,7 +58,7 @@ export function ManageTeamRoutesDialog({
   const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
+  
 
   useEffect(() => {
     if (open) {

@@ -21,9 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 interface Category {
   id: string;
@@ -51,7 +52,7 @@ export function CreateTypeDialog({
     gl_code: "",
   });
   const router = useRouter();
-  const supabase = createClient();
+  
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

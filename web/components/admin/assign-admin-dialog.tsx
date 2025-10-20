@@ -19,11 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+
 import { Database } from "@/lib/database.types";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { RoleBadge } from "./role-badge";
+import { supabase } from "@/lib/supabase/client";
 
 type Agency = Database["public"]["Tables"]["agencies"]["Row"];
 
@@ -68,7 +69,7 @@ export function AssignAdminDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Update the selected user to be an agency admin for this agency
       const { error: updateError } = await supabase
@@ -103,7 +104,7 @@ export function AssignAdminDialog({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Demote admin to officer
       const { error: updateError } = await supabase

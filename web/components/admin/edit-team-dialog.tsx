@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { Users } from "lucide-react";
 
 interface Agency {
@@ -63,7 +63,7 @@ export function EditTeamDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       const { error } = await supabase
         .from("teams")
@@ -126,7 +126,7 @@ export function EditTeamDialog({
                     <SelectValue placeholder="Select agency (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (Unassigned)</SelectItem>
+                    <SelectItem value="none">None (Unassigned)</SelectItem>
                     {agencies.map((agency) => (
                       <SelectItem key={agency.id} value={agency.id}>
                         {agency.name}

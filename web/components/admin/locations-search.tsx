@@ -37,7 +37,7 @@ export function LocationsSearch({ agencies, userRole }: LocationsSearchProps) {
 
   const handleTypeFilter = (type: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (type) {
+    if (type && type !== "all") {
       params.set("type", type);
     } else {
       params.delete("type");
@@ -47,7 +47,7 @@ export function LocationsSearch({ agencies, userRole }: LocationsSearchProps) {
 
   const handleAgencyFilter = (agency: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (agency) {
+    if (agency && agency !== "all") {
       params.set("agency", agency);
     } else {
       params.delete("agency");
@@ -75,7 +75,7 @@ export function LocationsSearch({ agencies, userRole }: LocationsSearchProps) {
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Types</SelectItem>
+          <SelectItem value="all">All Types</SelectItem>
           <SelectItem value="division">Division</SelectItem>
           <SelectItem value="station">Station</SelectItem>
           <SelectItem value="post">Post</SelectItem>
@@ -96,7 +96,7 @@ export function LocationsSearch({ agencies, userRole }: LocationsSearchProps) {
             <SelectValue placeholder="All Agencies" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Agencies</SelectItem>
+            <SelectItem value="all">All Agencies</SelectItem>
             {agencies.map((agency) => (
               <SelectItem key={agency.id} value={agency.id}>
                 {agency.name}

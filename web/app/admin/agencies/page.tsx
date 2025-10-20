@@ -2,13 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AgenciesTable } from "@/components/admin/agencies-table";
 import { CreateAgencyDialog } from "@/components/admin/create-agency-dialog";
-import { AgenciesSearch } from "@/components/admin/agencies-search";
 
-export default async function AdminAgenciesPage({
-  searchParams,
-}: {
-  searchParams: { search?: string };
-}) {
+export default async function AdminAgenciesPage() {
   const supabase = await createClient();
 
   // Check authentication
@@ -31,8 +26,8 @@ export default async function AdminAgenciesPage({
     redirect("/protected");
   }
 
-  // Build query with search filter - include admin users
-  let query = supabase
+  // Fetch all agencies (filtering will be done client-side)
+  const { data: agencies, error } = await supabase
     .from("agencies")
     .select(`
       *,
@@ -43,14 +38,6 @@ export default async function AdminAgenciesPage({
       )
     `)
     .order("name");
-
-  // Apply search filter if provided
-  const searchTerm = searchParams.search;
-  if (searchTerm) {
-    query = query.ilike("name", `%${searchTerm}%`);
-  }
-
-  const { data: agencies, error } = await query;
 
   if (error) {
     console.error("Error fetching agencies:", error);
@@ -73,8 +60,6 @@ export default async function AdminAgenciesPage({
         </div>
         <CreateAgencyDialog />
       </div>
-
-      <AgenciesSearch />
 
       <AgenciesTable 
         agencies={agencies || []}

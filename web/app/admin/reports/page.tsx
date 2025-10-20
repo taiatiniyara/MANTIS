@@ -17,18 +17,9 @@ import {
 } from "lucide-react";
 import { FinanceReportsTable } from "@/components/admin/finance-reports-table";
 import { AnalyticsCharts } from "@/components/admin/analytics-charts";
-import { ReportsSearch } from "@/components/admin/reports-search";
 import { ReportBuilder } from "@/components/admin/report-builder";
 
-export default async function ReportsPage({
-  searchParams,
-}: {
-  searchParams: {
-    agency?: string;
-    from?: string;
-    to?: string;
-  };
-}) {
+export default async function ReportsPage() {
   const supabase = await createClient();
 
   const {
@@ -50,7 +41,7 @@ export default async function ReportsPage({
     redirect("/protected");
   }
 
-  // Build query with filters
+  // Build query - fetch all infringements (filtering will be done client-side)
   let query = supabase.from("infringements").select(
     `
       id,
@@ -73,20 +64,9 @@ export default async function ReportsPage({
     `
   );
 
-  // Apply agency filter
+  // Apply agency filter for agency admins
   if (userData.role === "agency_admin" && userData.agency_id) {
     query = query.eq("agency_id", userData.agency_id);
-  } else if (searchParams.agency) {
-    query = query.eq("agency_id", searchParams.agency);
-  }
-
-  // Apply date range filters
-  if (searchParams.from) {
-    query = query.gte("issued_at", searchParams.from);
-  }
-
-  if (searchParams.to) {
-    query = query.lte("issued_at", searchParams.to);
   }
 
   const { data: infringements, error } = await query;
@@ -126,8 +106,6 @@ export default async function ReportsPage({
           Financial reports and infringement statistics
         </p>
       </div>
-
-      <ReportsSearch agencies={agencies || []} userRole={userData.role} />
 
       {/* Advanced Report Builder */}
       <div className="space-y-4">

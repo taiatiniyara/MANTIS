@@ -1,14 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { UsersTable } from "@/components/admin/users-table";
 import { CreateUserDialog } from "@/components/admin/create-user-dialog";
-import { UsersSearch } from "@/components/admin/users-search";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; role?: string; agency?: string };
-}) {
+export default async function AdminUsersPage() {
   const supabase = await createClient();
 
   // Check authentication
@@ -39,7 +34,7 @@ export default async function AdminUsersPage({
     redirect("/protected");
   }
 
-  // Build query
+  // Build query - fetch all users (filtering will be done client-side)
   let query = supabase
     .from("users")
     .select(`
@@ -58,21 +53,6 @@ export default async function AdminUsersPage({
   // Agency admins can only see users in their agency
   if (isAgencyAdmin && currentUser.agency_id) {
     query = query.eq("agency_id", currentUser.agency_id);
-  }
-
-  // Apply search filter
-  if (searchParams.search) {
-    query = query.or(`position.ilike.%${searchParams.search}%`);
-  }
-
-  // Apply role filter
-  if (searchParams.role) {
-    query = query.eq("role", searchParams.role);
-  }
-
-  // Apply agency filter (super admin only)
-  if (searchParams.agency && isSuperAdmin) {
-    query = query.eq("agency_id", searchParams.agency);
   }
 
   const { data: users, error } = await query;
@@ -124,11 +104,6 @@ export default async function AdminUsersPage({
           locations={locations || []}
         />
       </div>
-
-      <UsersSearch
-        isSuperAdmin={isSuperAdmin}
-        agencies={agencies}
-      />
 
       <UsersTable
         users={users || []}

@@ -23,8 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { MapPin, Plus } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 type LocationType = 'division' | 'station' | 'post' | 'region' | 'office' | 'council' | 'department' | 'zone';
 
@@ -74,7 +75,7 @@ export function CreateRouteDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       const { error } = await supabase.from("routes").insert({
         name: name.trim(),
@@ -164,7 +165,7 @@ export function CreateRouteDialog({
                     <SelectValue placeholder="Select agency (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (Unassigned)</SelectItem>
+                    <SelectItem value="none">None (Unassigned)</SelectItem>
                     {agencies.map((agency) => (
                       <SelectItem key={agency.id} value={agency.id}>
                         {agency.name}
@@ -182,7 +183,7 @@ export function CreateRouteDialog({
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {filteredLocations.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       No locations available

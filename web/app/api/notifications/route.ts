@@ -1,8 +1,9 @@
+import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  
   
   const {
     userId,
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
 
 // Batch create notifications
 export async function PUT(request: NextRequest) {
-  const supabase = await createClient();
+  
   
   const {
     userIds,

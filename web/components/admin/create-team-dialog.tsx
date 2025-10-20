@@ -22,8 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { Users, Plus } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Agency {
   id: string;
@@ -55,7 +56,7 @@ export function CreateTeamDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       const { error } = await supabase.from("teams").insert({
         name: name.trim(),
@@ -124,7 +125,7 @@ export function CreateTeamDialog({
                     <SelectValue placeholder="Select agency (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (Unassigned)</SelectItem>
+                    <SelectItem value="none">None (Unassigned)</SelectItem>
                     {agencies.map((agency) => (
                       <SelectItem key={agency.id} value={agency.id}>
                         {agency.name}

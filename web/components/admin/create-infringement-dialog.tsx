@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -32,6 +32,7 @@ import {
   combineValidations,
 } from "@/lib/validations";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Agency {
   id: string;
@@ -119,7 +120,7 @@ export function CreateInfringementDialog({
     issued_at: new Date().toISOString().slice(0, 16),
   });
   const router = useRouter();
-  const supabase = createClient();
+  
 
   // Reset agency when dialog opens for Super Admin
   useEffect(() => {

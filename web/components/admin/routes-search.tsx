@@ -47,7 +47,7 @@ export function RoutesSearch({ agencies, locations, userRole }: RoutesSearchProp
 
   const handleAgencyFilter = (agency: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (agency) {
+    if (agency && agency !== "all") {
       params.set("agency", agency);
     } else {
       params.delete("agency");
@@ -57,7 +57,7 @@ export function RoutesSearch({ agencies, locations, userRole }: RoutesSearchProp
 
   const handleLocationFilter = (location: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (location) {
+    if (location && location !== "all") {
       params.set("location", location);
     } else {
       params.delete("location");
@@ -86,7 +86,7 @@ export function RoutesSearch({ agencies, locations, userRole }: RoutesSearchProp
             <SelectValue placeholder="All Agencies" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Agencies</SelectItem>
+            <SelectItem value="all">All Agencies</SelectItem>
             {agencies.map((agency) => (
               <SelectItem key={agency.id} value={agency.id}>
                 {agency.name}
@@ -104,7 +104,7 @@ export function RoutesSearch({ agencies, locations, userRole }: RoutesSearchProp
           <SelectValue placeholder="All Locations" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Locations</SelectItem>
+          <SelectItem value="all">All Locations</SelectItem>
           {locations.map((location) => (
             <SelectItem key={location.id} value={location.id}>
               {location.name}

@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { UserPlus, X } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface User {
   id: string;
@@ -75,7 +76,7 @@ export function ManageTeamMembersDialog({
 
   const fetchTeamMembers = async () => {
     try {
-      const supabase = createClient();
+      
       const { data, error } = await supabase
         .from("team_members")
         .select(`
@@ -96,7 +97,7 @@ export function ManageTeamMembersDialog({
 
     setLoading(true);
     try {
-      const supabase = createClient();
+      
 
       const { error } = await supabase.from("team_members").insert({
         team_id: team.id,
@@ -128,7 +129,7 @@ export function ManageTeamMembersDialog({
   const handleRemoveMember = async (userId: string) => {
     setLoading(true);
     try {
-      const supabase = createClient();
+      
 
       const { error } = await supabase
         .from("team_members")

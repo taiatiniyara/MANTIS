@@ -1,8 +1,9 @@
+import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  
   
   const { notificationId } = await request.json();
 

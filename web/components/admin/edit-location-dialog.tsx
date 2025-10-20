@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { MapPin } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 type LocationType = 'division' | 'station' | 'post' | 'region' | 'office' | 'council' | 'department' | 'zone';
 
@@ -87,7 +88,7 @@ export function EditLocationDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       const { error } = await supabase
         .from("locations")
@@ -174,7 +175,7 @@ export function EditLocationDialog({
                     <SelectValue placeholder="Select agency (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (Unassigned)</SelectItem>
+                    <SelectItem value="none">None (Unassigned)</SelectItem>
                     {agencies.map((agency) => (
                       <SelectItem key={agency.id} value={agency.id}>
                         {agency.name}
@@ -192,7 +193,7 @@ export function EditLocationDialog({
                   <SelectValue placeholder="Select parent location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None (Top Level)</SelectItem>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
                   {availableParents.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>
                       {loc.name} ({loc.type})

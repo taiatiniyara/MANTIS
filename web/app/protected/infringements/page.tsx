@@ -2,9 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 export default async function ProtectedInfringementsPage() {
-  const supabase = await createClient();
+  
 
   const {
     data: { user },

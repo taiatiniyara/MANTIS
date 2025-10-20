@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase/client";
 
 export function LoginForm({
   className,
@@ -25,23 +26,68 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
+    
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+      if (authError) throw authError;
+      
+      console.log("Login successful:", authData);
+      // Show success toast immediately
+      toast({
+        title: "Login Successful!",
+        description: "Welcome back. Redirecting to your dashboard...",
+        variant: "default",
+        className: "bg-green-50 border-green-200",
+      });
+      
+      // Try to get user profile to determine redirect, but don't fail if it's not available
+      let redirectPath = "/protected"; // Default redirect
+      
+      try {
+        console.log(authData.user.id);
+        const { data: userData, error: profileError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", authData.user.id)
+          .single();
+
+        console.log("User profile data:", userData);
+        
+        if (!profileError && userData) {
+          console.log("User role:", userData.role, authData.user);
+          // Determine redirect based on role if profile is available
+          redirectPath = userData.role === "super_admin" ? "/admin" : "/protected";
+        }
+      } catch (profileError) {
+        // Profile fetch failed, but that's okay - use default redirect
+        console.warn("Could not fetch user profile, using default redirect:", profileError);
+      }
+      
+      // Redirect after a short delay so user sees the toast
+      setTimeout(() => {
+        router.push(redirectPath);
+        router.refresh(); // Refresh to ensure session is updated
+      }, 500);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      setError(errorMessage);
+      
+      // Show error toast
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

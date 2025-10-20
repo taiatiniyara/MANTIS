@@ -10,10 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createClient } from "@/lib/supabase/client";
+
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Category {
   id: string;
@@ -33,7 +34,7 @@ export function DeleteCategoryDialog({
 }: DeleteCategoryDialogProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  
 
   async function handleDelete() {
     setLoading(true);

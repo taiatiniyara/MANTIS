@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -5,7 +6,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
+  
   
   const notificationId = params.id;
 

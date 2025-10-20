@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Mail, CheckCircle2 } from "lucide-react";
 
 export function ForgotPasswordForm({
   className,
@@ -23,10 +25,11 @@ export function ForgotPasswordForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
+    
     setIsLoading(true);
     setError(null);
 
@@ -36,9 +39,23 @@ export function ForgotPasswordForm({
         redirectTo: `${window.location.origin}/auth/update-password`,
       });
       if (error) throw error;
+      
       setSuccess(true);
+      
+      toast({
+        title: "Reset Email Sent!",
+        description: `Password reset instructions have been sent to ${email}`,
+        className: "bg-green-50 border-green-200",
+      });
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      setError(errorMessage);
+      
+      toast({
+        title: "Failed to Send Reset Email",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -49,14 +66,39 @@ export function ForgotPasswordForm({
       {success ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>Password reset instructions sent</CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-green-100 p-2">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Check Your Email</CardTitle>
+                <CardDescription>Password reset instructions sent</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
-            </p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-4 border border-blue-200">
+                <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900">
+                    Email sent to: <span className="font-semibold">{email}</span>
+                  </p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    If you registered using your email and password, you will receive
+                    a password reset email within a few minutes.
+                  </p>
+                </div>
+              </div>
+              <div className="text-center">
+                <Link
+                  href="/auth/login"
+                  className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-4"
+                >
+                  Back to Login
+                </Link>
+              </div>
+            </div>
           </CardContent>
         </Card>
       ) : (

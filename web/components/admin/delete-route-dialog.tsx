@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+
 import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface RouteData {
   id: string;
@@ -40,7 +41,7 @@ export function DeleteRouteDialog({
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      
 
       // Check if route has assigned teams
       const { data: teamRoutes } = await supabase

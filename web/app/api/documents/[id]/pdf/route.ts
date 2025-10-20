@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase/client';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -6,7 +7,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
+    
     const { id } = params;
 
     // Get document details

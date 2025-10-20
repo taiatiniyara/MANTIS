@@ -2,20 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuditLogsTable } from "@/components/admin/audit-logs-table";
-import { AuditLogsSearch } from "@/components/admin/audit-logs-search";
 import { Shield } from "lucide-react";
 
-export default async function AuditLogsPage({
-  searchParams,
-}: {
-  searchParams: {
-    table?: string;
-    action?: string;
-    user?: string;
-    from?: string;
-    to?: string;
-  };
-}) {
+export default async function AuditLogsPage() {
   const supabase = await createClient();
 
   const {
@@ -37,35 +26,12 @@ export default async function AuditLogsPage({
     return redirect("/protected");
   }
 
-  // Build query for audit logs
-  let query = supabase
+  // Fetch all audit logs (filtering will be done client-side)
+  const { data: auditLogs } = await supabase
     .from("audit_logs_with_details")
     .select("*")
     .order("timestamp", { ascending: false })
-    .limit(100);
-
-  // Apply filters
-  if (searchParams.table) {
-    query = query.eq("table_name", searchParams.table);
-  }
-
-  if (searchParams.action) {
-    query = query.eq("action", searchParams.action);
-  }
-
-  if (searchParams.user) {
-    query = query.eq("user_id", searchParams.user);
-  }
-
-  if (searchParams.from) {
-    query = query.gte("timestamp", searchParams.from);
-  }
-
-  if (searchParams.to) {
-    query = query.lte("timestamp", searchParams.to);
-  }
-
-  const { data: auditLogs } = await query;
+    .limit(500);
 
   // Get list of users for filter dropdown
   let usersQuery = supabase.from("users").select("id, position, role");
@@ -87,18 +53,6 @@ export default async function AuditLogsPage({
           Track all system changes for compliance and security
         </p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filter Audit Logs</CardTitle>
-          <CardDescription>
-            Search and filter audit trail by table, action, user, or date range
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AuditLogsSearch users={users || []} />
-        </CardContent>
-      </Card>
 
       <AuditLogsTable auditLogs={(auditLogs as any) || []} userRole={userData.role} />
     </div>

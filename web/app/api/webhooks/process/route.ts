@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { supabase } from '@/lib/supabase/client';
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    
 
     // Get pending webhook deliveries
     const { data: deliveries, error } = await supabase
