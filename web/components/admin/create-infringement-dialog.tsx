@@ -33,6 +33,7 @@ import {
 } from "@/lib/validations";
 import { AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { LocationPicker } from "@/components/maps/location-picker";
 
 interface Agency {
   id: string;
@@ -118,6 +119,10 @@ export function CreateInfringementDialog({
     vehicle_id: "",
     notes: "",
     issued_at: new Date().toISOString().slice(0, 16),
+    // GIS fields
+    latitude: null as number | null,
+    longitude: null as number | null,
+    address: "",
   });
   const router = useRouter();
   
@@ -223,6 +228,10 @@ export function CreateInfringementDialog({
       location_id: formData.location_id || null,
       notes: formData.notes.trim() || null,
       issued_at: new Date(formData.issued_at).toISOString(),
+      // Add GIS coordinates if available
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      address: formData.address || null,
     });
 
     if (error) {
@@ -242,6 +251,9 @@ export function CreateInfringementDialog({
         vehicle_id: "",
         notes: "",
         issued_at: new Date().toISOString().slice(0, 16),
+        latitude: null,
+        longitude: null,
+        address: "",
       });
       setErrors({});
       setOpen(false);
@@ -538,6 +550,41 @@ export function CreateInfringementDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Precise Location Picker with Map */}
+            <div className="space-y-2 border-t pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label>Precise Location (GPS Coordinates)</Label>
+                <span className="text-xs text-muted-foreground">
+                  {formData.latitude && formData.longitude ? (
+                    <span className="text-green-600">✓ Location captured</span>
+                  ) : (
+                    <span>Optional - Click map or search address</span>
+                  )}
+                </span>
+              </div>
+              <LocationPicker
+                onLocationSelect={(lat, lng, address) => {
+                  setFormData({
+                    ...formData,
+                    latitude: lat,
+                    longitude: lng,
+                    address: address || "",
+                  });
+                }}
+                initialLocation={
+                  formData.latitude && formData.longitude
+                    ? { lat: formData.latitude, lng: formData.longitude }
+                    : undefined
+                }
+                label=""
+              />
+              {formData.address && (
+                <p className="text-sm text-muted-foreground">
+                  📍 {formData.address}
+                </p>
+              )}
             </div>
 
             {/* Notes */}

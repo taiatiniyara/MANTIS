@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyticsCharts } from "@/components/admin/analytics-charts";
+import { InfringementHeatmap } from "@/components/maps/infringement-heatmap";
 import { TrendingUp, Users, MapPin, DollarSign } from "lucide-react";
 
 export default async function AnalyticsPage() {
@@ -177,6 +178,44 @@ export default async function AnalyticsPage() {
 
       {/* Charts */}
       <AnalyticsCharts infringements={infringements || []} />
+
+      {/* Infringement Hotspot Map */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Infringement Hotspots</CardTitle>
+          <CardDescription>
+            Geographic distribution of infringements with GPS coordinates
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {infringements && infringements.filter((inf: any) => inf.latitude && inf.longitude).length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-4">
+                Showing {infringements.filter((inf: any) => inf.latitude && inf.longitude).length} of {infringements.length} infringements with location data
+              </p>
+              <InfringementHeatmap
+                infringements={infringements
+                  .filter((inf: any) => inf.latitude && inf.longitude)
+                  .map((inf: any) => ({
+                    id: inf.id,
+                    latitude: inf.latitude,
+                    longitude: inf.longitude,
+                  }))}
+                height="600px"
+              />
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <MapPin className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No GPS Data Available</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Start recording infringements with precise GPS locations to see hotspot analysis on the map.
+                The map will show areas with high infringement concentration.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,12 +1,10 @@
-# 🛠️ MANTIS — Municipal & Traffic Infringement System# 🛠️ MANTIS — Multi‑Agency National Traffic Infringement System
+# 🛠️ MANTIS — Multi‑Agency National Traffic Infringement System
 
+**Status**: ✅ **Production Ready** | **Internal System Only**
 
+MANTIS is a comprehensive **internal platform** for managing traffic infringements across multiple agencies in Fiji. It unifies the **Fiji Police Force**, **Land Transport Authority (LTA)**, and **City/Town Councils** into a single Supabase‑backed system with web and mobile apps.
 
-**Status**: ✅ **100% COMPLETE** (33/33 Tasks) | **Production Ready**MANTIS is a centralized platform for recording, managing, and analyzing traffic infringements across Fiji.  
-
-It unifies the **Fiji Police Force**, **Land Transport Authority (LTA)**, and **City/Town Councils** into a single Supabase‑backed system with web and mobile apps.
-
-MANTIS is a comprehensive platform for managing traffic infringements across multiple agencies. It provides a unified system for recording, processing, and analyzing traffic violations with support for web dashboards, mobile apps, document management, payments, and third-party integrations.
+**Important**: MANTIS is an **internal system only** - there is no public user access. All users must be authorized staff members.
 
 ---
 
@@ -591,30 +589,34 @@ License terms to be defined by stakeholders.
 
 ---
 
-## � Documentation
+## 📚 Documentation
 
 All documentation is organized in the `/docs` folder:
 
-### Getting Started (4 files)
-- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Quick start guide
-- [DATABASE_SETUP.md](docs/DATABASE_SETUP.md) - Database setup instructions
-- [WINDOWS_SETUP.md](docs/WINDOWS_SETUP.md) - Windows-specific setup
-- [COMMANDS.md](docs/COMMANDS.md) - Common commands reference
+### 🚀 Getting Started (4 files)
+- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Complete setup guide
+- [DATABASE_SETUP.md](docs/DATABASE_SETUP.md) - Database configuration
+- [WINDOWS_SETUP.md](docs/WINDOWS_SETUP.md) - Windows-specific instructions
+- [COMMANDS.md](docs/COMMANDS.md) - Common CLI commands
 
-### Technical Documentation (6 files)
+### 🏗️ Technical Documentation (6 files)
 - [system-design.md](docs/system-design.md) - System architecture
-- [schema.md](docs/schema.md) - Database schema details
+- [schema.md](docs/schema.md) - Complete database structure
 - [DATABASE_EXPLAINED.md](docs/DATABASE_EXPLAINED.md) - Database concepts
-- [api-spec.md](docs/api-spec.md) - API documentation
-- [ui-spec.md](docs/ui-spec.md) - UI/UX specifications
+- [api-spec.md](docs/api-spec.md) - REST API documentation
+- [ui-spec.md](docs/ui-spec.md) - UI/UX design specifications
 - [USER_JOURNEYS.md](docs/USER_JOURNEYS.md) - Complete user flows for all roles
 
-### Project Information (3 files)
-- [INDEX.md](docs/INDEX.md) - Documentation index
-- [PROJECT_COMPLETE.md](docs/PROJECT_COMPLETE.md) - Complete project history
-- [onboarding.md](docs/onboarding.md) - Team onboarding guide
+### 👥 User & Administration (1 file)
+- [ADMIN_USER_GUIDE.md](docs/ADMIN_USER_GUIDE.md) - Admin user management guide
 
-**Quick Stats**: 15 docs (14 essential + 1 record) | 67% reduction | Zero redundancy
+### 🎯 Project Information (4 files)
+- [INDEX.md](docs/INDEX.md) - Documentation index
+- [FINAL_STATUS.md](docs/FINAL_STATUS.md) - Complete project status
+- [PROJECT_COMPLETE.md](docs/PROJECT_COMPLETE.md) - Complete project history (33/33 tasks)
+- [onboarding.md](docs/onboarding.md) - Developer onboarding guide
+
+**Total**: 15 essential documentation files | Clean and organized structure
 
 ## 📞 Support
 

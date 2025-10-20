@@ -15,7 +15,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, CheckCircle2 } from "lucide-react";
+import { Mail, CheckCircle2, ArrowLeft } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 export function ForgotPasswordForm({
   className,
@@ -64,83 +65,90 @@ export function ForgotPasswordForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       {success ? (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-green-100 p-2">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">Check Your Email</CardTitle>
-                <CardDescription>Password reset instructions sent</CardDescription>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 p-4">
+            <div className="flex-shrink-0">
+              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-green-900 dark:text-green-100">
+                Reset Email Sent!
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                Check your inbox at <strong>{email}</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-muted/50 p-4">
+            <div className="flex items-start gap-3">
+              <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="text-sm text-muted-foreground">
+                <p className="mb-2">
+                  If an account exists with this email, you will receive password reset instructions within a few minutes.
+                </p>
+                <p>
+                  Don&apos;t see it? Check your spam folder or request a new link.
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-4 border border-blue-200">
-                <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-blue-900">
-                    Email sent to: <span className="font-semibold">{email}</span>
-                  </p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    If you registered using your email and password, you will receive
-                    a password reset email within a few minutes.
-                  </p>
-                </div>
-              </div>
-              <div className="text-center">
-                <Link
-                  href="/auth/login"
-                  className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-4"
-                >
-                  Back to Login
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <Link href="/auth/login">
+            <Button variant="outline" className="w-full h-11" type="button">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Sign In
+            </Button>
+          </Link>
+        </div>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-            <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleForgotPassword}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+        <div>
+          <form onSubmit={handleForgotPassword}>
+            <div className="flex flex-col gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Work Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.name@agency.gov.fj"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the email you use to sign in
+                </p>
+              </div>
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send reset email"}
-                </Button>
-              </div>
-              <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
-                <Link
-                  href="/auth/login"
-                  className="underline underline-offset-4"
-                >
-                  Login
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+              )}
+              <Button type="submit" className="w-full h-11" disabled={isLoading} size="lg">
+                {isLoading ? "Sending..." : "Send Reset Link"}
+              </Button>
+            </div>
+          </form>
+
+          <div className="relative mt-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Remember your password?
+              </span>
+            </div>
+          </div>
+
+          <Link href="/auth/login" className="mt-6 block">
+            <Button variant="outline" className="w-full h-11" type="button">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Sign In
+            </Button>
+          </Link>
+        </div>
       )}
     </div>
   );

@@ -1,15 +1,17 @@
 # 🗺️ MANTIS Web App - User Journeys
 
-**Last Updated**: October 19, 2025  
+**Last Updated**: October 20, 2025  
 **Version**: 1.0.0
 
-This document outlines the complete user journeys for all roles in the MANTIS web application, from first visit to advanced operations.
+This document outlines the complete user journeys for all roles in the MANTIS web application.
+
+**Note**: MANTIS is an **internal system only**. There is no public user access in version 1.
 
 ---
 
 ## 📋 Table of Contents
 
-1. [Public User Journey](#1-public-user-journey)
+1. [Authentication Flow](#1-authentication-flow)
 2. [Super Admin Journey](#2-super-admin-journey)
 3. [Agency Admin Journey](#3-agency-admin-journey)
 4. [Officer Journey](#4-officer-journey)
@@ -18,41 +20,19 @@ This document outlines the complete user journeys for all roles in the MANTIS we
 
 ---
 
-## 1. Public User Journey
+## 1. Authentication Flow
+
+**Internal Staff Only** - MANTIS is not accessible to the general public.
 
 ### 1.1 Home Page (`/`)
 
-**First Visit - Unauthenticated User**
-
-#### Visual Elements
-- **Navigation Bar**:
-  - Logo: "MANTIS" or agency logo
-  - Right side: "Sign In" button
-- **Hero Section**:
-  - Large heading: "Municipal & Traffic Infringement System"
-  - Subheading: "Unified traffic enforcement across Fiji"
-  - Call-to-action: "Get Started" → redirects to `/auth/login`
-- **Feature Highlights**:
-  - Multi-agency support (Police, LTA, Councils)
-  - Real-time tracking and analytics
-  - Mobile officer app
-  - Payment integration
-- **Footer**:
-  - Powered by Supabase
-  - Links to documentation
-  - Contact information
-
-#### User Actions
-1. **Click "Sign In"** → Navigate to `/auth/login`
-2. **Click "Get Started"** → Navigate to `/auth/login`
-3. **Browse features** → Scroll through marketing content
-4. **View documentation** → Navigate to public docs (if available)
+The root URL automatically redirects to `/auth/login` for staff authentication.
 
 ---
 
-### 1.2 Authentication Flow
+### 1.2 Login Page (`/auth/login`)
 
-#### Login Page (`/auth/login`)
+**For Internal Staff Only**
 
 **Visual Elements**:
 - Clean form with MANTIS branding
@@ -60,7 +40,6 @@ This document outlines the complete user journeys for all roles in the MANTIS we
 - "Remember me" checkbox
 - "Sign In" button (blue, prominent)
 - "Forgot password?" link
-- "Don't have an account? Sign up" link
 
 **User Actions**:
 1. **Enter credentials** → Input email and password
@@ -71,31 +50,40 @@ This document outlines the complete user journeys for all roles in the MANTIS we
      - Officer → `/protected`
    - ❌ **Error**: Show error message, remain on page
 3. **Click "Forgot password?"** → Navigate to `/auth/forgot-password`
-4. **Click "Sign up"** → Navigate to `/auth/sign-up`
 
-#### Sign Up Page (`/auth/sign-up`)
+**Access Control**: Only accounts created by administrators can log in.
+
+---
+
+### 1.3 Sign Up Page (`/auth/sign-up`)
+
+**For Internal Staff Registration Only**
 
 **Visual Elements**:
 - Registration form with fields:
   - Full name
-  - Email address
+  - Email address (work email required)
   - Password (with strength indicator)
   - Confirm password
   - Agency selection dropdown
   - Position/Role
-- Terms and conditions checkbox
 - "Create Account" button
 
 **User Actions**:
 1. **Fill out form** → Enter all required information
-2. **Select agency** → Choose from dropdown
+2. **Select agency** → Choose from dropdown (Fiji Police, LTA, Council)
 3. **Click "Create Account"**:
-   - ✅ **Success**: Redirect to `/auth/sign-up-success`
+   - ✅ **Success**: Account created with 'Pending Assignment' status
+   - Admin must approve and assign role
    - ❌ **Error**: Show validation errors
-4. **Verify email** → Check inbox for confirmation link
+4. **Verify email** → Check work inbox for confirmation link
 5. **Click confirmation link** → Navigate to `/auth/confirm`
 
-#### Forgot Password (`/auth/forgot-password`)
+**Note**: New accounts require administrator approval before full access is granted.
+
+---
+
+### 1.4 Forgot Password (`/auth/forgot-password`)
 
 **Visual Elements**:
 - Simple form with email field
@@ -103,7 +91,7 @@ This document outlines the complete user journeys for all roles in the MANTIS we
 - Back to login link
 
 **User Actions**:
-1. **Enter email** → Input registered email
+1. **Enter work email** → Input registered email
 2. **Click "Send Reset Link"**:
    - ✅ **Success**: Show confirmation message
    - Check email for reset link
@@ -784,11 +772,13 @@ Similar to Agency Admin but with limited permissions:
 
 ### 5.1 Main Navigation Hierarchy
 
+**Internal System Only - No Public Access**
+
 ```
-/ (Home - Public)
-├── /auth
+/ (Redirects to /auth/login)
+├── /auth (Internal Staff Authentication Only)
 │   ├── /login
-│   ├── /sign-up
+│   ├── /sign-up (Staff registration - requires approval)
 │   ├── /sign-up-success
 │   ├── /confirm
 │   ├── /forgot-password
@@ -848,14 +838,20 @@ Similar to Agency Admin but with limited permissions:
 
 ## 6. Page Inventory
 
-### 6.1 Public Pages (No Auth Required)
+### 6.1 Authentication Pages (Internal Staff Only)
 
 | Route | Page Title | Purpose | Key Elements |
 |-------|------------|---------|--------------|
-| `/` | Home | Landing page | Hero, features, CTA |
-| `/auth/login` | Sign In | User authentication | Email, password, forgot link |
-| `/auth/sign-up` | Sign Up | User registration | Registration form |
+| `/` | Home | Redirects to login | Automatic redirect |
+| `/auth/login` | Sign In | Staff authentication | Email, password, forgot link |
+| `/auth/sign-up` | Sign Up | Staff registration (requires approval) | Registration form, agency selection |
 | `/auth/forgot-password` | Reset Password | Password recovery | Email input |
+| `/auth/update-password` | Update Password | Set new password | Password fields |
+| `/auth/confirm` | Email Confirmation | Verify email | Confirmation message |
+| `/auth/sign-up-success` | Registration Success | Success message | Next steps |
+| `/auth/error` | Error | Authentication errors | Error message |
+
+**Note**: All authentication pages are for internal staff only. Public access is not available.
 
 ---
 

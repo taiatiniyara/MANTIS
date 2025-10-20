@@ -95,63 +95,81 @@ export function SignUpForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
-              </Button>
+      <div className="rounded-lg border bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900 p-4">
+        <p className="text-sm text-blue-900 dark:text-blue-100">
+          <strong>Internal Staff Only:</strong> New accounts require administrator approval before access is granted.
+        </p>
+      </div>
+
+      <form onSubmit={handleSignUp}>
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Work Email Address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="your.name@agency.gov.fj"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-11"
+            />
+            <p className="text-xs text-muted-foreground">
+              Use your official agency email address
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-11"
+            />
+            <p className="text-xs text-muted-foreground">
+              Minimum 6 characters
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="repeat-password">Confirm Password</Label>
+            <Input
+              id="repeat-password"
+              type="password"
+              required
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          {error && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+          <Button type="submit" className="w-full h-11" disabled={isLoading} size="lg">
+            {isLoading ? "Creating Account..." : "Create Account"}
+          </Button>
+        </div>
+      </form>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            Already have an account?
+          </span>
+        </div>
+      </div>
+
+      <Link href="/auth/login">
+        <Button variant="outline" className="w-full h-11" type="button">
+          Sign In Instead
+        </Button>
+      </Link>
     </div>
   );
 }

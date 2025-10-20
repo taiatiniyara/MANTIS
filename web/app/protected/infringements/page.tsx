@@ -2,10 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
 
 export default async function ProtectedInfringementsPage() {
-  
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -26,14 +25,17 @@ export default async function ProtectedInfringementsPage() {
     redirect("/auth/login");
   }
 
-  // Fetch infringements for the user's agency
-  const { data: infringements } = await supabase
+  const isOfficer = userData.role === "officer";
+
+  // Fetch infringements - scoped by role
+  let query = supabase
     .from("infringements")
     .select(
       `
       *,
       officer:users!officer_id (
-        position
+        position,
+        full_name
       ),
       team:teams (
         name
@@ -53,16 +55,29 @@ export default async function ProtectedInfringementsPage() {
         )
       )
     `
-    )
-    .eq("agency_id", userData.agency_id)
-    .order("issued_at", { ascending: false });
+    );
+
+  // Officers only see their own infringements
+  if (isOfficer) {
+    query = query.eq("officer_id", user.id);
+  } else {
+    // Agency admins see all agency infringements
+    query = query.eq("agency_id", userData.agency_id);
+  }
+
+  const { data: infringements } = await query.order("issued_at", { ascending: false });
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Infringements</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isOfficer ? "My Infringements" : "Infringements"}
+        </h1>
         <p className="text-muted-foreground">
-          View and manage your agency's infringement records
+          {isOfficer 
+            ? "View your recorded infringements and their status"
+            : "View and manage your agency's infringement records"
+          }
         </p>
       </div>
 
@@ -91,12 +106,19 @@ export default async function ProtectedInfringementsPage() {
                         {infringement.type?.name || "Unknown Type"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {infringement.officer?.position || "Unknown Officer"} •{" "}
+                        {!isOfficer && `${infringement.officer?.full_name || infringement.officer?.position || "Unknown Officer"} • `}
                         {new Date(infringement.issued_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs mb-1 ${
+                      infringement.status === 'approved' ? 'bg-green-100 text-green-700' :
+                      infringement.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {infringement.status || 'pending'}
+                    </span>
                     <p className="font-semibold">
                       ${(infringement.type?.fine_amount || 0).toFixed(2)}
                     </p>

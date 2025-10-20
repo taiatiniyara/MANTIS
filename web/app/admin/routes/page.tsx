@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { RoutesTable } from "@/components/admin/routes-table";
 import { CreateRouteDialog } from "@/components/admin/create-route-dialog";
+import { Button } from "@/components/ui/button";
+import { Map } from "lucide-react";
+import Link from "next/link";
 
 export default async function RoutesPage() {
   const supabase = await createClient();
@@ -100,12 +103,20 @@ export default async function RoutesPage() {
             Manage patrol routes and assignments
           </p>
         </div>
-        <CreateRouteDialog
-          agencies={agencies || []}
-          locations={locations || []}
-          userRole={profile.role}
-          userAgencyId={profile.agency_id}
-        />
+        <div className="flex items-center gap-2">
+          <Link href="/admin/routes/map">
+            <Button variant="outline">
+              <Map className="h-4 w-4 mr-2" />
+              Map View
+            </Button>
+          </Link>
+          <CreateRouteDialog
+            agencies={agencies || []}
+            locations={locations || []}
+            userRole={profile.role}
+            userAgencyId={profile.agency_id}
+          />
+        </div>
       </div>
 
       <RoutesTable

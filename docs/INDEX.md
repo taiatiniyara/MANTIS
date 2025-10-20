@@ -18,10 +18,13 @@
 - **[Database Explained](DATABASE_EXPLAINED.md)** - Database concepts
 - **[API Specification](api-spec.md)** - REST API documentation
 - **[UI Specification](ui-spec.md)** - UI/UX design specifications
-- **[User Journeys](USER_JOURNEYS.md)** - ⭐ **Complete user flows for all roles**
+- **[User Journeys](USER_JOURNEYS.md)** - Complete user flows for all roles
+
+### 👥 User & Administration
+- **[Admin User Guide](ADMIN_USER_GUIDE.md)** - Admin user management guide
 
 ### 🎯 Project Information
-- **[Final Status](FINAL_STATUS.md)** - ⭐ **Complete project status and achievements**
+- **[Final Status](FINAL_STATUS.md)** - Complete project status and achievements
 - **[Project Complete](PROJECT_COMPLETE.md)** - Complete project summary (33/33 tasks)
 - **[Onboarding](onboarding.md)** - Developer onboarding guide
 
@@ -30,10 +33,9 @@
 ## 🔗 Quick Links
 
 - **Main Project**: [../README.md](../README.md)
-- **Final Status**: [FINAL_STATUS.md](FINAL_STATUS.md) ⭐
-- **User Journeys**: [USER_JOURNEYS.md](USER_JOURNEYS.md) ⭐
-- **Project Summary**: [PROJECT_COMPLETE.md](PROJECT_COMPLETE.md)
 - **Setup Guide**: [GETTING_STARTED.md](GETTING_STARTED.md)
+- **Final Status**: [FINAL_STATUS.md](FINAL_STATUS.md)
+- **User Journeys**: [USER_JOURNEYS.md](USER_JOURNEYS.md)
 - **Database Schema**: [schema.md](schema.md)
 - **API Docs**: [api-spec.md](api-spec.md)
 
@@ -42,8 +44,7 @@
 ## 📊 Project Stats
 
 - **Status**: 100% Complete & Production Ready
-- **Documentation**: 15 files total (14 essential + 1 simplification record)
-- **Reduction**: 67% reduction from original 45 files
+- **Documentation**: 15 essential files
 - **Completion**: 33/33 tasks (100%)
 - **Database**: 35+ tables, 8 migrations, 100+ RLS policies
 - **Code**: 20,000+ lines across web and mobile
