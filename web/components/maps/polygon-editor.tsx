@@ -34,6 +34,10 @@ export default function PolygonEditor({
   const mapRef = useRef<L.Map | null>(null);
   const polygonLayerRef = useRef<L.Polygon | null>(null);
   const drawnItemsRef = useRef<L.FeatureGroup | null>(null);
+  const isEditingRef = useRef(false);
+
+  // Track if we've initialized with the initial polygon
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     // Initialize map only once
@@ -42,7 +46,7 @@ export default function PolygonEditor({
       const center =
         initialPolygon.length > 0
           ? [initialPolygon[0].lat, initialPolygon[0].lng]
-          : [-33.8688, 151.2093]; // Sydney default
+          : [-18.1416, 178.4419]; // Suva, Fiji default
 
       const map = L.map("polygon-editor-map").setView(
         center as [number, number],
@@ -85,11 +89,24 @@ export default function PolygonEditor({
       });
       map.addControl(drawControl);
 
+      // Track when user starts editing
+      map.on(L.Draw.Event.EDITSTART, () => {
+        console.log("Edit mode started");
+        isEditingRef.current = true;
+      });
+
+      map.on(L.Draw.Event.EDITSTOP, () => {
+        console.log("Edit mode stopped");
+        isEditingRef.current = false;
+      });
+
       // Handle polygon creation
       map.on(L.Draw.Event.CREATED, (e: any) => {
+        console.log("Polygon created event");
         const layer = e.layer;
         drawnItems.clearLayers(); // Remove existing polygon
         drawnItems.addLayer(layer);
+        polygonLayerRef.current = layer;
 
         const latlngs = layer.getLatLngs()[0];
         const coordinates = latlngs.map((latlng: L.LatLng) => ({
@@ -97,48 +114,49 @@ export default function PolygonEditor({
           lng: latlng.lng,
         }));
 
+        console.log("New polygon coordinates:", coordinates);
         onChange(coordinates);
       });
 
       // Handle polygon editing
       map.on(L.Draw.Event.EDITED, (e: any) => {
+        console.log("Polygon edited event triggered");
         const layers = e.layers;
         layers.eachLayer((layer: any) => {
+          polygonLayerRef.current = layer;
           const latlngs = layer.getLatLngs()[0];
           const coordinates = latlngs.map((latlng: L.LatLng) => ({
             lat: latlng.lat,
             lng: latlng.lng,
           }));
 
+          console.log("Edited polygon coordinates:", coordinates);
           onChange(coordinates);
         });
       });
 
       // Handle polygon deletion
       map.on(L.Draw.Event.DELETED, () => {
+        console.log("Polygon deleted event");
+        polygonLayerRef.current = null;
         onChange([]);
       });
-    }
 
-    // Add initial polygon if exists
-    if (
-      initialPolygon.length > 0 &&
-      drawnItemsRef.current &&
-      !polygonLayerRef.current
-    ) {
-      const latlngs = initialPolygon.map((coord) => [coord.lat, coord.lng]);
+      // Add initial polygon if exists
+      if (initialPolygon.length > 0) {
+        const latlngs = initialPolygon.map((coord) => [coord.lat, coord.lng]);
 
-      const polygon = L.polygon(latlngs as L.LatLngExpression[], {
-        color: "#3b82f6",
-        weight: 2,
-      });
+        const polygon = L.polygon(latlngs as L.LatLngExpression[], {
+          color: "#3b82f6",
+          weight: 2,
+        });
 
-      drawnItemsRef.current.addLayer(polygon);
-      polygonLayerRef.current = polygon;
+        drawnItems.addLayer(polygon);
+        polygonLayerRef.current = polygon;
+        initializedRef.current = true;
 
-      // Fit map to polygon bounds
-      if (mapRef.current) {
-        mapRef.current.fitBounds(polygon.getBounds());
+        // Fit map to polygon bounds
+        map.fitBounds(polygon.getBounds());
       }
     }
 
@@ -149,31 +167,11 @@ export default function PolygonEditor({
         mapRef.current = null;
         polygonLayerRef.current = null;
         drawnItemsRef.current = null;
+        initializedRef.current = false;
+        isEditingRef.current = false;
       }
     };
   }, []);
-
-  // Update polygon when initialPolygon changes
-  useEffect(() => {
-    if (drawnItemsRef.current && mapRef.current) {
-      drawnItemsRef.current.clearLayers();
-      polygonLayerRef.current = null;
-
-      if (initialPolygon.length > 0) {
-        const latlngs = initialPolygon.map((coord) => [coord.lat, coord.lng]);
-
-        const polygon = L.polygon(latlngs as L.LatLngExpression[], {
-          color: "#3b82f6",
-          weight: 2,
-        });
-
-        drawnItemsRef.current.addLayer(polygon);
-        polygonLayerRef.current = polygon;
-
-        mapRef.current.fitBounds(polygon.getBounds());
-      }
-    }
-  }, [initialPolygon]);
 
   return (
     <div

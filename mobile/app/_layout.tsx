@@ -57,7 +57,6 @@ function RootLayoutNav() {
     <Stack>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );
 }
@@ -66,8 +65,8 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider value={MANTISTheme}>
+        <StatusBar style="dark" />
         <RootLayoutNav />
-        <StatusBar style="light" backgroundColor="#007AFF" />
       </ThemeProvider>
     </AuthProvider>
   );

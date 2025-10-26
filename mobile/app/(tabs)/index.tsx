@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { infringements } from '@/lib/supabase';
@@ -144,7 +143,6 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="light" backgroundColor="#007AFF" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -213,7 +211,7 @@ export default function DashboardScreen() {
         
         <TouchableOpacity
           style={[styles.actionButton, styles.primaryAction]}
-          onPress={() => router.push('/record')}
+          onPress={() => router.push('/(tabs)/infringement')}
         >
           <View style={[styles.actionIcon, styles.primaryActionIcon]}>
             <Text style={styles.actionIconText}>⚠️</Text>
@@ -227,37 +225,21 @@ export default function DashboardScreen() {
           <Text style={[styles.actionArrow, styles.primaryActionText]}>›</Text>
         </TouchableOpacity>
 
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.halfWidth]}
-            onPress={() => router.push('/camera')}
-          >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>�</Text>
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Take Photos</Text>
-              <Text style={styles.actionDescription}>
-                Capture evidence
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.halfWidth]}
-            onPress={() => router.push('/(tabs)/explore')}
-          >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📋</Text>
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>View History</Text>
-              <Text style={styles.actionDescription}>
-                See all records
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push('/(tabs)/explore')}
+        >
+          <View style={styles.actionIcon}>
+            <Text style={styles.actionIconText}>📋</Text>
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>View History</Text>
+            <Text style={styles.actionDescription}>
+              See all records
+            </Text>
+          </View>
+          <Text style={styles.actionArrow}>›</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Location Info */}

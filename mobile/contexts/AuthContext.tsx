@@ -51,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authAPI.getSession().then(({ data, error }) => {
       if (error) {
         console.error('Error getting session:', error);
+        setLoading(false);
+        return;
       }
       setSession(data.session);
       setUser(data.session?.user ?? null);
@@ -60,12 +62,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch((err) => {
+      console.error('Exception getting session:', err);
+      setLoading(false);
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event);
+        
+        // Handle token refresh errors
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
 

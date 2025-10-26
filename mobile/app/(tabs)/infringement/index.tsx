@@ -10,15 +10,19 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  FlatList,
+  Image as RNImage,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { infringements, infringementTypes } from '@/lib/supabase';
+import { infringements, infringementTypes, storage } from '@/lib/supabase';
 import { gpsService, LocationData } from '@/lib/gps-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { WatermarkedImage } from '@/components/watermarked-image';
 
 interface InfringementType {
   id: string;
@@ -26,8 +30,6 @@ interface InfringementType {
   description: string;
   fine_amount: number;
 }
-
-type VehicleType = 'car' | 'motorcycle' | 'truck' | 'bus' | 'other';
 
 export default function RecordScreen() {
   const { profile } = useAuth();
@@ -39,9 +41,104 @@ export default function RecordScreen() {
 
   // Form fields
   const [vehicleId, setVehicleId] = useState('');
-  const [vehicleType, setVehicleType] = useState<VehicleType>('car');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  
+  // Type picker modal
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Camera modal
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
+  const [watermarkedPhotos, setWatermarkedPhotos] = useState<string[]>([]);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = React.useRef<CameraView>(null);
+
+  // Auto-generate notes when form data changes
+  useEffect(() => {
+    generateNotes();
+  }, [vehicleId, selectedType, location]);
+
+  // Filtered types based on search
+  const filteredTypes = types.filter(type => 
+    searchQuery === '' || 
+    type.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    type.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const takePicture = async () => {
+    if (!cameraRef.current) return;
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+      });
+
+      if (photo?.uri) {
+        setCapturedPhotos(prev => [...prev, photo.uri]);
+        Alert.alert('Success', 'Photo captured! Processing watermark...');
+        setProcessingPhoto(true);
+      }
+    } catch (error) {
+      console.error('Error taking picture:', error);
+      Alert.alert('Error', 'Failed to capture photo');
+    }
+  };
+
+  const handleWatermarkedCapture = (originalUri: string, watermarkedUri: string) => {
+    setWatermarkedPhotos(prev => [...prev, watermarkedUri]);
+    setProcessingPhoto(false);
+    console.log('Watermarked photo ready:', watermarkedUri);
+  };
+
+  const generateNotes = () => {
+    if (!vehicleId && !selectedType && !location) {
+      setNotes('');
+      return;
+    }
+
+    const parts: string[] = [];
+    
+    // Add vehicle info
+    if (vehicleId.trim()) {
+      parts.push(`Vehicle: ${vehicleId.trim().toUpperCase()}`);
+    }
+
+    // Add infringement type details
+    if (selectedType) {
+      const typeData = types.find(t => t.id === selectedType);
+      if (typeData) {
+        parts.push(`Violation: ${typeData.code} - ${typeData.description}`);
+        parts.push(`Fine Amount: $${typeData.fine_amount}`);
+      }
+    }
+
+    // Add location details
+    if (location) {
+      parts.push(`Location: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`);
+      parts.push(`GPS Accuracy: ±${Math.round(location.accuracy || 0)}m`);
+    }
+
+    // Add timestamp
+    const now = new Date();
+    const timestamp = now.toLocaleString('en-FJ', {
+      dateStyle: 'full',
+      timeStyle: 'long',
+    });
+    parts.push(`Recorded: ${timestamp}`);
+
+    // Add officer info
+    if (profile?.full_name) {
+      parts.push(`Officer: ${profile.full_name}`);
+    }
+    if (profile?.position) {
+      parts.push(`Position: ${profile.position}`);
+    }
+
+    setNotes(parts.join('\n'));
+  };
 
   useEffect(() => {
     loadData();
@@ -166,15 +263,11 @@ export default function RecordScreen() {
 
       const infringementData = {
         vehicle_id: vehicleId.trim().toUpperCase(),
-        vehicle_type: vehicleType,
-        infringement_type_id: selectedType,
+        type_id: selectedType,
         officer_id: profile?.id,
         latitude: location!.latitude,
         longitude: location!.longitude,
-        location_accuracy: location!.accuracy,
         notes: notes.trim() || null,
-        status: 'pending',
-        fine_amount: selectedTypeData.fine_amount,
         issued_at: new Date().toISOString(),
       };
 
@@ -187,30 +280,72 @@ export default function RecordScreen() {
         return;
       }
 
-      // Submit online
-      const { data, error } = await infringements.create(infringementData);
+      // Submit infringement first
+      const { data: infringementRecord, error } = await infringements.create(infringementData);
 
       if (error) {
         throw error;
       }
 
+      // Upload watermarked photos if any
+      let uploadedPhotosCount = 0;
+      if (watermarkedPhotos.length > 0 && infringementRecord?.id) {
+        Alert.alert('Uploading', `Uploading ${watermarkedPhotos.length} photo(s)...`);
+        
+        for (let i = 0; i < watermarkedPhotos.length; i++) {
+          const photoUri = watermarkedPhotos[i];
+          const timestamp = new Date().getTime();
+          const fileName = `${infringementRecord.id}_${timestamp}_${i}.jpg`;
+          
+          try {
+            const { error: uploadError } = await storage.uploadPhotoFromUri(
+              fileName,
+              photoUri,
+              'evidence-photos'
+            );
+            
+            if (uploadError) {
+              console.error('Error uploading photo:', uploadError);
+            } else {
+              uploadedPhotosCount++;
+            }
+          } catch (uploadErr) {
+            console.error('Exception uploading photo:', uploadErr);
+          }
+        }
+      }
+
+      const successMessage = watermarkedPhotos.length > 0
+        ? `Infringement recorded successfully! ${uploadedPhotosCount} of ${watermarkedPhotos.length} photo(s) uploaded.`
+        : 'Infringement recorded successfully';
+
       Alert.alert(
         'Success',
-        'Infringement recorded successfully',
+        successMessage,
         [
           {
             text: 'Record Another',
             onPress: () => {
+              // Clear form
               setVehicleId('');
-              setVehicleType('car');
               setSelectedType(null);
               setNotes('');
+              setCapturedPhotos([]);
+              setWatermarkedPhotos([]);
               refreshLocation();
             },
           },
           {
             text: 'Done',
-            onPress: () => router.back(),
+            onPress: () => {
+              // Clear form and go back
+              setVehicleId('');
+              setSelectedType(null);
+              setNotes('');
+              setCapturedPhotos([]);
+              setWatermarkedPhotos([]);
+              router.back();
+            },
           },
         ]
       );
@@ -227,17 +362,13 @@ export default function RecordScreen() {
             {
               text: 'Save Offline',
               onPress: async () => {
-                const selectedTypeData = types.find(t => t.id === selectedType);
                 await saveOffline({
                   vehicle_id: vehicleId.trim().toUpperCase(),
-                  infringement_type_id: selectedType,
+                  type_id: selectedType,
                   officer_id: profile?.id,
                   latitude: location!.latitude,
                   longitude: location!.longitude,
-                  location_accuracy: location!.accuracy,
                   notes: notes.trim() || null,
-                  status: 'pending',
-                  fine_amount: selectedTypeData?.fine_amount,
                   issued_at: new Date().toISOString(),
                 });
               },
@@ -255,7 +386,6 @@ export default function RecordScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <StatusBar style="light" backgroundColor="#007AFF" />
         <ActivityIndicator size="large" color="#007AFF" />
         <Text style={styles.loadingText}>Loading...</Text>
       </SafeAreaView>
@@ -264,7 +394,6 @@ export default function RecordScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar style="light" backgroundColor="#007AFF" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -344,120 +473,29 @@ export default function RecordScreen() {
             />
           </View>
 
-          {/* Vehicle Type */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>🚙 Vehicle Type *</Text>
-            <View style={styles.vehicleTypeContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.vehicleTypeChip,
-                  vehicleType === 'car' && styles.vehicleTypeChipSelected,
-                ]}
-                onPress={() => setVehicleType('car')}
-              >
-                <Text style={styles.vehicleTypeIcon}>🚗</Text>
-                <Text
-                  style={[
-                    styles.vehicleTypeText,
-                    vehicleType === 'car' && styles.vehicleTypeTextSelected,
-                  ]}
-                >
-                  Car
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.vehicleTypeChip,
-                  vehicleType === 'motorcycle' && styles.vehicleTypeChipSelected,
-                ]}
-                onPress={() => setVehicleType('motorcycle')}
-              >
-                <Text style={styles.vehicleTypeIcon}>🏍️</Text>
-                <Text
-                  style={[
-                    styles.vehicleTypeText,
-                    vehicleType === 'motorcycle' && styles.vehicleTypeTextSelected,
-                  ]}
-                >
-                  Motorcycle
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.vehicleTypeChip,
-                  vehicleType === 'truck' && styles.vehicleTypeChipSelected,
-                ]}
-                onPress={() => setVehicleType('truck')}
-              >
-                <Text style={styles.vehicleTypeIcon}>🚛</Text>
-                <Text
-                  style={[
-                    styles.vehicleTypeText,
-                    vehicleType === 'truck' && styles.vehicleTypeTextSelected,
-                  ]}
-                >
-                  Truck
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.vehicleTypeChip,
-                  vehicleType === 'bus' && styles.vehicleTypeChipSelected,
-                ]}
-                onPress={() => setVehicleType('bus')}
-              >
-                <Text style={styles.vehicleTypeIcon}>🚌</Text>
-                <Text
-                  style={[
-                    styles.vehicleTypeText,
-                    vehicleType === 'bus' && styles.vehicleTypeTextSelected,
-                  ]}
-                >
-                  Bus
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Infringement Type */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>⚠️ Infringement Type *</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.typeScroll}
+            <TouchableOpacity
+              style={[styles.pickerButton, selectedType && styles.pickerButtonSelected]}
+              onPress={() => setShowTypePicker(true)}
             >
-              {types.map((type) => (
-                <TouchableOpacity
-                  key={type.id}
-                  style={[
-                    styles.typeChip,
-                    selectedType === type.id && styles.typeChipSelected,
-                  ]}
-                  onPress={() => setSelectedType(type.id)}
-                >
-                  <Text
-                    style={[
-                      styles.typeChipText,
-                      selectedType === type.id && styles.typeChipTextSelected,
-                    ]}
-                  >
-                    {type.code}
+              {selectedType ? (
+                <View style={styles.pickerContent}>
+                  <Text style={styles.pickerTextSelected}>
+                    {types.find(t => t.id === selectedType)?.code}
                   </Text>
-                  <Text
-                    style={[
-                      styles.typeChipAmount,
-                      selectedType === type.id && styles.typeChipAmountSelected,
-                    ]}
-                  >
-                    R{type.fine_amount}
+                  <Text style={styles.pickerSubtext}>
+                    {types.find(t => t.id === selectedType)?.description}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                </View>
+              ) : (
+                <Text style={styles.pickerPlaceholder}>
+                  Select infringement type...
+                </Text>
+              )}
+              <Text style={styles.pickerArrow}>▼</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Selected Type Details */}
@@ -467,28 +505,95 @@ export default function RecordScreen() {
                 {types.find(t => t.id === selectedType)?.description}
               </Text>
               <Text style={styles.typeDetailsFine}>
-                Fine: R{types.find(t => t.id === selectedType)?.fine_amount}
+                Fine: ${types.find(t => t.id === selectedType)?.fine_amount}
               </Text>
             </View>
           )}
 
           {/* Notes */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>📝 Additional Notes</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>📝 Auto-Generated Notes</Text>
+              <TouchableOpacity onPress={generateNotes} style={styles.refreshNotesButton}>
+                <Text style={styles.refreshNotesText}>🔄 Refresh</Text>
+              </TouchableOpacity>
+            </View>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Enter any additional details..."
+              placeholder="Notes will be auto-generated from form data..."
               multiline
-              numberOfLines={4}
+              numberOfLines={6}
               textAlignVertical="top"
             />
+            <Text style={styles.notesHint}>
+              ℹ️ Notes are automatically generated. You can edit them if needed.
+            </Text>
           </View>
 
           {/* Photo Evidence Button */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>📸 Photo Evidence</Text>
+            
+            {/* Show captured photos */}
+            {capturedPhotos.length > 0 && (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.photoPreviewScroll}
+              >
+                {capturedPhotos.map((photoUri, index) => (
+                  <View key={index} style={styles.photoPreviewCard}>
+                    <RNImage source={{ uri: photoUri }} style={styles.photoPreviewImage} />
+                    <TouchableOpacity
+                      style={styles.photoPreviewDelete}
+                      onPress={() => {
+                        setCapturedPhotos(prev => prev.filter((_, i) => i !== index));
+                        setWatermarkedPhotos(prev => prev.filter((_, i) => i !== index));
+                      }}
+                    >
+                      <Text style={styles.photoPreviewDeleteText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Hidden watermark processors */}
+            <View style={{ height: 0, overflow: 'hidden' }}>
+              {capturedPhotos.map((photoUri, index) => {
+                // Only process if we haven't created watermark for this photo yet
+                if (watermarkedPhotos[index]) return null;
+                
+                const selectedTypeData = types.find(t => t.id === selectedType);
+                
+                return (
+                  <WatermarkedImage
+                    key={`watermark-${index}`}
+                    imageUri={photoUri}
+                    timestamp={new Date().toLocaleString('en-FJ', {
+                      dateStyle: 'full',
+                      timeStyle: 'long',
+                    })}
+                    officerName={profile?.full_name || 'Unknown Officer'}
+                    latitude={location?.latitude || null}
+                    longitude={location?.longitude || null}
+                    vehicleId={vehicleId.trim() || undefined}
+                    infringementType={selectedTypeData ? `${selectedTypeData.code} - ${selectedTypeData.description}` : undefined}
+                    onCapture={(watermarkedUri) => handleWatermarkedCapture(photoUri, watermarkedUri)}
+                  />
+                );
+              })}
+            </View>
+            
+            {processingPhoto && (
+              <View style={styles.processingIndicator}>
+                <ActivityIndicator size="small" color="#007AFF" />
+                <Text style={styles.processingText}>Processing watermark...</Text>
+              </View>
+            )}
+            
             <TouchableOpacity
               style={styles.cameraButton}
               onPress={() => {
@@ -496,18 +601,15 @@ export default function RecordScreen() {
                   Alert.alert('GPS Required', 'Please enable GPS before capturing evidence photos');
                   return;
                 }
-                router.push({
-                  pathname: '/(tabs)/infringement/camera',
-                  params: {
-                    officerName: profile?.full_name || profile?.email || 'Officer',
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                  },
-                });
+                setShowCamera(true);
               }}
             >
               <Text style={styles.cameraButtonIcon}>📷</Text>
-              <Text style={styles.cameraButtonText}>Capture Evidence Photos</Text>
+              <Text style={styles.cameraButtonText}>
+                {capturedPhotos.length > 0 
+                  ? `Add More Photos (${capturedPhotos.length})` 
+                  : 'Capture Evidence Photos'}
+              </Text>
             </TouchableOpacity>
             <Text style={styles.cameraHint}>
               Photos will be watermarked with location, time, and officer details
@@ -535,6 +637,136 @@ export default function RecordScreen() {
         )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Type Picker Modal */}
+      <Modal
+        visible={showTypePicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTypePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Infringement Type</Text>
+              <TouchableOpacity onPress={() => setShowTypePicker(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by code or description..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Text style={styles.searchClear}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Type List */}
+            <FlatList
+              data={filteredTypes}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={true}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No infringement types found</Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.typeItem,
+                    selectedType === item.id && styles.typeItemSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedType(item.id);
+                    setShowTypePicker(false);
+                    setSearchQuery('');
+                  }}
+                >
+                  <View style={styles.typeItemContent}>
+                    <View style={styles.typeItemHeader}>
+                      <Text style={styles.typeItemCode}>{item.code}</Text>
+                      <Text style={styles.typeItemAmount}>${item.fine_amount}</Text>
+                    </View>
+                    <Text style={styles.typeItemDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                  </View>
+                  {selectedType === item.id && (
+                    <Text style={styles.typeItemCheck}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Camera Modal */}
+      <Modal
+        visible={showCamera}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowCamera(false)}
+      >
+        <View style={styles.cameraModalContainer}>
+          {!cameraPermission?.granted ? (
+            <View style={styles.cameraPermissionContainer}>
+              <Text style={styles.cameraPermissionText}>📸 Camera permission required</Text>
+              <TouchableOpacity 
+                style={styles.cameraPermissionButton}
+                onPress={requestCameraPermission}
+              >
+                <Text style={styles.cameraPermissionButtonText}>Grant Permission</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.cameraCancelButton}
+                onPress={() => setShowCamera(false)}
+              >
+                <Text style={styles.cameraCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <CameraView ref={cameraRef} style={styles.camera} facing="back">
+                <View style={styles.cameraOverlay}>
+                  <View style={styles.cameraHeader}>
+                    <TouchableOpacity
+                      style={styles.cameraCloseButton}
+                      onPress={() => setShowCamera(false)}
+                    >
+                      <Text style={styles.cameraCloseText}>✕ Close</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.cameraPhotoCount}>
+                      {capturedPhotos.length} photo{capturedPhotos.length !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+
+                  <View style={styles.cameraFooter}>
+                    <TouchableOpacity 
+                      style={styles.cameraCaptureButton}
+                      onPress={takePicture}
+                    >
+                      <View style={styles.cameraCaptureButtonInner} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </CameraView>
+            </>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -684,6 +916,29 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#333',
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  refreshNotesButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+  },
+  refreshNotesText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  notesHint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -697,72 +952,145 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  vehicleTypeContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  vehicleTypeChip: {
-    flex: 1,
-    minWidth: '46%',
-    maxWidth: '48%',
+  pickerButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#ddd',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vehicleTypeChipSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  vehicleTypeIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  vehicleTypeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-  },
-  vehicleTypeTextSelected: {
-    color: '#fff',
-  },
-  typeScroll: {
-    marginTop: 8,
-  },
-  typeChip: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     borderRadius: 8,
-    marginRight: 8,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    minWidth: 120,
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 56,
   },
-  typeChipSelected: {
-    backgroundColor: '#007AFF',
+  pickerButtonSelected: {
     borderColor: '#007AFF',
   },
-  typeChipText: {
-    fontSize: 14,
+  pickerContent: {
+    flex: 1,
+  },
+  pickerTextSelected: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: '#007AFF',
+    marginBottom: 2,
   },
-  typeChipTextSelected: {
-    color: '#fff',
-  },
-  typeChipAmount: {
-    fontSize: 12,
+  pickerSubtext: {
+    fontSize: 13,
     color: '#666',
   },
-  typeChipAmountSelected: {
-    color: '#fff',
+  pickerPlaceholder: {
+    fontSize: 16,
+    color: '#999',
+  },
+  pickerArrow: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  modalClose: {
+    fontSize: 24,
+    color: '#999',
+    fontWeight: '300',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    margin: 16,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  searchClear: {
+    fontSize: 18,
+    color: '#999',
+    padding: 4,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+  },
+  typeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  typeItemSelected: {
+    backgroundColor: '#f0f8ff',
+  },
+  typeItemContent: {
+    flex: 1,
+  },
+  typeItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  typeItemCode: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  typeItemAmount: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  typeItemDescription: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  typeItemCheck: {
+    fontSize: 20,
+    color: '#007AFF',
+    marginLeft: 12,
+    fontWeight: '600',
   },
   typeDetailsCard: {
     backgroundColor: '#E3F2FD',
@@ -810,6 +1138,142 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  photoPreviewScroll: {
+    marginBottom: 12,
+  },
+  photoPreviewCard: {
+    width: 100,
+    height: 100,
+    marginRight: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoPreviewImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  photoPreviewDelete: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoPreviewDeleteText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  processingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  processingText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  cameraModalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  cameraPermissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  cameraPermissionText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+  },
+  cameraPermissionButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  cameraPermissionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cameraCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  cameraCancelButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'space-between',
+  },
+  cameraHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  cameraCloseButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+  },
+  cameraCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cameraPhotoCount: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cameraFooter: {
+    padding: 30,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  cameraCaptureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: '#007AFF',
+  },
+  cameraCaptureButtonInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#007AFF',
   },
   submitButton: {
     backgroundColor: '#007AFF',

@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -10,31 +11,56 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 // Custom storage implementation using SecureStore for tokens
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
-    if (Platform.OS === 'web') {
-      if (typeof localStorage === 'undefined') {
-        return null;
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof localStorage === 'undefined') {
+          return null;
+        }
+        return localStorage.getItem(key);
       }
-      return localStorage.getItem(key);
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      console.error('Error getting item from SecureStore:', error);
+      return null;
     }
-    return await SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
-    if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(key, value);
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, value);
+        }
+        return;
       }
-      return;
+      await SecureStore.setItemAsync(key, value);
+    } catch (error) {
+      console.error('Error setting item in SecureStore:', error);
+      // Fallback to AsyncStorage if SecureStore fails
+      try {
+        await AsyncStorage.setItem(key, value);
+      } catch (fallbackError) {
+        console.error('Error with AsyncStorage fallback:', fallbackError);
+      }
     }
-    await SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
-    if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(key);
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(key);
+        }
+        return;
       }
-      return;
+      await SecureStore.deleteItemAsync(key);
+    } catch (error) {
+      console.error('Error removing item from SecureStore:', error);
+      // Try AsyncStorage fallback
+      try {
+        await AsyncStorage.removeItem(key);
+      } catch (fallbackError) {
+        console.error('Error with AsyncStorage fallback:', fallbackError);
+      }
     }
-    await SecureStore.deleteItemAsync(key);
   },
 };
 
@@ -118,9 +144,6 @@ export const infringements = {
           category:infringement_categories (
             name
           )
-        ),
-        location:locations (
-          name
         )
       `)
       .eq('officer_id', userId)
@@ -141,9 +164,6 @@ export const infringements = {
           category:infringement_categories (
             name
           )
-        ),
-        location:locations (
-          name
         )
       `)
       .eq('id', id)
@@ -236,6 +256,62 @@ export const storage = {
         upsert: false,
       });
     return { data, error };
+  },
+
+  uploadPhotoFromUri: async (
+    fileName: string,
+    fileUri: string,
+    bucket = 'evidence-photos'
+  ) => {
+    try {
+      // Use expo-file-system to read the file as base64
+      const base64 = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      // Convert base64 to ArrayBuffer
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      
+      // Get the session for auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+      
+      // Upload directly via fetch to bypass FormData issues
+      const response = await fetch(
+        `${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'image/jpeg',
+            'apikey': supabaseAnonKey,
+          },
+          body: byteArray,
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload failed:', errorText);
+        return {
+          data: null,
+          error: new Error(`Upload failed: ${response.status} - ${errorText}`)
+        };
+      }
+      
+      const result = await response.json();
+      return { data: result, error: null };
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      return { data: null, error: err };
+    }
   },
 
   getPhotoUrl: (fileName: string, bucket = 'evidence-photos') => {

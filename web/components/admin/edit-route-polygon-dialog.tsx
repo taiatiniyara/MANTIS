@@ -59,13 +59,26 @@ export function EditRoutePolygonDialog({
     route.coverage_area || []
   );
 
-  // Reset polygon when route changes
+  // Reset polygon only when dialog opens with a new route
   useEffect(() => {
-    setPolygon(route.coverage_area || []);
-  }, [route.coverage_area]);
+    if (open) {
+      console.log("Dialog opened with route coverage_area:", route.coverage_area);
+      setPolygon(route.coverage_area || []);
+    }
+  }, [open, route.id]); // Only reset when dialog opens or route ID changes
+
+  // Track polygon state changes
+  useEffect(() => {
+    console.log("Polygon state updated to:", polygon);
+  }, [polygon]);
 
   const handleSave = async () => {
+    console.log("=== SAVE BUTTON CLICKED ===");
+    console.log("Current polygon state:", polygon);
+    console.log("Polygon length:", polygon.length);
+    
     if (polygon.length < 3) {
+      console.log("Validation failed: less than 3 points");
       toast({
         title: "Invalid polygon",
         description: "A polygon must have at least 3 points",
@@ -77,14 +90,24 @@ export function EditRoutePolygonDialog({
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      console.log("Attempting to save to database...");
+      console.log("Route ID:", route.id);
+      console.log("Polygon to save:", JSON.stringify(polygon));
+      
+      const { data, error } = await supabase
         .from("routes")
         .update({
           coverage_area: polygon,
         })
-        .eq("id", route.id);
+        .eq("id", route.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
+
+      console.log("Successfully saved polygon. Response data:", data);
 
       toast({
         title: "Success",

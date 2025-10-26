@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -234,7 +233,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="light" backgroundColor="#007AFF" />
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>

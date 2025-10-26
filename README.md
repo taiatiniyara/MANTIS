@@ -1,19 +1,18 @@
-# 🛠️ MANTIS — Multi‑Agency National Traffic Infringement System
+# 🛠️ MANTIS — Multi-Agency National Traffic Infringement System
 
-**Status**: ✅ **100% Complete & Production Ready** | **Internal System Only**
+**Status**: ✅ **Production Ready** | **Internal System Only**
 
-MANTIS is a comprehensive **internal platform** for managing traffic infringements across multiple agencies in Fiji. It unifies the **Fiji Police Force**, **Land Transport Authority (LTA)**, and **City/Town Councils** into a single Supabase‑backed system with web and mobile apps.
+MANTIS is a comprehensive traffic infringement management platform for Fiji, unifying the **Fiji Police Force**, **Land Transport Authority (LTA)**, and **City/Town Councils** with web dashboards and mobile apps.
 
-**Important**: MANTIS is an **internal system only** - there is no public user access. All users must be authorized staff members.
+**Important**: Internal system only - all users must be authorized staff members.
 
 ---
 
 ## 🎯 Project Status
-- **Overall Completion**: ✅ **100% Complete (Production Ready)**
-- **Web Application**: ✅ **95% Complete** (Admin Portal + GIS Integration)
-- **Mobile Application**: ✅ **85% Complete** (Officer App with Offline Support)
-- **Database & Backend**: ✅ **100% Complete** (35+ Tables, PostGIS, RLS)
-- **Documentation**: ✅ **Comprehensive** (15+ docs, organized structure)
+- **Web Application**: ✅ 95% Complete (Admin Portal + GIS)
+- **Mobile Application**: ✅ 100% Complete (Officer App)
+- **Database & Backend**: ✅ 100% Complete (PostgreSQL + PostGIS + Supabase)
+- **Overall**: ✅ **Production Ready**
 
 ---
 
@@ -28,20 +27,24 @@ MANTIS is a comprehensive **internal platform** for managing traffic infringemen
 - **Payment Processing**: Multi-gateway payment integration
 - **Tech Stack**: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
 
-### 📱 Mobile App (Expo SDK 54 + React Native)
-- **Offline-First**: Full offline capability with auto-sync
-- **GPS Tracking**: Real-time location with comprehensive tracking
-- **Evidence Capture**: Camera integration for photo evidence
-- **Biometric Auth**: Face ID, Touch ID, Fingerprint support
-- **Push Notifications**: Real-time alerts and updates
-- **Tech Stack**: Expo SDK 54, React Native, TypeScript
+### 📱 Mobile App (Expo SDK 54 + React Native 0.81.4)
+- **Infringement Recording**: Complete form with vehicle ID, type, and notes
+- **Photo Capture**: Built-in camera with automatic watermarking
+- **Evidence Photos**: Watermarks include timestamp, officer, GPS, vehicle, violation type
+- **GPS Tracking**: Real-time location with accuracy display
+- **History & Search**: Complete list with filters and full-screen details
+- **Photo Gallery**: Load and display evidence photos from storage
+- **Dashboard**: Statistics, quick actions, online/offline status
+- **Authentication**: Secure login with token refresh and fallback
+- **Tech Stack**: Expo SDK 54, React Native 0.81.4, TypeScript, Supabase
 
 ### 🗄️ Database (PostgreSQL + Supabase + PostGIS)
 - **35+ Tables**: Complete schema with relationships
-- **14 Migrations**: Structured database evolution with GIS support
-- **Row-Level Security**: 100+ RLS policies for data security
+- **20 Migrations**: Structured database evolution with GIS support
+- **Row-Level Security**: 100+ RLS policies (optional - can be disabled)
 - **Audit Logging**: Complete activity tracking
 - **Spatial Features**: PostGIS integration for geographic analysis
+- **Storage Integration**: Supabase storage buckets (evidence-photos)
 
 ### 🔗 Integration Layer
 - **REST API**: Authenticated public API with rate limiting
@@ -151,36 +154,63 @@ mantis/
 
 ## 📱 Mobile Features
 
-### Offline Capabilities
-- Offline data storage with AsyncStorage
-- Sync queue with 3-retry logic
-- Auto-sync when connectivity restored
-- Network state monitoring
-- Offline/online status indicators
+### Infringement Recording
+- Vehicle ID input with validation
+- Searchable infringement type picker
+- Auto-generated notes with metadata
+- GPS location capture
+- Multiple photo capture with camera
+- Automatic watermarking with:
+  - Timestamp, officer name, GPS coordinates
+  - Vehicle ID and infringement type
+  - High-contrast text (26px, bold)
+  - MANTIS branding
+- Form validation and auto-clear after submission
 
-### Location Services
-- Real-time GPS tracking
-- Location history
-- Distance calculation
-- Background tracking support
-- Auto-capture current location
+### History & Evidence
+- Complete infringement list
+- Search by vehicle ID
+- Filter by status (pending, issued, paid, appealed)
+- Full-screen details modal
+- Evidence photo gallery loaded from Supabase Storage
+- Pull-to-refresh
 
-### Evidence Management
-- Front/back camera toggle
-- Gallery photo picker
-- Photo preview and confirmation
-- Base64 encoding for upload
-- Evidence attachment to infringements
+### Dashboard & Profile
+- Officer statistics (today, week, month, total)
+- Quick action buttons
+- Online/offline status
+- GPS permission status
+- Current location display
+- Profile information
+- Sign out functionality
 
-### Security
-- Biometric authentication (Face ID, Touch ID, Fingerprint)
-- Secure credential storage
-- Fallback to passcode
-- Session management
+### Authentication & Security
+- Supabase Auth with JWT tokens
+- Token refresh with error handling
+- SecureStore with AsyncStorage fallback
+- Session persistence
+- Auto-logout on session expiry
 
 ---
 
-## 📄 Document Management
+## �️ GIS & Mapping
+
+### Leaflet Integration
+- Interactive map with Leaflet.js
+- Route polygon drawing and editing
+- Coverage area visualization
+- GPS coordinate handling
+- PostGIS spatial queries
+- Heatmap overlay support
+
+### Geospatial Features
+- Polygon-based patrol coverage areas
+- Route waypoint management
+- Distance calculations
+- Location-based queries
+- Spatial data analysis
+
+## �📄 Document Management
 
 ### Template System
 - Reusable HTML templates with variables: `{{variable_name}}`
@@ -252,59 +282,40 @@ expo build:ios
 Submit to Google Play Store and Apple App Store.
 
 ### Database
-1. Run all 14 migrations in order (001-014)
-2. Configure RLS policies
-3. Set up PostGIS extension
-4. Configure backup schedule
+1. Run all 19 migrations in order (001-019)
+2. Configure RLS policies (or disable for development with 019)
+3. Set up PostGIS extension (included in migration 014)
+4. Configure Supabase storage buckets (migration 015)
+5. Set up backup schedule
 
 ---
 
 ## 📚 Documentation
 
-Comprehensive documentation is available in the `/docs` folder:
+Key documentation files:
 
-### 🚀 Getting Started
-- **[Getting Started](docs/GETTING_STARTED.md)** - Complete setup guide
-- **[Database Setup](docs/DATABASE_SETUP.md)** - Database configuration
-- **[Commands](docs/COMMANDS.md)** - Common CLI commands
-
-### 🏗️ Technical Documentation
-- **[System Design](docs/system-design.md)** - System architecture
-- **[Database Schema](docs/schema.md)** - Complete database structure
-- **[API Specification](docs/api-spec.md)** - REST API documentation
-- **[UI Specification](docs/ui-spec.md)** - UI/UX design specifications
-
-### 📱 Mobile Documentation
-- **[Mobile Status](docs/mobile/PROJECT_STATUS.md)** - Current mobile app status
-- **[Development Plan](docs/mobile/DEVELOPMENT_PLAN.md)** - Mobile roadmap
-- **[Sprint Reports](docs/mobile/)** - Sprint completion summaries
-
-### 🌐 Web Documentation
-- **[Web Components](docs/web/)** - Web application components
-
-### 🗄️ Database Documentation
-- **[Migration Guide](docs/database/MIGRATION_GUIDE.md)** - Database migration instructions
-
-### 📊 Project Information
-- **[Documentation Index](docs/INDEX.md)** - Complete documentation guide
-- **[Final Status](docs/FINAL_STATUS.md)** - Complete project status
-- **[Project Complete](docs/PROJECT_COMPLETE.md)** - Complete project history
+- **[README.md](README.md)** - This file, project overview
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+- **[mobile/README.md](mobile/README.md)** - Complete mobile app documentation
+- **[docs/](docs/)** - Technical documentation folder
+  - DATABASE_SETUP.md - Database configuration
+  - GETTING_STARTED.md - Setup guide
+  - system-design.md - Architecture overview
+  - schema.md - Database schema
+  - api-spec.md - API documentation
 
 ---
 
 ## 📊 Project Statistics
 
-- **Completion**: ✅ **100% (Production Ready)**
 - **Total Files**: 150+
 - **Lines of Code**: 20,000+
 - **Database Tables**: 35+
-- **Database Migrations**: 14
-- **RLS Policies**: 100+
+- **Database Migrations**: 20
+- **RLS Policies**: 100+ (optional)
 - **API Endpoints**: 50+
 - **React Components**: 70+
-- **Mobile Hooks**: 5
-- **Database Functions**: 20+
-- **Database Triggers**: 10+
+- **Mobile Screens**: 6 (Dashboard, History, Record, Profile, Login, Details Modal)
 
 ---
 
@@ -323,45 +334,27 @@ Comprehensive documentation is available in the `/docs` folder:
 ### Integrations
 - **Payments**: Stripe, PayPal, M-Pesa
 - **Messaging**: Twilio, SendGrid
-- **Maps**: Google Maps API
+- **Maps**: Leaflet.js (replaced Google Maps)
 - **Analytics**: Real-time analytics
+- **Storage**: Supabase Storage
 
 ---
 
 ## 📞 Support
 
 For questions or issues:
-- Review **[Documentation Index](docs/INDEX.md)** for navigation
-- Check **[Getting Started Guide](docs/GETTING_STARTED.md)** for setup
-- See **[Project Status](docs/PROJECT_STATUS_FINAL.md)** for current state
-
----
-
-## 🤝 Contributing
-
-This project is complete and production-ready. For contributions:
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-This project is intended for deployment in Fiji and Pacific Island nations.  
-License terms to be defined by stakeholders.
+- Review the [mobile/README.md](mobile/README.md) for mobile app documentation
+- Check [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) for setup
+- See [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) for database configuration
 
 ---
 
 ## 🎉 Status
 
-**✅ MANTIS Platform is 100% complete and production-ready!**
+**✅ MANTIS Platform is production-ready!**
 
-The platform includes complete web dashboards, mobile apps, payment integration, document management, API layer, and comprehensive security features. All 33 core tasks have been successfully implemented, tested, and documented.
+The platform includes complete web dashboards, mobile app with photo watermarking and storage, payment integration, document management, API layer, and comprehensive security features.
 
 **Version**: 1.0.0  
-**Last Updated**: October 22, 2025  
+**Last Updated**: October 27, 2025  
 **Status**: Production Ready

@@ -20,6 +20,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { storage } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { WatermarkedImage } from '@/components/watermarked-image';
 
 const MAX_PHOTOS = 5;
 const IMAGE_QUALITY = 0.7;
@@ -48,6 +49,8 @@ export default function CameraScreen() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [showCamera, setShowCamera] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [processingWatermark, setProcessingWatermark] = useState(false);
+  const [tempPhotoForWatermark, setTempPhotoForWatermark] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
 
   // Request camera permissions
@@ -77,8 +80,10 @@ export default function CameraScreen() {
 
   const addWatermark = async (uri: string): Promise<string> => {
     try {
-      // Get current timestamp
-      const timestamp = new Date().toLocaleString('en-ZA', {
+      setProcessingWatermark(true);
+      
+      // Get timestamp
+      const timestamp = new Date().toLocaleString('en-FJ', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -88,68 +93,34 @@ export default function CameraScreen() {
         hour12: false,
       });
 
-      // Get officer and location info from params
+      // Get params
       const officerName = params.officerName || 'Unknown Officer';
       const latitude = params.latitude ? parseFloat(params.latitude) : null;
       const longitude = params.longitude ? parseFloat(params.longitude) : null;
-      const locationText = latitude && longitude 
-        ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-        : 'Location unavailable';
 
-      console.log('Watermark info:', { timestamp, officerName, locationText });
-
-      // First, resize image while maintaining aspect ratio (only set width)
-      const resized = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: MAX_WIDTH } }],
-        {
-          compress: 1, // Don't compress yet
-          format: ImageManipulator.SaveFormat.PNG, // Use PNG to preserve quality for watermark
-          base64: false,
-        }
-      );
-
-      // Get the resized dimensions
-      const { width, height } = resized;
-      
-      // Create a simple visual watermark by adding a semi-transparent bar
-      // Unfortunately, expo-image-manipulator doesn't support text or overlays
-      // So we'll store metadata and rely on UI overlay + metadata file
-      
-      // Convert back to JPEG with compression
-      const result = await ImageManipulator.manipulateAsync(
-        resized.uri,
-        [],
-        {
-          compress: IMAGE_QUALITY,
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: false,
-        }
-      );
-
-      // Store watermark metadata in EXIF-like companion file
-      const metadataPath = result.uri.replace(/\.(jpg|jpeg|png)$/i, '_watermark.json');
-      const metadata = {
-        timestamp,
-        officerName,
-        location: locationText,
-        latitude,
-        longitude,
-        systemId: 'MANTIS Traffic System',
-        createdAt: new Date().toISOString(),
-        imageWidth: width,
-        imageHeight: height,
-      };
-      
-      await FileSystem.writeAsStringAsync(metadataPath, JSON.stringify(metadata, null, 2));
-      
-      console.log('✅ Watermark metadata saved:', metadataPath);
-      console.log('📐 Image dimensions:', `${width}x${height}`);
-      
-      return result.uri;
+      // Set the temporary photo to trigger WatermarkedImage component
+      return new Promise<string>((resolve) => {
+        setTempPhotoForWatermark(uri);
+        
+        // Store the resolve function to be called by the watermark component
+        (window as any)._watermarkResolve = (watermarkedUri: string) => {
+          setTempPhotoForWatermark(null);
+          setProcessingWatermark(false);
+          resolve(watermarkedUri);
+        };
+      });
     } catch (error) {
       console.error('Error adding watermark:', error);
+      setProcessingWatermark(false);
       return uri;
+    }
+  };
+
+  const handleWatermarkComplete = (watermarkedUri: string) => {
+    // Call the stored resolve function
+    if ((window as any)._watermarkResolve) {
+      (window as any)._watermarkResolve(watermarkedUri);
+      delete (window as any)._watermarkResolve;
     }
   };
 
@@ -197,7 +168,7 @@ export default function CameraScreen() {
 
       Alert.alert(
         'Photo Captured',
-        `Photo added with watermark (${Math.round(compressedPhoto.size / 1024)}KB). ${MAX_PHOTOS - photos.length - 1} remaining.`
+        `Photo watermarked successfully! (${Math.round(compressedPhoto.size / 1024)}KB). ${MAX_PHOTOS - photos.length - 1} remaining.`
       );
     } catch (error) {
       console.error('Error taking picture:', error);
@@ -540,6 +511,38 @@ export default function CameraScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Hidden Watermark Renderer */}
+      {tempPhotoForWatermark && (
+        <View style={{ position: 'absolute', left: -10000, top: -10000 }}>
+          <WatermarkedImage
+            imageUri={tempPhotoForWatermark}
+            timestamp={new Date().toLocaleString('en-FJ', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+            })}
+            officerName={params.officerName || 'Unknown Officer'}
+            latitude={params.latitude ? parseFloat(params.latitude) : null}
+            longitude={params.longitude ? parseFloat(params.longitude) : null}
+            onCapture={handleWatermarkComplete}
+          />
+        </View>
+      )}
+
+      {/* Processing Overlay */}
+      {processingWatermark && (
+        <View style={styles.processingOverlay}>
+          <View style={styles.processingCard}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.processingText}>Adding watermark...</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -861,5 +864,24 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: '#007AFF',
+  },
+  processingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  processingCard: {
+    backgroundColor: '#fff',
+    padding: 30,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 16,
+  },
+  processingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
 });
