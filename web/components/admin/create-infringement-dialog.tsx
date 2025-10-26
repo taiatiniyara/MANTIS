@@ -64,32 +64,31 @@ interface Route {
   agency_id: string | null;
 }
 
-interface Location {
-  id: string;
-  name: string;
-  type: string;
-  agency_id: string | null;
-  parent_id: string | null;
-}
-
-interface Officer {
+interface User {
   id: string;
   position: string | null;
   role: string;
   agency_id: string | null;
 }
 
+interface InfringementType {
+  id: string;
+  code: string;
+  name: string;
+  category_id: string;
+  fine_amount: number;
+}
+
 interface CreateInfringementDialogProps {
-  agencies: Agency[];
-  categories: Category[];
-  types: Type[];
-  teams: Team[];
-  routes: Route[];
-  locations: Location[];
-  officers: Officer[];
   userRole: string;
   userAgencyId: string | null;
-  children: React.ReactNode;
+  agencies: Agency[];
+  users: User[];
+  teams: Team[];
+  routes: Route[];
+  categories: Category[];
+  types: InfringementType[];
+  children?: React.ReactNode;
 }
 
 export function CreateInfringementDialog({
@@ -98,8 +97,7 @@ export function CreateInfringementDialog({
   types,
   teams,
   routes,
-  locations,
-  officers,
+  users,
   userRole,
   userAgencyId,
   children,
@@ -114,12 +112,10 @@ export function CreateInfringementDialog({
     category_id: "",
     team_id: "",
     route_id: "",
-    parent_location_id: "", // For division/region selection
-    location_id: "", // For station/office selection
     vehicle_id: "",
     notes: "",
     issued_at: new Date().toISOString().slice(0, 16),
-    // GIS fields
+    // Location fields - entered by officer
     latitude: null as number | null,
     longitude: null as number | null,
     address: "",
@@ -161,13 +157,9 @@ export function CreateInfringementDialog({
     ? routes.filter((r) => r.agency_id === formData.agency_id)
     : routes;
 
-  const filteredLocations = formData.agency_id
-    ? locations.filter((l) => l.agency_id === formData.agency_id)
-    : locations;
-
   const filteredOfficers = formData.agency_id
-    ? officers.filter((o) => o.agency_id === formData.agency_id)
-    : officers;
+    ? users.filter((o) => o.agency_id === formData.agency_id && o.role === 'officer')
+    : users.filter((o) => o.role === 'officer');
 
   function validateForm(): boolean {
     const newErrors: Record<string, string> = {};
@@ -225,10 +217,9 @@ export function CreateInfringementDialog({
       route_id: formData.route_id || null,
       type_id: formData.type_id,
       vehicle_id: formData.vehicle_id.trim().toUpperCase(),
-      location_id: formData.location_id || null,
       notes: formData.notes.trim() || null,
       issued_at: new Date(formData.issued_at).toISOString(),
-      // Add GIS coordinates if available
+      // Location data entered by officer
       latitude: formData.latitude,
       longitude: formData.longitude,
       address: formData.address || null,
@@ -246,8 +237,6 @@ export function CreateInfringementDialog({
         category_id: "",
         team_id: "",
         route_id: "",
-        parent_location_id: "",
-        location_id: "",
         vehicle_id: "",
         notes: "",
         issued_at: new Date().toISOString().slice(0, 16),
@@ -288,8 +277,6 @@ export function CreateInfringementDialog({
                       agency_id: value,
                       team_id: "",
                       route_id: "",
-                      parent_location_id: "",
-                      location_id: "",
                       officer_id: "",
                     })
                   }
@@ -482,85 +469,15 @@ export function CreateInfringementDialog({
               </div>
             </div>
 
-            {/* Hierarchical Location Selection */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Parent Location (Division/Region) */}
-              <div className="space-y-2">
-                <Label htmlFor="parent_location">
-                  {filteredLocations.some((l) => l.type === "division" || l.type === "station")
-                    ? "Division"
-                    : "Region"}
-                </Label>
-                <Select
-                  value={formData.parent_location_id}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      parent_location_id: value,
-                      location_id: "", // Reset child when parent changes
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Parent</SelectItem>
-                    {filteredLocations
-                      .filter((loc) => !loc.parent_id && (loc.type === "division" || loc.type === "region"))
-                      .map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Child Location (Station/Office) */}
-              <div className="space-y-2">
-                <Label htmlFor="location">
-                  {filteredLocations.some((l) => l.type === "division" || l.type === "station")
-                    ? "Station"
-                    : "Office"}
-                </Label>
-                <Select
-                  value={formData.location_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, location_id: value })
-                  }
-                  disabled={!formData.parent_location_id || formData.parent_location_id === "none"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Child</SelectItem>
-                    {filteredLocations
-                      .filter(
-                        (loc) =>
-                          loc.parent_id === formData.parent_location_id &&
-                          (loc.type === "station" || loc.type === "office")
-                      )
-                      .map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Precise Location Picker with Map */}
-            <div className="space-y-2 border-t pt-4">
+            {/* Location with Map Picker */}
+            <div className="space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <Label>Precise Location (GPS Coordinates)</Label>
+                <Label>Location (GPS Coordinates & Address)</Label>
                 <span className="text-xs text-muted-foreground">
                   {formData.latitude && formData.longitude ? (
                     <span className="text-green-600">✓ Location captured</span>
                   ) : (
-                    <span>Optional - Click map or search address</span>
+                    <span>Required - Click map or search address</span>
                   )}
                 </span>
               </div>

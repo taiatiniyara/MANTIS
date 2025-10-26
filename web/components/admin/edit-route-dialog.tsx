@@ -51,7 +51,6 @@ interface RouteData {
 interface EditRouteDialogProps {
   route: RouteData;
   agencies: Agency[];
-  locations: Location[];
   userRole: string;
   userAgencyId: string | null;
   open: boolean;
@@ -61,7 +60,6 @@ interface EditRouteDialogProps {
 export function EditRouteDialog({
   route,
   agencies,
-  locations,
   userRole,
   userAgencyId,
   open,
@@ -71,29 +69,20 @@ export function EditRouteDialog({
   const [name, setName] = useState(route.name);
   const [description, setDescription] = useState(route.description || "");
   const [agencyId, setAgencyId] = useState<string>(route.agency_id || "");
-  const [locationId, setLocationId] = useState<string>(route.location_id || "");
   const router = useRouter();
   const { toast } = useToast();
-
-  // Filter locations by selected agency
-  const filteredLocations = locations.filter(
-    (loc) => loc.agency_id === (agencyId || null)
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      
-
       const { error } = await supabase
         .from("routes")
         .update({
           name: name.trim(),
           description: description.trim() || null,
           agency_id: agencyId || null,
-          location_id: locationId || null,
         })
         .eq("id", route.id);
 
@@ -127,7 +116,7 @@ export function EditRouteDialog({
             Edit Route
           </DialogTitle>
           <DialogDescription>
-            Update route details
+            Update route details (coverage area cannot be edited after creation)
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -155,13 +144,7 @@ export function EditRouteDialog({
             {userRole === "super_admin" && (
               <div className="grid gap-2">
                 <Label htmlFor="edit-agency">Agency</Label>
-                <Select
-                  value={agencyId}
-                  onValueChange={(value) => {
-                    setAgencyId(value);
-                    setLocationId(""); // Reset location when agency changes
-                  }}
-                >
+                <Select value={agencyId} onValueChange={setAgencyId}>
                   <SelectTrigger id="edit-agency">
                     <SelectValue placeholder="Select agency (optional)" />
                   </SelectTrigger>
@@ -176,23 +159,6 @@ export function EditRouteDialog({
                 </Select>
               </div>
             )}
-
-            <div className="grid gap-2">
-              <Label htmlFor="edit-location">Location</Label>
-              <Select value={locationId} onValueChange={setLocationId}>
-                <SelectTrigger id="edit-location">
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {filteredLocations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name} ({location.type})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           <DialogFooter>
             <Button

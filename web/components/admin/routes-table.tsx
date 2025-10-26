@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Route, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Route, Pencil, Trash2, Map } from "lucide-react";
 import { EditRouteDialog } from "./edit-route-dialog";
+import { EditRoutePolygonDialog } from "./edit-route-polygon-dialog";
 import { DeleteRouteDialog } from "./delete-route-dialog";
 import { useState } from "react";
 
@@ -35,6 +36,14 @@ interface Team {
   agency_id: string | null;
 }
 
+interface Waypoint {
+  id: string;
+  latitude: number;
+  longitude: number;
+  waypoint_order: number;
+  name?: string | null;
+}
+
 interface RouteData {
   id: string;
   name: string;
@@ -43,13 +52,12 @@ interface RouteData {
   location_id: string | null;
   created_at: string;
   agency?: Agency | null;
-  location?: Location | null;
+  coverage_area?: Array<{ lat: number; lng: number }> | null;
 }
 
 interface RoutesTableProps {
   routes: RouteData[];
   agencies: Agency[];
-  locations: Location[];
   teams: Team[];
   userRole: string;
   userAgencyId: string | null;
@@ -58,12 +66,12 @@ interface RoutesTableProps {
 export function RoutesTable({
   routes,
   agencies,
-  locations,
   teams,
   userRole,
   userAgencyId,
 }: RoutesTableProps) {
   const [editingRoute, setEditingRoute] = useState<RouteData | null>(null);
+  const [editingPolygon, setEditingPolygon] = useState<RouteData | null>(null);
   const [deletingRoute, setDeletingRoute] = useState<RouteData | null>(null);
 
   if (routes.length === 0) {
@@ -87,7 +95,7 @@ export function RoutesTable({
               <TableHead>Route Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Agency</TableHead>
-              <TableHead>Location</TableHead>
+              <TableHead>Coverage Area</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -122,16 +130,18 @@ export function RoutesTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  {route.location ? (
+                  {route.coverage_area && route.coverage_area.length > 0 ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">{route.location.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {route.location.type}
+                      <Badge variant="secondary" className="text-xs">
+                        {route.coverage_area.length} vertices
                       </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        Polygon defined
+                      </span>
                     </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      No location
+                      No coverage area
                     </span>
                   )}
                 </TableCell>
@@ -146,6 +156,13 @@ export function RoutesTable({
                       onClick={() => setEditingRoute(route)}
                     >
                       <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingPolygon(route)}
+                    >
+                      <Map className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -166,11 +183,18 @@ export function RoutesTable({
         <EditRouteDialog
           route={editingRoute}
           agencies={agencies}
-          locations={locations}
           userRole={userRole}
           userAgencyId={userAgencyId}
           open={!!editingRoute}
           onOpenChange={(open: boolean) => !open && setEditingRoute(null)}
+        />
+      )}
+
+      {editingPolygon && (
+        <EditRoutePolygonDialog
+          route={editingPolygon}
+          open={!!editingPolygon}
+          onOpenChange={(open: boolean) => !open && setEditingPolygon(null)}
         />
       )}
 

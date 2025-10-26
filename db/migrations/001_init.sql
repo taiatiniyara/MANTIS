@@ -95,7 +95,9 @@ create table infringements (
   route_id uuid references routes(id),
   type_id uuid references infringement_types(id),
   vehicle_id text,
-  location_id uuid references locations(id),
+  latitude double precision,
+  longitude double precision,
+  address text,
   notes text,
   issued_at timestamptz default now(),
   created_at timestamptz default now()

@@ -17,7 +17,7 @@ interface Infringement {
   issued_at: string;
   officer: {
     position: string | null;
-  };
+  } | null;
   agency: {
     name: string;
   } | null;
@@ -37,10 +37,9 @@ interface Infringement {
       name: string;
     };
   };
-  location: {
-    name: string;
-    type: string;
-  } | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
 }
 
 interface ViewInfringementDialogProps {
@@ -95,10 +94,12 @@ export function ViewInfringementDialog({
 
           {/* Officer & Team Info */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <h4 className="text-sm font-medium mb-2">Officer</h4>
-              <p className="text-sm">{infringement.officer.position || "Officer"}</p>
-            </div>
+            {infringement.officer && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">Officer</h4>
+                <p className="text-sm">{infringement.officer.position || "Officer"}</p>
+              </div>
+            )}
             {infringement.agency && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Agency</h4>
@@ -123,14 +124,15 @@ export function ViewInfringementDialog({
 
           {/* Location & Time */}
           <div className="grid grid-cols-2 gap-4">
-            {infringement.location && (
+            {(infringement.address || (infringement.latitude && infringement.longitude)) && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Location</h4>
                 <p className="text-sm">
-                  {infringement.location.name}
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    {infringement.location.type}
-                  </Badge>
+                  {infringement.address || (
+                    <span className="text-muted-foreground">
+                      {infringement.latitude?.toFixed(6)}, {infringement.longitude?.toFixed(6)}
+                    </span>
+                  )}
                 </p>
               </div>
             )}

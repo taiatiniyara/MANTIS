@@ -28,14 +28,13 @@ export default async function InfringementsPage() {
   }
 
   // Fetch filter data
-  const [agenciesResult, categoriesResult, typesResult, teamsResult, routesResult, locationsResult, officersResult] =
+  const [agenciesResult, categoriesResult, typesResult, teamsResult, routesResult, officersResult] =
     await Promise.all([
       supabase.from("agencies").select("id, name").order("name"),
       supabase.from("infringement_categories").select("id, name").order("name"),
-      supabase.from("infringement_types").select("id, code, name, category_id").order("code"),
+      supabase.from("infringement_types").select("id, code, name, category_id, fine_amount, demerit_points, gl_code").order("code"),
       supabase.from("teams").select("id, name, agency_id").order("name"),
       supabase.from("routes").select("id, name, agency_id").order("name"),
-      supabase.from("locations").select("id, name, type, agency_id, parent_id").order("name"),
       supabase
         .from("users")
         .select("id, position, role, agency_id")
@@ -77,11 +76,6 @@ export default async function InfringementsPage() {
           id,
           name
         )
-      ),
-      location:locations (
-        id,
-        name,
-        type
       )
     `
     )
@@ -113,8 +107,7 @@ export default async function InfringementsPage() {
           types={typesResult.data || []}
           teams={teamsResult.data || []}
           routes={routesResult.data || []}
-          locations={locationsResult.data || []}
-          officers={officersResult.data || []}
+          users={officersResult.data || []}
           userRole={userData.role}
           userAgencyId={userData.agency_id}
         >
@@ -132,7 +125,6 @@ export default async function InfringementsPage() {
         types={typesResult.data || []}
         teams={teamsResult.data || []}
         routes={routesResult.data || []}
-        locations={locationsResult.data || []}
         officers={officersResult.data || []}
         userRole={userData.role}
         userAgencyId={userData.agency_id}

@@ -1,14 +1,28 @@
 -- ============================================================================================
--- MANTIS Complete Database Setup - Seeds EVERYTHING
+-- MANTIS Initial Setup - Agencies, Locations, and Users
 -- ============================================================================================
--- This SQL seeds agencies, locations, and users in the correct order
--- Run this in Supabase SQL Editor
+-- Run this FIRST to set up base agencies, locations, and sync auth users
 -- ============================================================================================
 
--- Step 1: Temporarily disable RLS on all tables
-ALTER TABLE public.agencies DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.locations DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
+-- Disable RLS on all tables (skip system tables)
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE schemaname = 'public' 
+        AND tablename NOT IN ('spatial_ref_sys', 'geography_columns', 'geometry_columns')
+    ) LOOP
+        BEGIN
+            EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' DISABLE ROW LEVEL SECURITY';
+        EXCEPTION WHEN OTHERS THEN
+            -- Skip tables we don't own or can't modify
+            NULL;
+        END;
+    END LOOP;
+END $$;
 
 -- ============================================================================================
 -- Step 2: Seed Agencies
@@ -157,57 +171,24 @@ SET role = EXCLUDED.role,
     location_id = EXCLUDED.location_id;
 
 -- ============================================================================================
--- Step 5: Re-enable RLS on all tables
+-- Re-enable RLS on all tables
 -- ============================================================================================
 
-ALTER TABLE public.agencies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-
--- ============================================================================================
--- Step 6: Verify everything was created
--- ============================================================================================
-
--- Count agencies
-SELECT 'Agencies' as table_name, COUNT(*) as count FROM public.agencies
-UNION ALL
-SELECT 'Locations' as table_name, COUNT(*) as count FROM public.locations
-UNION ALL
-SELECT 'Users' as table_name, COUNT(*) as count FROM public.users;
-
--- Show all users with their agencies
-SELECT 
-  u.id,
-  au.email,
-  u.role,
-  u.position,
-  a.name as agency_name,
-  l.name as location_name
-FROM public.users u
-JOIN auth.users au ON au.id = u.id
-LEFT JOIN public.agencies a ON a.id = u.agency_id
-LEFT JOIN public.locations l ON l.id = u.location_id
-ORDER BY 
-  CASE u.role 
-    WHEN 'super_admin' THEN 1 
-    WHEN 'agency_admin' THEN 2 
-    WHEN 'officer' THEN 3 
-  END,
-  au.email;
-
--- ============================================================================================
--- Expected Result:
--- ============================================================================================
--- First query should show:
---   Agencies: 6
---   Locations: 7
---   Users: 7
---
--- Second query should show all 7 users with their full details
---
--- If you see this, EVERYTHING IS WORKING! 🎉
---
--- Test login at: http://localhost:3001/auth/login
--- Email: admin@mantis.gov.fj
--- Password: Password123!
--- ============================================================================================
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE schemaname = 'public' 
+        AND tablename NOT IN ('spatial_ref_sys', 'geography_columns', 'geometry_columns')
+    ) LOOP
+        BEGIN
+            EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' ENABLE ROW LEVEL SECURITY';
+        EXCEPTION WHEN OTHERS THEN
+            -- Skip tables we don't own or can't modify
+            NULL;
+        END;
+    END LOOP;
+END $$;

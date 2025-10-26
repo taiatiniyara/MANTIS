@@ -101,6 +101,7 @@ export default async function TeamsPage() {
         users={users || []}
         userRole={profile.role}
         userAgencyId={profile.agency_id}
+        baseUrl="/admin"
       />
     </div>
   );

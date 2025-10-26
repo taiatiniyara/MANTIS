@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { loadGoogleMaps } from "@/lib/google-maps-loader";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix Leaflet default icon paths
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 interface MapComponentProps {
   center?: { lat: number; lng: number };
@@ -12,6 +22,14 @@ interface MapComponentProps {
     title?: string;
     onClick?: () => void;
   }>;
+  polygons?: Array<{
+    id: string;
+    path: Array<{ lat: number; lng: number }>;
+    strokeColor?: string;
+    fillColor?: string;
+    fillOpacity?: number;
+    title?: string;
+  }>;
   onMapClick?: (lat: number, lng: number) => void;
   height?: string;
   className?: string;
@@ -21,109 +39,106 @@ export function MapComponent({
   center = { lat: -18.1416, lng: 178.4419 }, // Suva, Fiji default
   zoom = 12,
   markers = [],
+  polygons = [],
   onMapClick,
   height = "500px",
   className = "",
 }: MapComponentProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const polygonsRef = useRef<L.Polygon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const markersRef = useRef<any[]>([]);
 
-  // Load Google Maps script and initialize map
+  // Initialize map
   useEffect(() => {
-    let isMounted = true;
+    if (!mapContainerRef.current || mapRef.current) return;
 
-    const initializeMap = async () => {
-      try {
-        // Load Google Maps (singleton pattern ensures only one load)
-        await loadGoogleMaps();
+    const map = L.map(mapContainerRef.current).setView([center.lat, center.lng], zoom);
 
-        if (!isMounted || !mapRef.current || !window.google) return;
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
 
-        const mapInstance = new window.google.maps.Map(mapRef.current, {
-          center,
-          zoom,
-          mapTypeControl: true,
-          streetViewControl: true,
-          fullscreenControl: true,
-          zoomControl: true,
-        });
+    // Add click listener
+    if (onMapClick) {
+      map.on("click", (e: L.LeafletMouseEvent) => {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      });
+    }
 
-        // Add click listener if callback provided
-        if (onMapClick) {
-          mapInstance.addListener("click", (e: any) => {
-            if (e.latLng) {
-              onMapClick(e.latLng.lat(), e.latLng.lng());
-            }
-          });
-        }
-
-        if (isMounted) {
-          setMap(mapInstance);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.error("Error loading/initializing map:", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to load map");
-          setIsLoading(false);
-        }
-      }
-    };
-
-    initializeMap();
+    mapRef.current = map;
+    setIsLoading(false);
 
     return () => {
-      isMounted = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
-  }, [center.lat, center.lng, zoom, onMapClick]);
+  }, []);
 
-  // Update markers when they change
+  // Update center and zoom
   useEffect(() => {
-    if (!map || typeof window === 'undefined' || !(window as any).google) return;
+    if (!mapRef.current) return;
+    mapRef.current.setView([center.lat, center.lng], zoom);
+  }, [center.lat, center.lng, zoom]);
+
+  // Update markers
+  useEffect(() => {
+    if (!mapRef.current) return;
 
     // Clear existing markers
-    markersRef.current.forEach((marker) => marker.setMap(null));
+    markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
     // Add new markers
-    const google = (window as any).google;
     markers.forEach((markerData) => {
-      const marker = new google.maps.Marker({
-        position: markerData.position,
-        map,
-        title: markerData.title,
-      });
+      const marker = L.marker([markerData.position.lat, markerData.position.lng]);
 
-      if (markerData.onClick) {
-        marker.addListener("click", markerData.onClick);
+      if (markerData.title) {
+        marker.bindTooltip(markerData.title);
       }
 
+      if (markerData.onClick) {
+        marker.on("click", markerData.onClick);
+      }
+
+      marker.addTo(mapRef.current!);
       markersRef.current.push(marker);
     });
+  }, [markers]);
 
-    // Cleanup function
-    return () => {
-      markersRef.current.forEach((marker) => marker.setMap(null));
-      markersRef.current = [];
-    };
-  }, [map, markers]);
+  // Update polygons
+  useEffect(() => {
+    if (!mapRef.current) return;
 
-  if (error) {
-    return (
-      <div
-        className={`flex items-center justify-center bg-muted rounded-lg ${className}`}
-        style={{ height }}
-      >
-        <div className="text-center p-4">
-          <p className="text-destructive font-semibold mb-2">Map Error</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </div>
-      </div>
-    );
-  }
+    // Clear existing polygons
+    polygonsRef.current.forEach((polygon) => polygon.remove());
+    polygonsRef.current = [];
+
+    // Add new polygons
+    polygons.forEach((polygonData) => {
+      const latlngs = polygonData.path.map((coord) => [coord.lat, coord.lng] as L.LatLngTuple);
+
+      const polygon = L.polygon(latlngs, {
+        color: polygonData.strokeColor || "#FF0000",
+        weight: 2,
+        opacity: 0.8,
+        fillColor: polygonData.fillColor || "#FF0000",
+        fillOpacity: polygonData.fillOpacity || 0.35,
+      });
+
+      if (polygonData.title) {
+        polygon.bindPopup(polygonData.title);
+      }
+
+      polygon.addTo(mapRef.current!);
+      polygonsRef.current.push(polygon);
+    });
+  }, [polygons]);
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
@@ -135,7 +150,7 @@ export function MapComponent({
           </div>
         </div>
       )}
-      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      <div ref={mapContainerRef} className="w-full h-full rounded-lg" />
     </div>
   );
 }

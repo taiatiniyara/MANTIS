@@ -1,9 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { RoutesTable } from "@/components/admin/routes-table";
-import { CreateRouteDialog } from "@/components/admin/create-route-dialog";
 import { Button } from "@/components/ui/button";
-import { Map } from "lucide-react";
+import { Map, Plus } from "lucide-react";
 import Link from "next/link";
 
 export default async function RoutesPage() {
@@ -37,13 +36,12 @@ export default async function RoutesPage() {
     return redirect("/protected");
   }
 
-  // Build query based on role - fetch all routes (filtering will be done client-side)
+  // Build query based on role - fetch routes with coverage areas
   let query = supabase
     .from("routes")
     .select(`
       *,
-      agency:agencies(id, name),
-      location:locations(id, name, type)
+      agency:agencies(id, name)
     `)
     .order("created_at", { ascending: false });
 
@@ -69,18 +67,6 @@ export default async function RoutesPage() {
   }
 
   const { data: agencies } = await agenciesQuery;
-
-  // Fetch locations for filters and dialogs
-  let locationsQuery = supabase
-    .from("locations")
-    .select("id, name, type, agency_id")
-    .order("name");
-
-  if (isAgencyAdmin && profile.agency_id) {
-    locationsQuery = locationsQuery.eq("agency_id", profile.agency_id);
-  }
-
-  const { data: locations } = await locationsQuery;
 
   // Fetch teams for route assignment
   let teamsQuery = supabase
@@ -110,19 +96,18 @@ export default async function RoutesPage() {
               Map View
             </Button>
           </Link>
-          <CreateRouteDialog
-            agencies={agencies || []}
-            locations={locations || []}
-            userRole={profile.role}
-            userAgencyId={profile.agency_id}
-          />
+          <Link href="/admin/routes/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Route
+            </Button>
+          </Link>
         </div>
       </div>
 
       <RoutesTable
         routes={routes || []}
         agencies={agencies || []}
-        locations={locations || []}
         teams={teams || []}
         userRole={profile.role}
         userAgencyId={profile.agency_id}

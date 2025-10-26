@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LocationsTable } from "@/components/admin/locations-table";
+import { CreateLocationDialog } from "@/components/admin/create-location-dialog";
 
 export default async function ProtectedLocationsPage() {
   const supabase = await createClient();
@@ -73,11 +74,19 @@ export default async function ProtectedLocationsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Locations Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage locations and hierarchies within your agency
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Locations Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage locations and hierarchies within your agency
+          </p>
+        </div>
+        <CreateLocationDialog
+          agencies={agencies || []}
+          locations={locations || []}
+          userRole={currentUser.role}
+          userAgencyId={currentUser.agency_id}
+        />
       </div>
       <LocationsTable
         locations={locations || []}

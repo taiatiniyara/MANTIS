@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RoutesTable } from "@/components/admin/routes-table";
+import { Button } from "@/components/ui/button";
+import { Map, Plus } from "lucide-react";
+import Link from "next/link";
 
 export default async function ProtectedRoutesPage() {
   const supabase = await createClient();
@@ -32,7 +35,7 @@ export default async function ProtectedRoutesPage() {
     redirect("/protected");
   }
 
-  // Fetch routes from the same agency only
+  // Fetch routes from the same agency with coverage areas
   const { data: routes, error } = await supabase
     .from("routes")
     .select(`
@@ -40,16 +43,6 @@ export default async function ProtectedRoutesPage() {
       agency:agencies (
         id,
         name
-      ),
-      start_location:locations!routes_start_location_id_fkey (
-        id,
-        name,
-        type
-      ),
-      end_location:locations!routes_end_location_id_fkey (
-        id,
-        name,
-        type
       ),
       team_routes (
         team:teams (
@@ -84,7 +77,10 @@ export default async function ProtectedRoutesPage() {
       id,
       name,
       type,
-      agency_id
+      agency_id,
+      latitude,
+      longitude,
+      address
     `)
     .eq("agency_id", currentUser.agency_id)
     .order("name");
@@ -95,6 +91,9 @@ export default async function ProtectedRoutesPage() {
     name: loc.name,
     type: loc.type,
     agency_id: loc.agency_id,
+    latitude: loc.latitude,
+    longitude: loc.longitude,
+    address: loc.address,
   })) || [];
 
   // Fetch teams from the same agency
@@ -106,16 +105,31 @@ export default async function ProtectedRoutesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Routes Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage patrol routes within your agency
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Routes Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage patrol routes within your agency
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link href="/protected/routes/map">
+            <Button variant="outline">
+              <Map className="h-4 w-4 mr-2" />
+              Map View
+            </Button>
+          </Link>
+          <Link href="/protected/routes/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Route
+            </Button>
+          </Link>
+        </div>
       </div>
       <RoutesTable
         routes={routes || []}
         agencies={agencies || []}
-        locations={locations}
         teams={teams || []}
         userRole={currentUser.role}
         userAgencyId={currentUser.agency_id}

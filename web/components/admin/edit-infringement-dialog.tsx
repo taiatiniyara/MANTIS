@@ -85,7 +85,9 @@ interface Infringement {
   route_id: string | null;
   type_id: string;
   vehicle_id: string;
-  location_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
   notes: string | null;
   issued_at: string;
   type: {
@@ -100,7 +102,6 @@ interface EditInfringementDialogProps {
   types: Type[];
   teams: Team[];
   routes: Route[];
-  locations: Location[];
   officers: Officer[];
   userRole: string;
   userAgencyId: string | null;
@@ -115,7 +116,6 @@ export function EditInfringementDialog({
   types,
   teams,
   routes,
-  locations,
   officers,
   userRole,
   userAgencyId,
@@ -125,10 +125,6 @@ export function EditInfringementDialog({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Find parent location if current location has one
-  const currentLocation = locations.find(loc => loc.id === infringement.location_id);
-  const parentLocationId = currentLocation?.parent_id || "";
-  
   const [formData, setFormData] = useState({
     agency_id: infringement.agency_id || "",
     officer_id: infringement.officer_id,
@@ -136,8 +132,9 @@ export function EditInfringementDialog({
     category_id: infringement.type.category_id,
     team_id: infringement.team_id || "",
     route_id: infringement.route_id || "",
-    parent_location_id: parentLocationId,
-    location_id: infringement.location_id || "",
+    latitude: infringement.latitude || 0,
+    longitude: infringement.longitude || 0,
+    address: infringement.address || "",
     vehicle_id: infringement.vehicle_id,
     notes: infringement.notes || "",
     issued_at: new Date(infringement.issued_at).toISOString().slice(0, 16),
@@ -158,10 +155,6 @@ export function EditInfringementDialog({
   const filteredRoutes = formData.agency_id
     ? routes.filter((r) => r.agency_id === formData.agency_id)
     : routes;
-
-  const filteredLocations = formData.agency_id
-    ? locations.filter((l) => l.agency_id === formData.agency_id)
-    : locations;
 
   const filteredOfficers = formData.agency_id
     ? officers.filter((o) => o.agency_id === formData.agency_id)
@@ -225,7 +218,9 @@ export function EditInfringementDialog({
         route_id: formData.route_id || null,
         type_id: formData.type_id,
         vehicle_id: formData.vehicle_id.trim().toUpperCase(),
-        location_id: formData.location_id || null,
+        latitude: formData.latitude || null,
+        longitude: formData.longitude || null,
+        address: formData.address.trim() || null,
         notes: formData.notes.trim() || null,
         issued_at: new Date(formData.issued_at).toISOString(),
       })
@@ -268,8 +263,6 @@ export function EditInfringementDialog({
                       agency_id: value,
                       team_id: "",
                       route_id: "",
-                      parent_location_id: "",
-                      location_id: "",
                       officer_id: "",
                     })
                   }
@@ -462,74 +455,48 @@ export function EditInfringementDialog({
               </div>
             </div>
 
-            {/* Hierarchical Location Selection */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Parent Location (Division/Region) */}
-              <div className="space-y-2">
-                <Label htmlFor="parent_location">
-                  {filteredLocations.some((l) => l.type === "division" || l.type === "station")
-                    ? "Division"
-                    : "Region"}
-                </Label>
-                <Select
-                  value={formData.parent_location_id}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      parent_location_id: value,
-                      location_id: "", // Reset child when parent changes
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Parent</SelectItem>
-                    {filteredLocations
-                      .filter((loc) => !loc.parent_id && (loc.type === "division" || loc.type === "region"))
-                      .map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+            {/* GPS Location */}
+            <div className="space-y-2">
+              <Label>GPS Location (Required)</Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    placeholder="-18.1416"
+                    value={formData.latitude || ""}
+                    onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    placeholder="178.4419"
+                    value={formData.longitude || ""}
+                    onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    placeholder="Victoria Parade, Suva"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                </div>
               </div>
-
-              {/* Child Location (Station/Office) */}
-              <div className="space-y-2">
-                <Label htmlFor="location">
-                  {filteredLocations.some((l) => l.type === "division" || l.type === "station")
-                    ? "Station"
-                    : "Office"}
-                </Label>
-                <Select
-                  value={formData.location_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, location_id: value })
-                  }
-                  disabled={!formData.parent_location_id}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Child</SelectItem>
-                    {filteredLocations
-                      .filter(
-                        (loc) =>
-                          loc.parent_id === formData.parent_location_id &&
-                          (loc.type === "station" || loc.type === "office")
-                      )
-                      .map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter GPS coordinates and address where the infringement occurred
+              </p>
             </div>
 
             {/* Notes */}

@@ -13,9 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Users, UserPlus, Pencil, Trash2, Route } from "lucide-react";
 import { EditTeamDialog } from "./edit-team-dialog";
 import { DeleteTeamDialog } from "./delete-team-dialog";
-import { ManageTeamMembersDialog } from "./manage-team-members-dialog";
-import { ManageTeamRoutesDialog } from "./manage-team-routes-dialog";
 import { useState } from "react";
+import Link from "next/link";
 
 interface Agency {
   id: string;
@@ -44,6 +43,7 @@ interface TeamsTableProps {
   users: User[];
   userRole: string;
   userAgencyId: string | null;
+  baseUrl: string; // "/admin" or "/protected"
 }
 
 export function TeamsTable({
@@ -52,11 +52,10 @@ export function TeamsTable({
   users,
   userRole,
   userAgencyId,
+  baseUrl,
 }: TeamsTableProps) {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
-  const [managingTeam, setManagingTeam] = useState<Team | null>(null);
-  const [managingRoutes, setManagingRoutes] = useState<Team | null>(null);
 
   if (teams.length === 0) {
     return (
@@ -122,18 +121,22 @@ export function TeamsTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setManagingTeam(team)}
+                      asChild
                       title="Manage members"
                     >
-                      <UserPlus className="h-4 w-4" />
+                      <Link href={`${baseUrl}/teams/${team.id}/members`}>
+                        <UserPlus className="h-4 w-4" />
+                      </Link>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setManagingRoutes(team)}
+                      asChild
                       title="Manage routes"
                     >
-                      <Route className="h-4 w-4" />
+                      <Link href={`${baseUrl}/teams/${team.id}/routes`}>
+                        <Route className="h-4 w-4" />
+                      </Link>
                     </Button>
                     <Button
                       variant="ghost"
@@ -173,24 +176,6 @@ export function TeamsTable({
           team={deletingTeam}
           open={!!deletingTeam}
           onOpenChange={(open: boolean) => !open && setDeletingTeam(null)}
-        />
-      )}
-
-      {managingTeam && (
-        <ManageTeamMembersDialog
-          team={managingTeam}
-          users={users}
-          userAgencyId={userAgencyId}
-          open={!!managingTeam}
-          onOpenChange={(open: boolean) => !open && setManagingTeam(null)}
-        />
-      )}
-
-      {managingRoutes && (
-        <ManageTeamRoutesDialog
-          team={managingRoutes}
-          open={!!managingRoutes}
-          onOpenChange={(open: boolean) => !open && setManagingRoutes(null)}
         />
       )}
     </>

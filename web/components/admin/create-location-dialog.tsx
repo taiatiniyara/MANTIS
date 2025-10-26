@@ -61,6 +61,9 @@ export function CreateLocationDialog({
     userRole === "agency_admin" && userAgencyId ? userAgencyId : ""
   );
   const [parentId, setParentId] = useState<string>("");
+  const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -87,11 +90,39 @@ export function CreateLocationDialog({
     try {
       
 
+      // Parse GPS coordinates if provided
+      const lat = latitude.trim() ? parseFloat(latitude) : null;
+      const lng = longitude.trim() ? parseFloat(longitude) : null;
+
+      // Validate coordinates if provided
+      if (latitude.trim() && (isNaN(lat!) || lat! < -90 || lat! > 90)) {
+        toast({
+          title: "Invalid Latitude",
+          description: "Latitude must be between -90 and 90",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (longitude.trim() && (isNaN(lng!) || lng! < -180 || lng! > 180)) {
+        toast({
+          title: "Invalid Longitude",
+          description: "Longitude must be between -180 and 180",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("locations").insert({
         name: name.trim(),
         type,
         agency_id: agencyId || null,
         parent_id: parentId || null,
+        address: address.trim() || null,
+        latitude: lat,
+        longitude: lng,
       });
 
       if (error) throw error;
@@ -106,6 +137,9 @@ export function CreateLocationDialog({
       setType("station");
       setAgencyId(userRole === "agency_admin" && userAgencyId ? userAgencyId : "");
       setParentId("");
+      setAddress("");
+      setLatitude("");
+      setLongitude("");
       router.refresh();
     } catch (error) {
       console.error("Error creating location:", error);
@@ -209,6 +243,54 @@ export function CreateLocationDialog({
               <p className="text-xs text-muted-foreground">
                 e.g., Suva Station under Central Division
               </p>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                GPS Coordinates (Optional)
+              </h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Add coordinates to display this location on route maps
+              </p>
+
+              <div className="grid gap-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  placeholder="e.g., 123 Victoria Parade, Suva"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    placeholder="-18.1416"
+                    value={latitude}
+                    onChange={(e) => setLatitude(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">-90 to 90</p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    placeholder="178.4419"
+                    value={longitude}
+                    onChange={(e) => setLongitude(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">-180 to 180</p>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>

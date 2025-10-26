@@ -45,14 +45,6 @@ interface Route {
   agency_id: string | null;
 }
 
-interface Location {
-  id: string;
-  name: string;
-  type: string;
-  agency_id: string | null;
-  parent_id: string | null;
-}
-
 interface Officer {
   id: string;
   position: string | null;
@@ -68,7 +60,9 @@ interface Infringement {
   route_id: string | null;
   type_id: string;
   vehicle_id: string;
-  location_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
   notes: string | null;
   issued_at: string;
   created_at: string;
@@ -102,11 +96,6 @@ interface Infringement {
       name: string;
     };
   };
-  location: {
-    id: string;
-    name: string;
-    type: string;
-  } | null;
 }
 
 interface InfringementsTableProps {
@@ -116,7 +105,6 @@ interface InfringementsTableProps {
   types: Type[];
   teams: Team[];
   routes: Route[];
-  locations: Location[];
   officers: Officer[];
   userRole: string;
   userAgencyId: string | null;
@@ -129,7 +117,6 @@ export function InfringementsTable({
   types,
   teams,
   routes,
-  locations,
   officers,
   userRole,
   userAgencyId,
@@ -188,7 +175,7 @@ export function InfringementsTable({
                 </TableCell>
                 <TableCell>
                   <span className="text-sm">
-                    {infringement.officer.position || "Officer"}
+                    {infringement.officer?.position || "Officer"}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -208,9 +195,13 @@ export function InfringementsTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  {infringement.location ? (
+                  {infringement.address ? (
                     <span className="text-sm">
-                      {infringement.location.name}
+                      {infringement.address}
+                    </span>
+                  ) : infringement.latitude && infringement.longitude ? (
+                    <span className="text-sm text-muted-foreground">
+                      {infringement.latitude.toFixed(4)}, {infringement.longitude.toFixed(4)}
                     </span>
                   ) : (
                     <span className="text-sm text-muted-foreground">-</span>
@@ -284,7 +275,6 @@ export function InfringementsTable({
           types={types}
           teams={teams}
           routes={routes}
-          locations={locations}
           officers={officers}
           userRole={userRole}
           userAgencyId={userAgencyId}

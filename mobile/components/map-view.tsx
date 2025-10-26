@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { gpsService, LocationData } from '@/lib/gps-service';
 
 interface InfringementMarker {
@@ -25,8 +25,17 @@ interface InfringementMarker {
   createdAt: string;
 }
 
+interface RoutePolygon {
+  id: string;
+  name: string;
+  coordinates: Array<{ latitude: number; longitude: number }>;
+  strokeColor?: string;
+  fillColor?: string;
+}
+
 interface MapComponentProps {
   infringements?: InfringementMarker[];
+  routes?: RoutePolygon[];
   onMarkerPress?: (infringement: InfringementMarker) => void;
   showUserLocation?: boolean;
   initialRegion?: Region;
@@ -34,6 +43,7 @@ interface MapComponentProps {
 
 export function MapComponent({
   infringements = [],
+  routes = [],
   onMarkerPress,
   showUserLocation = true,
   initialRegion,
@@ -64,6 +74,26 @@ export function MapComponent({
               longitudeDelta: 0.0421,
             });
           }
+        } else {
+          // Default to Fiji if no user location
+          if (!initialRegion) {
+            setRegion({
+              latitude: -18.1416,
+              longitude: 178.4419,
+              latitudeDelta: 0.5,
+              longitudeDelta: 0.5,
+            });
+          }
+        }
+      } else {
+        // Default to Fiji if no permission
+        if (!initialRegion) {
+          setRegion({
+            latitude: -18.1416,
+            longitude: 178.4419,
+            latitudeDelta: 0.5,
+            longitudeDelta: 0.5,
+          });
         }
       }
     } catch (error) {
@@ -135,6 +165,17 @@ export function MapComponent({
         showsCompass={true}
         toolbarEnabled={false}
       >
+        {/* Route Polygons */}
+        {routes.map((route) => (
+          <Polygon
+            key={route.id}
+            coordinates={route.coordinates}
+            strokeColor={route.strokeColor || '#2563eb'}
+            fillColor={route.fillColor || '#3b82f680'}
+            strokeWidth={2}
+          />
+        ))}
+
         {/* Infringement Markers */}
         {infringements.map((infringement) => (
           <Marker

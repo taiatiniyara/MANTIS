@@ -24,31 +24,32 @@ export function LocationPicker({
   } | null>(initialLocation || null);
   const [address, setAddress] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      // Use Nominatim for reverse geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+      );
+      const data = await response.json();
+      if (data.display_name) {
+        return data.display_name;
+      }
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
+    }
+    return undefined;
+  };
 
   const handleMapClick = useCallback(
-    (lat: number, lng: number) => {
+    async (lat: number, lng: number) => {
       setSelectedLocation({ lat, lng });
       
       // Reverse geocode to get address
-      // @ts-ignore - Google Maps loaded dynamically
-      if (typeof window.google !== "undefined") {
-        // @ts-ignore
-        const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode(
-          { location: { lat, lng } },
-          (results: any, status: any) => {
-            if (status === "OK" && results && results[0]) {
-              const formattedAddress = results[0].formatted_address;
-              setAddress(formattedAddress);
-              onLocationSelect(lat, lng, formattedAddress);
-            } else {
-              onLocationSelect(lat, lng);
-            }
-          }
-        );
-      } else {
-        onLocationSelect(lat, lng);
-      }
+      const formattedAddress = await reverseGeocode(lat, lng);
+      setAddress(formattedAddress || "");
+      onLocationSelect(lat, lng, formattedAddress);
     },
     [onLocationSelect]
   );
@@ -56,22 +57,31 @@ export function LocationPicker({
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
-    // @ts-ignore - Google Maps loaded dynamically
-    if (typeof window.google !== "undefined") {
-      // @ts-ignore
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ address: searchQuery }, (results: any, status: any) => {
-        if (status === "OK" && results && results[0]) {
-          const location = results[0].geometry.location;
-          const lat = location.lat();
-          const lng = location.lng();
-          setSelectedLocation({ lat, lng });
-          setAddress(results[0].formatted_address);
-          onLocationSelect(lat, lng, results[0].formatted_address);
-        } else {
-          alert("Location not found. Please try a different search.");
-        }
-      });
+    setIsSearching(true);
+    try {
+      // Use Nominatim for forward geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          searchQuery
+        )}&limit=1`
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        setSelectedLocation({ lat, lng });
+        setAddress(result.display_name);
+        onLocationSelect(lat, lng, result.display_name);
+      } else {
+        alert("Location not found. Please try a different search.");
+      }
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      alert("Failed to search location. Please try again.");
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -104,7 +114,7 @@ export function LocationPicker({
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
-          <Button onClick={handleSearch} variant="outline">
+          <Button onClick={handleSearch} variant="outline" disabled={isSearching}>
             <Search className="h-4 w-4" />
           </Button>
           <Button onClick={handleUseCurrentLocation} variant="outline">

@@ -29,15 +29,13 @@ export default async function RoutesMapPage() {
     redirect("/protected");
   }
 
-  // Fetch routes with their start and end locations
+  // Fetch routes with coverage areas
   let routesQuery = supabase
     .from("routes")
     .select(
       `
       *,
-      agency:agencies(id, name),
-      start_location:locations!routes_start_location_id_fkey(id, name, latitude, longitude, address),
-      end_location:locations!routes_end_location_id_fkey(id, name, latitude, longitude, address)
+      agency:agencies(id, name)
     `
     )
     .order("name");
@@ -49,46 +47,32 @@ export default async function RoutesMapPage() {
 
   const { data: routes } = await routesQuery;
 
-  // Create markers for all start and end locations
-  const markers: Array<{
+  // Transform routes to polygons format
+  const polygons: Array<{
     id: string;
-    position: { lat: number; lng: number };
-    title: string;
-    onClick?: () => void;
+    path: Array<{ lat: number; lng: number }>;
+    name: string;
+    strokeColor?: string;
+    fillColor?: string;
   }> = [];
 
   if (routes) {
     routes.forEach((route: any) => {
-      // Add start location marker
-      if (route.start_location?.latitude && route.start_location?.longitude) {
-        markers.push({
-          id: `start-${route.id}`,
-          position: {
-            lat: route.start_location.latitude,
-            lng: route.start_location.longitude,
-          },
-          title: `${route.name} - Start: ${route.start_location.name}`,
-        });
-      }
-
-      // Add end location marker
-      if (route.end_location?.latitude && route.end_location?.longitude) {
-        markers.push({
-          id: `end-${route.id}`,
-          position: {
-            lat: route.end_location.latitude,
-            lng: route.end_location.longitude,
-          },
-          title: `${route.name} - End: ${route.end_location.name}`,
+      // Add route coverage area as polygon
+      if (route.coverage_area && Array.isArray(route.coverage_area) && route.coverage_area.length >= 3) {
+        polygons.push({
+          id: route.id,
+          path: route.coverage_area,
+          name: route.name,
+          strokeColor: '#2563eb', // Blue
+          fillColor: '#3b82f680', // Blue with transparency
         });
       }
     });
   }
 
-  const routesWithLocations = routes?.filter(
-    (r: any) =>
-      (r.start_location?.latitude && r.start_location?.longitude) ||
-      (r.end_location?.latitude && r.end_location?.longitude)
+  const routesWithCoverage = routes?.filter(
+    (r: any) => r.coverage_area && Array.isArray(r.coverage_area) && r.coverage_area.length >= 3
   );
 
   return (
@@ -113,28 +97,28 @@ export default async function RoutesMapPage() {
       {/* Map */}
       <Card>
         <CardHeader>
-          <CardTitle>Route Locations</CardTitle>
+          <CardTitle>Route Coverage Areas</CardTitle>
           <CardDescription>
-            {routesWithLocations && routesWithLocations.length > 0
-              ? `Showing ${routesWithLocations.length} route${routesWithLocations.length === 1 ? "" : "s"} with GPS coordinates`
-              : "No routes with location data"}
+            {routesWithCoverage && routesWithCoverage.length > 0
+              ? `Showing ${routesWithCoverage.length} route${routesWithCoverage.length === 1 ? "" : "s"} with coverage areas`
+              : "No routes with coverage areas defined"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {markers.length > 0 ? (
+          {polygons.length > 0 ? (
             <MapComponent
               center={{ lat: -18.1416, lng: 178.4419 }} // Suva, Fiji
               zoom={11}
-              markers={markers}
+              polygons={polygons}
               height="600px"
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <MapPin className="h-16 w-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Route Locations Found</h3>
+              <h3 className="text-lg font-semibold mb-2">No Route Coverage Areas Found</h3>
               <p className="text-sm text-muted-foreground max-w-md">
-                Routes will appear on the map once their start and end locations have GPS coordinates.
-                Make sure to add latitude and longitude to location records.
+                Routes will appear on the map once their coverage areas have been defined.
+                Create routes and draw polygon coverage areas to see them here.
               </p>
             </div>
           )}
@@ -146,21 +130,19 @@ export default async function RoutesMapPage() {
         <CardHeader>
           <CardTitle>Route Details</CardTitle>
           <CardDescription>
-            Information about patrol routes and their locations
+            Information about patrol route coverage areas
           </CardDescription>
         </CardHeader>
         <CardContent>
           {routes && routes.length > 0 ? (
             <div className="space-y-4">
               {routes.map((route: any) => {
-                const hasStartGPS = route.start_location?.latitude && route.start_location?.longitude;
-                const hasEndGPS = route.end_location?.latitude && route.end_location?.longitude;
-                const hasAnyGPS = hasStartGPS || hasEndGPS;
+                const hasCoverage = route.coverage_area && Array.isArray(route.coverage_area) && route.coverage_area.length >= 3;
 
                 return (
                   <div
                     key={route.id}
-                    className={`rounded-lg border p-4 ${!hasAnyGPS ? "opacity-50" : ""}`}
+                    className={`rounded-lg border p-4 ${!hasCoverage ? "opacity-50" : ""}`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
@@ -171,35 +153,18 @@ export default async function RoutesMapPage() {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          {/* Start Location */}
-                          <div>
-                            <p className="font-medium text-muted-foreground">Start Location</p>
-                            <p>{route.start_location?.name || "Not set"}</p>
-                            {hasStartGPS && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                <MapPin className="h-3 w-3" />
-                                {route.start_location.latitude.toFixed(4)}, {route.start_location.longitude.toFixed(4)}
-                              </p>
-                            )}
+                        {hasCoverage ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-900">
+                              <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <span className="text-sm text-blue-700 dark:text-blue-300">
+                                Coverage area defined ({route.coverage_area.length} points)
+                              </span>
+                            </div>
                           </div>
-
-                          {/* End Location */}
-                          <div>
-                            <p className="font-medium text-muted-foreground">End Location</p>
-                            <p>{route.end_location?.name || "Not set"}</p>
-                            {hasEndGPS && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                <MapPin className="h-3 w-3" />
-                                {route.end_location.latitude.toFixed(4)}, {route.end_location.longitude.toFixed(4)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {!hasAnyGPS && (
+                        ) : (
                           <p className="text-xs text-amber-600 flex items-center gap-1 mt-2">
-                            ⚠️ This route has no GPS coordinates and won't appear on the map
+                            ⚠️ This route has no coverage area and won't appear on the map
                           </p>
                         )}
                       </div>

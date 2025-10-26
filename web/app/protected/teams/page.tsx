@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TeamsTable } from "@/components/admin/teams-table";
+import { CreateTeamDialog } from "@/components/admin/create-team-dialog";
 
 export default async function ProtectedTeamsPage() {
   const supabase = await createClient();
@@ -81,11 +82,18 @@ export default async function ProtectedTeamsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Teams Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage patrol teams within your agency
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Teams Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage patrol teams within your agency
+          </p>
+        </div>
+        <CreateTeamDialog
+          agencies={agencies || []}
+          userRole={currentUser.role}
+          userAgencyId={currentUser.agency_id}
+        />
       </div>
       <TeamsTable
         teams={teams || []}
@@ -93,6 +101,7 @@ export default async function ProtectedTeamsPage() {
         users={officers || []}
         userRole={currentUser.role}
         userAgencyId={currentUser.agency_id}
+        baseUrl="/protected"
       />
     </div>
   );
