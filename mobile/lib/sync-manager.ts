@@ -197,7 +197,10 @@ class SyncManager {
         });
 
         try {
-          const { data, error } = await infringements.create(item);
+          // Remove offline-only fields before syncing
+          const { offline, ...dataToSync } = item;
+          
+          const { data, error } = await infringements.create(dataToSync);
           if (error) throw error;
 
           results.push({ success: true, item, data });
@@ -349,7 +352,7 @@ class SyncManager {
 
           // Read file as base64
           const base64 = await FileSystem.readAsStringAsync(item.uri, {
-            encoding: FileSystem.EncodingType.Base64,
+            encoding: 'base64',
           });
 
           // Upload to storage

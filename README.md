@@ -1,56 +1,48 @@
 # 🛠️ MANTIS — Multi-Agency National Traffic Infringement System
 
-**Status**: ✅ **Production Ready** | **Internal System Only**
+**Status**: ✅ **Production Ready** | **Version**: 1.0.0
 
-MANTIS is a comprehensive traffic infringement management platform for Fiji, unifying the **Fiji Police Force**, **Land Transport Authority (LTA)**, and **City/Town Councils** with web dashboards and mobile apps.
-
-**Important**: Internal system only - all users must be authorized staff members.
+A comprehensive traffic infringement management platform for Fiji, unifying the **Fiji Police Force**, **Land Transport Authority (LTA)**, and **City/Town Councils** with web dashboards and mobile apps.
 
 ---
 
-## 🎯 Project Status
+## 🎯 Project Overview
+
 - **Web Application**: ✅ 95% Complete (Admin Portal + GIS)
 - **Mobile Application**: ✅ 100% Complete (Officer App)
 - **Database & Backend**: ✅ 100% Complete (PostgreSQL + PostGIS + Supabase)
-- **Overall**: ✅ **Production Ready**
 
 ---
 
 ## ✨ Key Features
 
-### 🌐 Web Dashboard (Next.js 15 + React 19)
-- **Admin Panel**: Complete agency, user, and infringement management
-- **Real-Time Analytics**: Comprehensive dashboards with live updates
-- **Advanced Reporting**: Customizable reports with export capabilities
-- **GIS Integration**: Google Maps with spatial analysis capabilities
-- **Document Management**: Templates, digital signatures, PDF generation
-- **Payment Processing**: Multi-gateway payment integration
-- **Tech Stack**: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
+### 🌐 Web Dashboard
+- Complete admin panel for multi-agency management
+- Real-time analytics with live dashboards
+- Advanced reporting with export capabilities
+- GIS integration with Leaflet.js for spatial analysis
+- Document management with templates and digital signatures
+- Payment processing with multi-gateway support
 
-### 📱 Mobile App (Expo SDK 54 + React Native 0.81.4)
-- **Infringement Recording**: Complete form with vehicle ID, type, and notes
-- **Photo Capture**: Built-in camera with automatic watermarking
-- **Evidence Photos**: Watermarks include timestamp, officer, GPS, vehicle, violation type
-- **GPS Tracking**: Real-time location with accuracy display
-- **History & Search**: Complete list with filters and full-screen details
-- **Photo Gallery**: Load and display evidence photos from storage
-- **Dashboard**: Statistics, quick actions, online/offline status
-- **Authentication**: Secure login with token refresh and fallback
-- **Tech Stack**: Expo SDK 54, React Native 0.81.4, TypeScript, Supabase
+**Stack**: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
 
-### 🗄️ Database (PostgreSQL + Supabase + PostGIS)
-- **35+ Tables**: Complete schema with relationships
-- **20 Migrations**: Structured database evolution with GIS support
-- **Row-Level Security**: 100+ RLS policies (optional - can be disabled)
-- **Audit Logging**: Complete activity tracking
-- **Spatial Features**: PostGIS integration for geographic analysis
-- **Storage Integration**: Supabase storage buckets (evidence-photos)
+### 📱 Mobile App
+- Infringement recording with GPS auto-tagging
+- Evidence photo capture with automatic watermarking
+- Offline-first architecture with intelligent sync
+- Real-time location tracking during patrol
+- Complete history with search and filters
+- Biometric authentication support
 
-### 🔗 Integration Layer
-- **REST API**: Authenticated public API with rate limiting
-- **Webhooks**: Event-driven integrations with HMAC signatures
-- **Service Integrations**: Payment, messaging, storage, analytics
-- **API Security**: SHA256 hashing, permissions, comprehensive logging
+**Stack**: Expo SDK 54, React Native 0.81.4, TypeScript
+
+### 🗄️ Database
+- 35+ tables with full relational schema
+- 22 migrations for structured evolution
+- PostGIS integration for geospatial analysis
+- Row-Level Security (100+ policies, optional)
+- Audit logging and data archiving
+- Supabase storage for evidence photos
 
 ---
 
@@ -58,21 +50,19 @@ MANTIS is a comprehensive traffic infringement management platform for Fiji, uni
 
 ```
 mantis/
-├── web/                    # Next.js 15 app (admin dashboards)
-├── mobile/                 # React Native/Expo SDK 54 app (officers)
-├── db/                     # Database migrations + seeds
-│   ├── migrations/         # SQL schema files (14 migrations)
-│   └── seeds/              # Preloaded data (agencies, locations, etc.)
-├── docs/                   # Comprehensive documentation
-│   ├── mobile/             # Mobile app documentation
-│   ├── web/                # Web app documentation  
-│   ├── database/           # Database documentation
+├── web/                    # Next.js 15 admin portal
+├── mobile/                 # React Native/Expo mobile app
+├── db/                     # Database migrations & seeds
+│   ├── migrations/         # 22 SQL migration files
+│   └── seeds/              # Reference data
+├── docs/                   # Documentation
+│   ├── GETTING_STARTED.md  # Setup guide
+│   ├── DATABASE_SETUP.md   # Database configuration
+│   ├── DEPLOYMENT_GUIDE.md # Production deployment
 │   ├── system-design.md    # Architecture overview
 │   ├── schema.md           # Database schema
-│   ├── api-spec.md         # API documentation
-│   └── GETTING_STARTED.md  # Setup guide
-├── supabase/               # Supabase configuration
-└── README.md               # This file
+│   └── api-spec.md         # API documentation
+└── supabase/               # Supabase configuration
 ```
 
 ---
@@ -80,25 +70,23 @@ mantis/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js 18+** (for web development)
-- **Supabase Account** (database & backend)
-- **Expo CLI** (for mobile development)
+- Node.js 18+
+- Supabase account
+- Expo CLI (for mobile)
 
 ### Installation
 
-1. **Clone the repository**
+1. **Clone and configure**
    ```bash
    git clone https://github.com/taiatiniyara/MANTIS.git
    cd MANTIS
+   cp web/.env.example web/.env.local
+   cp mobile/.env.example mobile/.env
    ```
 
-2. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-   Configure your `.env.local`:
+2. **Configure environment variables**
+   Edit `.env.local` and `.env` files with your Supabase credentials:
    ```env
-   # Supabase
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_key
@@ -106,13 +94,13 @@ mantis/
 
 3. **Run database migrations**
    ```bash
-   # If using Supabase CLI
+   # Using Supabase CLI
    supabase db push
    
-   # Or manually run migrations 001-014 in order
+   # Or run migrations manually in order (001-022)
    ```
 
-4. **Install and run web application**
+4. **Start web application**
    ```bash
    cd web
    npm install
@@ -120,7 +108,7 @@ mantis/
    ```
    Open [http://localhost:3201](http://localhost:3201)
 
-5. **Install and run mobile application**
+5. **Start mobile application**
    ```bash
    cd mobile
    npm install
@@ -131,121 +119,84 @@ mantis/
 
 ## 👥 User Roles
 
-- **Super Admin**: System-wide administration, multi-agency management
-- **Agency Admin**: Agency management, user administration
-- **Supervisor**: Team oversight, report access
-- **Officer**: Infringement recording, mobile app access
-- **Viewer**: Read-only access to data
+| Role | Permissions |
+|------|-------------|
+| **Super Admin** | System-wide administration, multi-agency management |
+| **Agency Admin** | Agency-specific management, user administration |
+| **Supervisor** | Team oversight, report access |
+| **Officer** | Infringement recording, mobile app access |
+| **Viewer** | Read-only access |
 
 ---
 
 ## 🔒 Security Features
 
-- **Authentication**: Supabase Auth with JWT tokens
-- **Authorization**: Row-Level Security (RLS) with 100+ policies
-- **RBAC**: Comprehensive role-based access control
-- **Audit Logging**: Complete activity tracking
-- **API Security**: SHA256 key hashing, rate limiting
-- **Webhook Security**: HMAC SHA256 signature verification
-- **Data Encryption**: Encrypted sensitive data storage
-- **Biometric Auth**: Mobile device biometric security
+- Supabase Auth with JWT tokens
+- Row-Level Security (100+ policies, optional)
+- Role-based access control (RBAC)
+- Complete audit logging
+- API security with SHA256 hashing
+- Biometric authentication (mobile)
+- Encrypted data storage
 
 ---
 
-## 📱 Mobile Features
+## 📱 Mobile Highlights
 
 ### Infringement Recording
 - Vehicle ID input with validation
 - Searchable infringement type picker
 - Auto-generated notes with metadata
-- GPS location capture
-- Multiple photo capture with camera
-- Automatic watermarking with:
-  - Timestamp, officer name, GPS coordinates
-  - Vehicle ID and infringement type
+- GPS location capture with accuracy display
+- Multiple photo evidence capture
+
+### Photo Watermarking
+- Automatic watermarks with:
+  - Timestamp and officer name
+  - GPS coordinates
+  - Vehicle ID and violation type
   - High-contrast text (26px, bold)
-  - MANTIS branding
-- Form validation and auto-clear after submission
+- Direct upload to Supabase Storage
 
-### History & Evidence
-- Complete infringement list
-- Search by vehicle ID
-- Filter by status (pending, issued, paid, appealed)
-- Full-screen details modal
-- Evidence photo gallery loaded from Supabase Storage
-- Pull-to-refresh
-
-### Dashboard & Profile
-- Officer statistics (today, week, month, total)
-- Quick action buttons
-- Online/offline status
-- GPS permission status
-- Current location display
-- Profile information
-- Sign out functionality
-
-### Authentication & Security
-- Supabase Auth with JWT tokens
-- Token refresh with error handling
-- SecureStore with AsyncStorage fallback
-- Session persistence
-- Auto-logout on session expiry
+### Offline Capabilities
+- Full offline operation with local storage
+- Intelligent sync manager with retry logic
+- Network status monitoring
+- Queue management for failed operations
 
 ---
 
-## �️ GIS & Mapping
+## 🗺️ GIS & Mapping
 
-### Leaflet Integration
-- Interactive map with Leaflet.js
-- Route polygon drawing and editing
-- Coverage area visualization
-- GPS coordinate handling
-- PostGIS spatial queries
-- Heatmap overlay support
+- **Interactive Maps**: Leaflet.js integration
+- **Route Management**: Polygon-based patrol coverage areas
+- **Waypoint System**: Route planning and visualization
+- **Spatial Queries**: PostGIS-powered geographic analysis
+- **Heatmaps**: Traffic violation pattern visualization
 
-### Geospatial Features
-- Polygon-based patrol coverage areas
-- Route waypoint management
-- Distance calculations
-- Location-based queries
-- Spatial data analysis
+---
 
-## �📄 Document Management
+## 📄 Document Management
 
-### Template System
-- Reusable HTML templates with variables: `{{variable_name}}`
-- Template types: Notice, Letter, Report, Receipt, Certificate
-- Activate/deactivate templates
-- Version control
-
-### Document Generation
-- Auto-numbering with prefixes
-- Data binding from templates
+- Reusable HTML templates with variables
+- Auto-numbering with custom prefixes
 - Digital signatures with canvas
-- PDF export
-- Document sharing with expiration
+- PDF export and generation
+- Document version control
 
 ---
 
 ## 🔗 API & Integrations
 
 ### Public REST API
-```
-POST /api/public/infringements - Create infringement
-GET  /api/public/infringements - List infringements (paginated)
-```
+- `POST /api/public/infringements` - Create infringement
+- `GET /api/public/infringements` - List infringements (paginated)
 
-**Features**:
-- Bearer token authentication
-- Granular permissions
-- Rate limiting
-- Request logging
-- Automatic webhook triggering
+**Features**: Bearer token auth, rate limiting, request logging, automatic webhooks
 
 ### Webhooks
-- Event subscriptions
-- HMAC SHA256 signatures
-- Exponential backoff retry
+- Event subscriptions with HMAC SHA256 signatures
+- Exponential backoff retry logic
 - Delivery tracking
 - Custom headers support
 
@@ -253,7 +204,7 @@ GET  /api/public/infringements - List infringements (paginated)
 - **Payment**: Stripe, PayPal, M-Pesa
 - **Messaging**: Twilio SMS, SendGrid Email
 - **Storage**: Supabase Storage
-- **Analytics**: Real-time analytics
+- **Analytics**: Real-time dashboards
 
 ---
 
@@ -272,80 +223,72 @@ Deploy to Vercel, Netlify, or any Node.js hosting platform.
 ```bash
 cd mobile
 npm install
-
-# Build for Android
-expo build:android
-
-# Build for iOS
-expo build:ios
+expo build:android  # Android APK
+expo build:ios      # iOS IPA
 ```
 Submit to Google Play Store and Apple App Store.
 
 ### Database
-1. Run all 19 migrations in order (001-019)
-2. Configure RLS policies (or disable for development with 019)
-3. Set up PostGIS extension (included in migration 014)
-4. Configure Supabase storage buckets (migration 015)
-5. Set up backup schedule
+1. Apply all migrations in order (001-022)
+2. Configure RLS policies (or disable for development)
+3. Set up PostGIS extension
+4. Configure Supabase storage buckets
+5. Set up automated backups
 
 ---
 
 ## 📚 Documentation
 
-Key documentation files:
-
-- **[README.md](README.md)** - This file, project overview
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
-- **[mobile/README.md](mobile/README.md)** - Complete mobile app documentation
-- **[docs/](docs/)** - Technical documentation folder
-  - DATABASE_SETUP.md - Database configuration
-  - GETTING_STARTED.md - Setup guide
-  - system-design.md - Architecture overview
-  - schema.md - Database schema
-  - api-spec.md - API documentation
+- **[GETTING_STARTED.md](docs/GETTING_STARTED.md)** - Complete setup guide
+- **[DATABASE_SETUP.md](docs/DATABASE_SETUP.md)** - Database configuration
+- **[DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** - Production deployment
+- **[system-design.md](docs/system-design.md)** - Architecture overview
+- **[schema.md](docs/schema.md)** - Database schema reference
+- **[api-spec.md](docs/api-spec.md)** - API documentation
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history
+- **[mobile/README.md](mobile/README.md)** - Mobile app documentation
 
 ---
 
 ## 📊 Project Statistics
 
-- **Total Files**: 150+
-- **Lines of Code**: 20,000+
-- **Database Tables**: 35+
-- **Database Migrations**: 20
-- **RLS Policies**: 100+ (optional)
-- **API Endpoints**: 50+
+- **Total Lines of Code**: 20,000+
 - **React Components**: 70+
-- **Mobile Screens**: 6 (Dashboard, History, Record, Profile, Login, Details Modal)
+- **Database Tables**: 35+
+- **API Endpoints**: 50+
+- **Database Migrations**: 22
+- **RLS Policies**: 100+ (optional)
+- **Mobile Screens**: 6 main screens
 
 ---
 
 ## 🎯 Technology Stack
 
-### Frontend
-- **Web**: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
-- **Mobile**: Expo SDK 54, React Native, TypeScript
+**Frontend**
+- Web: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
+- Mobile: Expo SDK 54, React Native 0.81.4, TypeScript
 
-### Backend
-- **Database**: PostgreSQL 14+ with PostGIS and Supabase
-- **Authentication**: Supabase Auth (JWT)
-- **Storage**: Supabase Storage
-- **Real-time**: Supabase Realtime
+**Backend**
+- Database: PostgreSQL 14+ with PostGIS
+- Authentication: Supabase Auth (JWT)
+- Storage: Supabase Storage
+- Real-time: Supabase Realtime
 
-### Integrations
-- **Payments**: Stripe, PayPal, M-Pesa
-- **Messaging**: Twilio, SendGrid
-- **Maps**: Leaflet.js (replaced Google Maps)
-- **Analytics**: Real-time analytics
-- **Storage**: Supabase Storage
+**Integrations**
+- Payments: Stripe, PayPal, M-Pesa
+- Messaging: Twilio, SendGrid
+- Maps: Leaflet.js
+- Storage: Supabase Storage
 
 ---
 
 ## 📞 Support
 
-For questions or issues:
-- Review the [mobile/README.md](mobile/README.md) for mobile app documentation
-- Check [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) for setup
-- See [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) for database configuration
+For setup and configuration help:
+- See [GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- Check [DATABASE_SETUP.md](docs/DATABASE_SETUP.md)
+- Review [mobile/README.md](mobile/README.md)
+- Read [CHANGELOG.md](CHANGELOG.md) for recent changes
 
 ---
 
@@ -353,8 +296,8 @@ For questions or issues:
 
 **✅ MANTIS Platform is production-ready!**
 
-The platform includes complete web dashboards, mobile app with photo watermarking and storage, payment integration, document management, API layer, and comprehensive security features.
+Complete web dashboards, mobile app with offline support, comprehensive security, GIS integration, payment processing, and document management.
 
 **Version**: 1.0.0  
 **Last Updated**: October 27, 2025  
-**Status**: Production Ready
+**License**: Proprietary - Internal System Only

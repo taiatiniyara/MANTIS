@@ -72,9 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log('Auth state changed:', event);
         
-        // Handle token refresh errors
+        // Handle token refresh - just update session without reloading profile
         if (event === 'TOKEN_REFRESHED') {
           console.log('Token refreshed successfully');
+          setSession(session);
+          setUser(session?.user ?? null);
+          return;
         }
         
         if (event === 'SIGNED_OUT') {

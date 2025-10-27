@@ -1,7 +1,7 @@
-import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { captureRef } from 'react-native-view-shot';
+import React, { useRef, useCallback, useState, useEffect } from "react";
+import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { captureRef } from "react-native-view-shot";
 
 interface WatermarkedImageProps {
   imageUri: string;
@@ -9,6 +9,8 @@ interface WatermarkedImageProps {
   officerName: string;
   latitude: number | null;
   longitude: number | null;
+  locationAddress?: string;
+  agencyName?: string;
   vehicleId?: string;
   infringementType?: string;
   onCapture: (uri: string) => void;
@@ -20,12 +22,17 @@ export function WatermarkedImage({
   officerName,
   latitude,
   longitude,
+  locationAddress,
+  agencyName,
   vehicleId,
   infringementType,
   onCapture,
 }: WatermarkedImageProps) {
   const viewRef = useRef<View>(null);
-  const [imageDimensions, setImageDimensions] = useState({ width: 1920, height: 1080 });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 1920,
+    height: 1080,
+  });
 
   // Get original image dimensions
   useEffect(() => {
@@ -35,7 +42,7 @@ export function WatermarkedImage({
         // Keep original dimensions but max out at 1920 width
         const maxWidth = 1920;
         const aspectRatio = height / width;
-        
+
         if (width > maxWidth) {
           setImageDimensions({
             width: maxWidth,
@@ -46,7 +53,7 @@ export function WatermarkedImage({
         }
       },
       (error) => {
-        console.error('Error getting image size:', error);
+        console.error("Error getting image size:", error);
         // Fallback to default dimensions
         setImageDimensions({ width: 1920, height: 1080 });
       }
@@ -58,12 +65,12 @@ export function WatermarkedImage({
 
     try {
       const uri = await captureRef(viewRef, {
-        format: 'jpg',
+        format: "jpg",
         quality: 0.9,
       });
       onCapture(uri);
     } catch (error) {
-      console.error('Error capturing watermarked image:', error);
+      console.error("Error capturing watermarked image:", error);
     }
   }, [onCapture]);
 
@@ -74,7 +81,7 @@ export function WatermarkedImage({
       // Still waiting for actual dimensions
       return;
     }
-    
+
     // Small delay to ensure image is rendered
     const timer = setTimeout(() => {
       captureWatermarkedImage();
@@ -82,58 +89,122 @@ export function WatermarkedImage({
     return () => clearTimeout(timer);
   }, [imageDimensions, captureWatermarkedImage]);
 
-  const locationText = latitude && longitude
-    ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-    : 'Location unavailable';
+  const locationText =
+    latitude && longitude
+      ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+      : "Location unavailable";
 
-  const watermarkBarHeight = vehicleId || infringementType ? 260 : 200;
+  // Calculate dynamic height based on content
+  let lineCount = 3; // Base: timestamp, officer, coordinates
+  if (agencyName) lineCount++;
+  if (locationAddress) lineCount++;
+  if (vehicleId) lineCount++;
+  if (infringementType) lineCount++;
+  lineCount++; // MANTIS system line
+  
+  const watermarkBarHeight = Math.max(320, lineCount * 42 + 40); // 42px per line + padding
   const containerHeight = imageDimensions.height + watermarkBarHeight;
 
   return (
-    <View 
-      ref={viewRef} 
-      style={[styles.container, { width: imageDimensions.width, height: containerHeight }]} 
+    <View
+      ref={viewRef}
+      style={[
+        styles.container,
+        { width: imageDimensions.width, height: containerHeight },
+      ]}
       collapsable={false}
     >
-      <View style={[styles.watermarkBar, { width: imageDimensions.width }]}>
+      <View style={[styles.watermarkBar, { width: imageDimensions.width, height: watermarkBarHeight }]}>
         <View style={styles.watermarkContent}>
           <View style={styles.watermarkRow}>
             <Text style={styles.watermarkIcon}>📸</Text>
             <Text style={styles.watermarkText}>{timestamp}</Text>
           </View>
           <View style={styles.watermarkRow}>
-            <Ionicons name="person" size={12} color="#FFF" style={{ marginRight: 6 }} />
+            <Ionicons
+              name="person"
+              size={24}
+              color="#FFF"
+              style={{ marginRight: 8 }}
+            />
             <Text style={styles.watermarkText}>{officerName}</Text>
           </View>
+          {agencyName && (
+            <View style={styles.watermarkRow}>
+              <Ionicons
+                name="business"
+                size={24}
+                color="#FFF"
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.watermarkText}>{agencyName}</Text>
+            </View>
+          )}
+          {locationAddress && (
+            <View style={styles.watermarkRow}>
+              <Ionicons
+                name="location"
+                size={24}
+                color="#FFF"
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.watermarkText} numberOfLines={2}>
+                {locationAddress}
+              </Text>
+            </View>
+          )}
           <View style={styles.watermarkRow}>
-            <Ionicons name="location" size={12} color="#FFF" style={{ marginRight: 6 }} />
+            <Ionicons
+              name="navigate"
+              size={24}
+              color="#FFF"
+              style={{ marginRight: 8 }}
+            />
             <Text style={styles.watermarkText} numberOfLines={1}>
               {locationText}
             </Text>
           </View>
           {vehicleId && (
             <View style={styles.watermarkRow}>
-              <Ionicons name="car" size={12} color="#FFF" style={{ marginRight: 6 }} />
+              <Ionicons
+                name="car"
+                size={24}
+                color="#FFF"
+                style={{ marginRight: 8 }}
+              />
               <Text style={styles.watermarkText}>{vehicleId}</Text>
             </View>
           )}
           {infringementType && (
             <View style={styles.watermarkRow}>
-              <Ionicons name="warning" size={12} color="#FFF" style={{ marginRight: 6 }} />
-              <Text style={styles.watermarkText} numberOfLines={1}>
+              <Ionicons
+                name="warning"
+                size={24}
+                color="#FFF"
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.watermarkText} numberOfLines={2}>
                 {infringementType}
               </Text>
             </View>
           )}
           <View style={styles.watermarkRow}>
-            <Ionicons name="shield-checkmark" size={12} color="#FFF" style={{ marginRight: 6 }} />
+            <Ionicons
+              name="shield-checkmark"
+              size={24}
+              color="#FFF"
+              style={{ marginRight: 8 }}
+            />
             <Text style={styles.watermarkText}>MANTIS Traffic System</Text>
           </View>
         </View>
       </View>
       <Image
         source={{ uri: imageUri }}
-        style={[styles.image, { width: imageDimensions.width, height: imageDimensions.height }]}
+        style={[
+          styles.image,
+          { width: imageDimensions.width, height: imageDimensions.height },
+        ]}
         resizeMode="contain"
       />
     </View>
@@ -142,39 +213,40 @@ export function WatermarkedImage({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   image: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   watermarkBar: {
-    height: 200,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
+    minHeight: 320,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    justifyContent: "center",
     paddingHorizontal: 30,
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderBottomWidth: 4,
-    borderBottomColor: '#FFD700',
+    borderBottomColor: "#FFD700",
   },
   watermarkContent: {
-    gap: 14,
+    gap: 16,
   },
   watermarkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 36,
   },
   watermarkIcon: {
     fontSize: 28,
     width: 36,
   },
   watermarkText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 26,
-    fontWeight: '800',
-    fontFamily: 'monospace',
+    fontWeight: "800",
+    fontFamily: "monospace",
     flex: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 3,
   },

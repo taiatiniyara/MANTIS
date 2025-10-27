@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
+import { handleAuthError, clearAuthData } from "@/lib/auth-error-handler";
 
 export function LoginForm({
   className,
@@ -35,13 +36,22 @@ export function LoginForm({
     setError(null);
 
     try {
+      // Clear any stale auth data before logging in
+      await clearAuthData();
+      
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (authError) throw authError;
+      
+      if (authError) {
+        // Handle auth errors properly
+        const errorDetails = handleAuthError(authError);
+        throw new Error(errorDetails.message);
+      }
       
       console.log("Login successful:", authData);
+      
       // Show success toast immediately
       toast({
         title: "Login Successful!",

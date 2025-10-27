@@ -44,8 +44,30 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getClaims() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getClaims();
+    
+    // If there's a refresh token error, clear the session cookies
+    if (error && error.message?.includes('refresh_token_not_found')) {
+      console.log('Refresh token error detected, clearing session cookies');
+      // Clear all Supabase auth cookies
+      supabaseResponse.cookies.delete('sb-access-token');
+      supabaseResponse.cookies.delete('sb-refresh-token');
+      // Clear cookies with project ref pattern
+      const cookiesToDelete = request.cookies.getAll()
+        .filter(cookie => cookie.name.includes('sb-') || cookie.name.includes('supabase'));
+      cookiesToDelete.forEach(cookie => {
+        supabaseResponse.cookies.delete(cookie.name);
+      });
+      user = null;
+    } else {
+      user = data?.claims;
+    }
+  } catch (error) {
+    console.error('Error in middleware auth check:', error);
+    user = null;
+  }
 
   if (
     request.nextUrl.pathname !== "/" &&

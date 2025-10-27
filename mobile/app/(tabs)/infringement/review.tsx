@@ -14,14 +14,14 @@ import { router } from 'expo-router';
 export default function ReviewScreen() {
   const handleSubmit = () => {
     Alert.alert(
-      'Submit Infringement',
+      'New Infringement',
       'Are you sure you want to submit this infringement?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Submit',
           onPress: () => {
-            // TODO: Submit infringement
+            // TODO: New Infringement
             Alert.alert('Success', 'Infringement submitted successfully', [
               {
                 text: 'Done',
@@ -56,7 +56,7 @@ export default function ReviewScreen() {
 
         {/* Submit Button */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Submit Infringement</Text>
+          <Text style={styles.submitButtonText}>New Infringement</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -21,20 +21,24 @@ Run all migrations in the `migrations/` folder in numerical order:
 002_finance_reports.sql         # Finance reporting views
 003_rls_policies.sql           # Row Level Security policies
 004_audit_logging.sql          # Audit log system
-004_data_archiving.sql         # Data archiving system
-004_sync_auth_users.sql        # Auth user sync triggers
 005_admin_sync_function.sql    # Admin sync functions
-005_notifications.sql          # Notifications system
 006_payments.sql               # Payment processing
 007_documents.sql              # Document management
 008_integrations.sql           # API & webhook integrations
 009_auto_create_users.sql      # Auto-create user profiles
 010_sync_existing_users.sql    # Sync existing auth users
+011_data_archiving.sql         # Data archiving system
+012_sync_auth_users.sql        # Auth user sync triggers
 013_add_team_leader.sql        # Team leader support
 014_gis_integration.sql        # GIS & GPS tracking
 015_storage_buckets.sql        # File storage buckets
 016_route_waypoints.sql        # Route waypoints table
 017_route_polygon_areas.sql    # Polygon coverage areas
+018_remove_location_id_from_infringements.sql  # Schema optimization
+020_fix_routes_rls_super_admin.sql  # Fix RLS for super admin
+021_add_description_to_infringements.sql  # Add description field
+022_add_location_address_to_infringements.sql  # Add location address
+023_notifications.sql          # Notifications system
 ```
 
 ### 2. Initial Setup
@@ -102,7 +106,9 @@ UNION ALL SELECT 'Infringements', COUNT(*) FROM infringements;
 
 ## 🗑️ Removed Files
 
-The following files have been removed as they were temporary fixes:
+The following files have been removed as they were unnecessary:
+- **disable_all_rls.sql** - Duplicate of migration 019 (removed both)
+- **019_disable_all_rls.sql** - Development tool, not a production migration
 - All emergency/diagnostic scripts
 - Old seed files (001_seed.sql, 002_users_seed.sql)
 - Fix migrations (011_fix_rls_profiles.sql, 012_disable_rls.sql, 016_route_waypoints_fix.sql)

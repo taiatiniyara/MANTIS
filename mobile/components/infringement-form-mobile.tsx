@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useOfflineSync } from '../hooks/use-offline-sync';
 import { useLocationTracking } from '../hooks/use-location-tracking';
 import { EvidenceCamera } from './evidence-camera';
+import { AddressInput } from './address-input';
+import { GeocodedAddress } from '@/lib/geocoding-service';
 
 interface InfringementFormData {
   type_id: string;
@@ -14,6 +16,7 @@ interface InfringementFormData {
   vehicle_make?: string;
   vehicle_model?: string;
   location_id: string;
+  location_address?: string;
   latitude?: number;
   longitude?: number;
   notes?: string;
@@ -44,24 +47,19 @@ export function InfringementFormMobile() {
     setShowCamera(false);
   };
 
-  const captureCurrentLocation = async () => {
-    const currentLocation = await getCurrentLocation();
-    if (currentLocation) {
-      setFormData(prev => ({
-        ...prev,
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-      }));
-      Alert.alert('Success', 'Location captured successfully');
-    } else {
-      Alert.alert('Error', 'Failed to capture location');
-    }
+  const handleAddressSelect = (address: GeocodedAddress) => {
+    setFormData(prev => ({
+      ...prev,
+      location_address: address.formattedAddress,
+      latitude: address.latitude,
+      longitude: address.longitude,
+    }));
   };
 
   const handleSubmit = async () => {
     // Validate required fields
-    if (!formData.type_id || !formData.offender_name || !formData.offender_license || !formData.vehicle_registration) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+    if (!formData.type_id || !formData.offender_name || !formData.offender_license || !formData.vehicle_registration || !formData.latitude || !formData.longitude) {
+      Alert.alert('Validation Error', 'Please fill in all required fields including location');
       return;
     }
 
@@ -72,6 +70,7 @@ export function InfringementFormMobile() {
         ...formData,
         latitude: formData.latitude || location?.latitude,
         longitude: formData.longitude || location?.longitude,
+        location_address: formData.location_address, // Include geocoded address
         created_at: new Date().toISOString(),
         status: 'draft',
       };
@@ -87,7 +86,7 @@ export function InfringementFormMobile() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to submit infringement');
+          throw new Error('Failed to New Infringement');
         }
 
         Alert.alert('Success', 'Infringement submitted successfully');
@@ -113,7 +112,7 @@ export function InfringementFormMobile() {
       });
     } catch (error) {
       console.error('Error submitting infringement:', error);
-      Alert.alert('Error', 'Failed to submit infringement');
+      Alert.alert('Error', 'Failed to New Infringement');
     } finally {
       setIsSubmitting(false);
     }
@@ -226,15 +225,13 @@ export function InfringementFormMobile() {
         {/* Location & Evidence */}
         <Text style={styles.sectionTitle}>Location & Evidence</Text>
 
-        <TouchableOpacity style={styles.actionButton} onPress={captureCurrentLocation}>
-          <Text style={styles.actionButtonText}>📍 Capture Current Location</Text>
-        </TouchableOpacity>
-
-        {(formData.latitude && formData.longitude) && (
-          <Text style={styles.locationText}>
-            Location: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-          </Text>
-        )}
+        <AddressInput
+          value={formData.location_address}
+          onAddressSelect={handleAddressSelect}
+          label="Infringement Location"
+          required={true}
+          showCurrentLocation={true}
+        />
 
         <TouchableOpacity style={styles.actionButton} onPress={() => setShowCamera(true)}>
           <Text style={styles.actionButtonText}>📷 Take Photo</Text>
@@ -269,7 +266,7 @@ export function InfringementFormMobile() {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.submitButtonText}>
-              {isOnline ? 'Submit Infringement' : 'Save Offline'}
+              {isOnline ? 'New Infringement' : 'Save Offline'}
             </Text>
           )}
         </TouchableOpacity>

@@ -15,6 +15,7 @@ import {
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { gpsService, LocationData } from '@/lib/gps-service';
+import { customMapStyle } from '@/constants/mapStyle';
 
 interface InfringementMarker {
   id: string;
@@ -165,6 +166,7 @@ export function MapComponent({
         showsMyLocationButton={false}
         showsCompass={true}
         toolbarEnabled={false}
+        customMapStyle={customMapStyle}
       >
         {/* Route Polygons */}
         {routes.map((route) => (
