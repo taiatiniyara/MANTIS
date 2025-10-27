@@ -26,7 +26,6 @@ interface Infringement {
   vehicle_type?: "car" | "motorcycle" | "truck" | "bus" | "other";
   infringement_type_id: string;
   status?: "pending" | "paid" | "disputed" | "cancelled";
-  fine_amount?: number;
   latitude?: number;
   longitude?: number;
   notes: string | null;
@@ -265,9 +264,6 @@ export default function InfringementsScreen() {
             </View>
             <View>
               <Text style={styles.vehicleId}>{item.vehicle_id}</Text>
-              <Text style={styles.vehicleType}>
-                {item.vehicle_type || "Unknown"}
-              </Text>
             </View>
           </View>
           <View
@@ -303,19 +299,6 @@ export default function InfringementsScreen() {
             />
             <Text style={styles.detailText}>{formatDate(item.created_at)}</Text>
           </View>
-          {item.fine_amount && item.fine_amount > 0 && (
-            <View style={styles.cardFineRow}>
-              <Ionicons
-                name="cash-outline"
-                size={16}
-                color="#2E7D32"
-                style={styles.detailIcon}
-              />
-              <Text style={styles.cardFineAmount}>
-                ${item.fine_amount.toFixed(2)}
-              </Text>
-            </View>
-          )}
         </View>
       </TouchableOpacity>
     );
@@ -454,7 +437,7 @@ export default function InfringementsScreen() {
                   <Text style={styles.detailLabel}> Fine</Text>
                 </View>
                 <Text style={styles.detailValueHighlight}>
-                  $ {(selectedInfringement.fine_amount || 0).toFixed(2)}
+                  $ {(selectedInfringement.type?.fine_amount || 0).toFixed(2)}
                 </Text>
               </View>
 
@@ -781,8 +764,8 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: 14,
+    padding: 10,
     marginBottom: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -794,8 +777,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 8,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
@@ -809,10 +792,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   vehicleIconContainer: {
-    marginRight: 12,
+    marginRight: 4,
   },
   vehicleId: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: "#000000",
     marginBottom: 2,
@@ -825,8 +808,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    padding: 6,
     borderRadius: 16,
     minWidth: 80,
     alignItems: "center",
@@ -838,9 +820,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   infringementType: {
-    backgroundColor: "#F8F9FA",
-    padding: 12,
-    borderRadius: 10,
     marginBottom: 16,
   },
   infringementCode: {

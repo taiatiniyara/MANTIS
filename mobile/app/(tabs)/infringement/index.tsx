@@ -1007,7 +1007,7 @@ export default function RecordScreen() {
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>Record Infringement</Text>
+              <Text style={styles.submitButtonText}>Submit</Text>
             )}
           </TouchableOpacity>
 

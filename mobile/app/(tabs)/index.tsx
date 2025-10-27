@@ -295,7 +295,7 @@ export default function DashboardScreen() {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/(tabs)/explore")}
+            onPress={() => router.push("/(tabs)/history")}
           >
             <View style={styles.actionIcon}>
               <Ionicons name="list" size={24} color="#3b82f6" />
