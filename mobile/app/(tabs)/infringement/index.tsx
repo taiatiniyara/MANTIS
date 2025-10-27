@@ -15,6 +15,7 @@ import {
   Image as RNImage,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { infringements, infringementTypes, storage } from '@/lib/supabase';
@@ -42,6 +43,7 @@ export default function RecordScreen() {
   // Form fields
   const [vehicleId, setVehicleId] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   
   // Type picker modal
@@ -58,6 +60,7 @@ export default function RecordScreen() {
 
   // Auto-generate notes when form data changes
   useEffect(() => {
+    generateDescription();
     generateNotes();
   }, [vehicleId, selectedType, location]);
 
@@ -91,6 +94,41 @@ export default function RecordScreen() {
     setWatermarkedPhotos(prev => [...prev, watermarkedUri]);
     setProcessingPhoto(false);
     console.log('Watermarked photo ready:', watermarkedUri);
+  };
+
+  const generateDescription = () => {
+    if (!vehicleId && !selectedType) {
+      setDescription('');
+      return;
+    }
+
+    const parts: string[] = [];
+    
+    // Add vehicle info
+    if (vehicleId.trim()) {
+      parts.push(vehicleId.trim().toUpperCase());
+    }
+
+    // Add infringement type code only
+    if (selectedType) {
+      const typeData = types.find(t => t.id === selectedType);
+      if (typeData) {
+        parts.push(typeData.code);
+      }
+    }
+
+    // Add short timestamp
+    const now = new Date();
+    const shortDate = now.toLocaleDateString('en-FJ', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    parts.push(shortDate);
+
+    // Create short description
+    const desc = parts.join(' - ');
+    setDescription(desc);
   };
 
   const generateNotes = () => {
@@ -267,6 +305,7 @@ export default function RecordScreen() {
         officer_id: profile?.id,
         latitude: location!.latitude,
         longitude: location!.longitude,
+        description: description.trim() || null,
         notes: notes.trim() || null,
         issued_at: new Date().toISOString(),
       };
@@ -329,6 +368,7 @@ export default function RecordScreen() {
               // Clear form
               setVehicleId('');
               setSelectedType(null);
+              setDescription('');
               setNotes('');
               setCapturedPhotos([]);
               setWatermarkedPhotos([]);
@@ -341,6 +381,7 @@ export default function RecordScreen() {
               // Clear form and go back
               setVehicleId('');
               setSelectedType(null);
+              setDescription('');
               setNotes('');
               setCapturedPhotos([]);
               setWatermarkedPhotos([]);
@@ -368,6 +409,7 @@ export default function RecordScreen() {
                   officer_id: profile?.id,
                   latitude: location!.latitude,
                   longitude: location!.longitude,
+                  description: description.trim() || null,
                   notes: notes.trim() || null,
                   issued_at: new Date().toISOString(),
                 });
@@ -415,13 +457,20 @@ export default function RecordScreen() {
         {/* Status Bar */}
         <View style={styles.statusBar}>
           <View style={[styles.statusBadge, isOnline ? styles.online : styles.offline]}>
+            <Ionicons 
+              name={isOnline ? "wifi" : "wifi-outline"} 
+              size={14} 
+              color={isOnline ? "#10B981" : "#EF4444"} 
+              style={{ marginRight: 4 }}
+            />
             <Text style={styles.statusText}>
-              {isOnline ? '🟢 Online' : '🔴 Offline'}
+              {isOnline ? 'Online' : 'Offline'}
             </Text>
           </View>
           {location && (
             <TouchableOpacity style={styles.refreshButton} onPress={refreshLocation}>
-              <Text style={styles.refreshText}>🔄 Refresh GPS</Text>
+              <Ionicons name="refresh" size={16} color="#007AFF" style={{ marginRight: 4 }} />
+              <Text style={styles.refreshText}>Refresh GPS</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -429,7 +478,10 @@ export default function RecordScreen() {
         {/* Location Card */}
         {location ? (
           <View style={styles.locationCard}>
-            <Text style={styles.locationTitle}>📍 Current Location</Text>
+            <View style={styles.locationHeader}>
+              <Ionicons name="location" size={18} color="#10B981" />
+              <Text style={styles.locationTitle}>Current Location</Text>
+            </View>
             <Text style={styles.locationCoords}>
               {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
             </Text>
@@ -439,7 +491,10 @@ export default function RecordScreen() {
           </View>
         ) : (
           <View style={styles.alertBox}>
-            <Text style={styles.alertTitle}>⚠️ No GPS Location</Text>
+            <View style={styles.alertHeader}>
+              <Ionicons name="warning" size={20} color="#DC2626" />
+              <Text style={styles.alertTitle}> No GPS Location</Text>
+            </View>
             <Text style={styles.alertText}>
               Location is required to record infringements
             </Text>
@@ -462,7 +517,10 @@ export default function RecordScreen() {
         <View style={styles.form}>
           {/* Vehicle ID */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>🚗 Vehicle Registration *</Text>
+            <View style={styles.labelWithIcon}>
+              <Ionicons name="car" size={18} color="#000" style={{ marginRight: 6 }} />
+              <Text style={styles.label}>Vehicle Registration *</Text>
+            </View>
             <TextInput
               style={styles.input}
               value={vehicleId}
@@ -475,7 +533,10 @@ export default function RecordScreen() {
 
           {/* Infringement Type */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>⚠️ Infringement Type *</Text>
+            <View style={styles.labelWithIcon}>
+              <Ionicons name="warning-outline" size={16} color="#666" />
+              <Text style={styles.label}> Infringement Type *</Text>
+            </View>
             <TouchableOpacity
               style={[styles.pickerButton, selectedType && styles.pickerButtonSelected]}
               onPress={() => setShowTypePicker(true)}
@@ -510,31 +571,62 @@ export default function RecordScreen() {
             </View>
           )}
 
+          {/* Description */}
+          <View style={styles.formGroup}>
+            <View style={styles.labelRow}>
+              <View style={styles.labelWithIcon}>
+                <Ionicons name="document-text-outline" size={18} color="#000" style={{ marginRight: 6 }} />
+                <Text style={styles.label}>Summary</Text>
+              </View>
+              <TouchableOpacity onPress={generateDescription} style={styles.refreshNotesButton}>
+                <Ionicons name="refresh" size={16} color="#007AFF" style={{ marginRight: 4 }} />
+                <Text style={styles.refreshNotesText}>Refresh</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Auto-generated summary..."
+              editable={true}
+            />
+          </View>
+
           {/* Notes */}
           <View style={styles.formGroup}>
             <View style={styles.labelRow}>
-              <Text style={styles.label}>📝 Auto-Generated Notes</Text>
+              <View style={styles.labelWithIcon}>
+                <Ionicons name="create-outline" size={18} color="#000" style={{ marginRight: 6 }} />
+                <Text style={styles.label}>Detailed Notes</Text>
+              </View>
               <TouchableOpacity onPress={generateNotes} style={styles.refreshNotesButton}>
-                <Text style={styles.refreshNotesText}>🔄 Refresh</Text>
+                <Ionicons name="refresh" size={16} color="#007AFF" style={{ marginRight: 4 }} />
+                <Text style={styles.refreshNotesText}>Refresh</Text>
               </TouchableOpacity>
             </View>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Notes will be auto-generated from form data..."
+              placeholder="Detailed notes (auto-generated)..."
               multiline
               numberOfLines={6}
               textAlignVertical="top"
             />
-            <Text style={styles.notesHint}>
-              ℹ️ Notes are automatically generated. You can edit them if needed.
-            </Text>
+            <View style={styles.notesHint}>
+              <Ionicons name="information-circle" size={14} color="#666" style={{ marginRight: 4 }} />
+              <Text style={styles.notesHintText}>
+                Notes are auto-generated. Edit if needed.
+              </Text>
+            </View>
           </View>
 
           {/* Photo Evidence Button */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>📸 Photo Evidence</Text>
+            <View style={styles.labelWithIcon}>
+              <Ionicons name="camera" size={20} color="#000" style={{ marginRight: 6 }} />
+              <Text style={styles.label}>Photo Evidence</Text>
+            </View>
             
             {/* Show captured photos */}
             {capturedPhotos.length > 0 && (
@@ -553,7 +645,7 @@ export default function RecordScreen() {
                         setWatermarkedPhotos(prev => prev.filter((_, i) => i !== index));
                       }}
                     >
-                      <Text style={styles.photoPreviewDeleteText}>✕</Text>
+                      <Ionicons name="close" size={16} color="#fff" />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -604,15 +696,15 @@ export default function RecordScreen() {
                 setShowCamera(true);
               }}
             >
-              <Text style={styles.cameraButtonIcon}>📷</Text>
+              <Ionicons name="camera" size={20} color="#fff" style={{ marginRight: 8 }} />
               <Text style={styles.cameraButtonText}>
                 {capturedPhotos.length > 0 
                   ? `Add More Photos (${capturedPhotos.length})` 
-                  : 'Capture Evidence Photos'}
+                  : 'Capture Evidence'}
               </Text>
             </TouchableOpacity>
             <Text style={styles.cameraHint}>
-              Photos will be watermarked with location, time, and officer details
+              Photos are watermarked with location, time, and officer details
             </Text>
           </View>
         </View>
@@ -631,9 +723,12 @@ export default function RecordScreen() {
         </TouchableOpacity>
 
         {!isOnline && (
-          <Text style={styles.offlineNote}>
-            ℹ️ You are offline. Infringement will be saved locally and synced when online.
-          </Text>
+          <View style={styles.offlineNote}>
+            <Ionicons name="information-circle" size={18} color="#FFA500" style={{ marginRight: 6 }} />
+            <Text style={styles.offlineNoteText}>
+              You are offline. Infringement will be saved locally and synced when online.
+            </Text>
+          </View>
         )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -650,13 +745,13 @@ export default function RecordScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Infringement Type</Text>
               <TouchableOpacity onPress={() => setShowTypePicker(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Ionicons name="close" size={28} color="#000" />
               </TouchableOpacity>
             </View>
 
             {/* Search Bar */}
             <View style={styles.searchContainer}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by code or description..."
@@ -667,7 +762,7 @@ export default function RecordScreen() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Text style={styles.searchClear}>✕</Text>
+                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
                 </TouchableOpacity>
               )}
             </View>
@@ -704,7 +799,7 @@ export default function RecordScreen() {
                     </Text>
                   </View>
                   {selectedType === item.id && (
-                    <Text style={styles.typeItemCheck}>✓</Text>
+                    <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
                   )}
                 </TouchableOpacity>
               )}
@@ -746,7 +841,8 @@ export default function RecordScreen() {
                       style={styles.cameraCloseButton}
                       onPress={() => setShowCamera(false)}
                     >
-                      <Text style={styles.cameraCloseText}>✕ Close</Text>
+                      <Ionicons name="close" size={20} color="#fff" style={{ marginRight: 6 }} />
+                      <Text style={styles.cameraCloseText}>Close</Text>
                     </TouchableOpacity>
                     <Text style={styles.cameraPhotoCount}>
                       {capturedPhotos.length} photo{capturedPhotos.length !== 1 ? 's' : ''}
@@ -859,10 +955,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   locationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginLeft: 6,
     color: '#333',
   },
   locationCoords: {
@@ -882,10 +983,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#FF9800',
   },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   alertTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
     color: '#333',
   },
   alertText: {
@@ -916,6 +1021,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#333',
   },
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -934,10 +1043,20 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   notesHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  notesHintText: {
     fontSize: 12,
     color: '#666',
-    marginTop: 6,
     fontStyle: 'italic',
+    flex: 1,
+  },
+  notesHintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
   },
   input: {
     backgroundColor: '#fff',
@@ -1111,26 +1230,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cameraButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 16,
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-  },
-  cameraButtonIcon: {
-    fontSize: 24,
-    marginRight: 8,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cameraButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#fff',
   },
   cameraHint: {
     fontSize: 12,
@@ -1297,11 +1414,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   offlineNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
     marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  offlineNoteText: {
     fontSize: 12,
     color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 16,
+    flex: 1,
   },
 });

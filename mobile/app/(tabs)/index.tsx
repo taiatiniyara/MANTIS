@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { infringements } from '@/lib/supabase';
@@ -164,13 +165,23 @@ export default function DashboardScreen() {
       {/* Status Indicators */}
       <View style={styles.statusContainer}>
         <View style={[styles.statusBadge, isOnline ? styles.online : styles.offline]}>
+          <Ionicons 
+            name={isOnline ? "wifi" : "wifi-outline"} 
+            size={16} 
+            color={isOnline ? "#10B981" : "#EF4444"} 
+          />
           <Text style={styles.statusText}>
-            {isOnline ? '🟢 Online' : '🔴 Offline'}
+            {isOnline ? ' Online' : ' Offline'}
           </Text>
         </View>
         <View style={[styles.statusBadge, gpsPermission ? styles.online : styles.offline]}>
+          <Ionicons 
+            name={gpsPermission ? "location" : "location-outline"} 
+            size={16} 
+            color={gpsPermission ? "#10B981" : "#EF4444"} 
+          />
           <Text style={styles.statusText}>
-            {gpsPermission ? '📍 GPS Active' : '📍 GPS Off'}
+            {gpsPermission ? ' GPS Active' : ' GPS Off'}
           </Text>
         </View>
       </View>
@@ -178,7 +189,10 @@ export default function DashboardScreen() {
       {/* GPS Permission Alert */}
       {!gpsPermission && (
         <TouchableOpacity style={styles.alertBox} onPress={requestGPSPermission}>
-          <Text style={styles.alertTitle}>⚠️ GPS Permission Required</Text>
+          <View style={styles.alertHeader}>
+            <Ionicons name="warning" size={20} color="#DC2626" />
+            <Text style={styles.alertTitle}> GPS Permission Required</Text>
+          </View>
           <Text style={styles.alertText}>
             Tap here to enable location services for accurate infringement recording
           </Text>
@@ -214,7 +228,7 @@ export default function DashboardScreen() {
           onPress={() => router.push('/(tabs)/infringement')}
         >
           <View style={[styles.actionIcon, styles.primaryActionIcon]}>
-            <Text style={styles.actionIconText}>⚠️</Text>
+            <Ionicons name="warning" size={24} color="#fff" />
           </View>
           <View style={styles.actionContent}>
             <Text style={[styles.actionTitle, styles.primaryActionText]}>Record Infringement</Text>
@@ -222,7 +236,7 @@ export default function DashboardScreen() {
               Capture a new traffic violation
             </Text>
           </View>
-          <Text style={[styles.actionArrow, styles.primaryActionText]}>›</Text>
+          <Ionicons name="chevron-forward" size={24} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -230,7 +244,7 @@ export default function DashboardScreen() {
           onPress={() => router.push('/(tabs)/explore')}
         >
           <View style={styles.actionIcon}>
-            <Text style={styles.actionIconText}>📋</Text>
+            <Ionicons name="list" size={24} color="#3b82f6" />
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionTitle}>View History</Text>
@@ -238,7 +252,7 @@ export default function DashboardScreen() {
               See all records
             </Text>
           </View>
-          <Text style={styles.actionArrow}>›</Text>
+          <Ionicons name="chevron-forward" size={24} color="#666" />
         </TouchableOpacity>
       </View>
 
@@ -331,22 +345,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   alertBox: {
-    backgroundColor: '#FFF8E1',
-    padding: 20,
+    backgroundColor: '#FEF2F2',
+    padding: 16,
     borderRadius: 16,
     marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FFA726',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   alertTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 6,
     color: '#000',
   },
   alertText: {

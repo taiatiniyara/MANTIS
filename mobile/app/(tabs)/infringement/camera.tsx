@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -227,7 +228,7 @@ export default function CameraScreen() {
 
       // Read file as base64
       const base64 = await FileSystem.readAsStringAsync(photo.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       // Upload to Supabase Storage (expects base64 string)
@@ -366,22 +367,34 @@ export default function CameraScreen() {
                 style={styles.cameraButton}
                 onPress={() => setShowCamera(false)}
               >
-                <Text style={styles.cameraButtonText}>✕</Text>
+                <Ionicons name="close" size={28} color="#fff" />
               </TouchableOpacity>
               <Text style={styles.cameraTitle}>
                 {photos.length}/{MAX_PHOTOS} Photos
               </Text>
               <TouchableOpacity style={styles.cameraButton} onPress={toggleCameraFacing}>
-                <Text style={styles.cameraButtonText}>🔄</Text>
+                <Ionicons name="camera-reverse" size={28} color="#fff" />
               </TouchableOpacity>
             </View>
 
             {/* Watermark Info Overlay */}
             <View style={styles.watermarkOverlay}>
-              <Text style={styles.watermarkText}>📸 Photo will include:</Text>
-              <Text style={styles.watermarkDetail}>🕐 {timestamp}</Text>
-              <Text style={styles.watermarkDetail}>👤 {officerName}</Text>
-              <Text style={styles.watermarkDetail}>📍 {locationText}</Text>
+              <View style={styles.watermarkRow}>
+                <Ionicons name="camera" size={16} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.watermarkText}>Photo will include:</Text>
+              </View>
+              <View style={styles.watermarkRow}>
+                <Ionicons name="time" size={14} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.watermarkDetail}>{timestamp}</Text>
+              </View>
+              <View style={styles.watermarkRow}>
+                <Ionicons name="person" size={14} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.watermarkDetail}>{officerName}</Text>
+              </View>
+              <View style={styles.watermarkRow}>
+                <Ionicons name="location" size={14} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.watermarkDetail}>{locationText}</Text>
+              </View>
             </View>
 
             <View style={styles.cameraFooter}>
@@ -435,7 +448,10 @@ export default function CameraScreen() {
               
               {/* Permanent-Looking Watermark Overlay */}
               <View style={styles.watermarkBanner}>
-                <Text style={styles.watermarkBannerText}>🚔 MANTIS | {photoTimestamp}</Text>
+                <View style={styles.watermarkRow}>
+                  <Ionicons name="shield-checkmark" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                  <Text style={styles.watermarkBannerText}>MANTIS | {photoTimestamp}</Text>
+                </View>
                 <Text style={styles.watermarkBannerSubtext}>
                   {officerName} | {latitude && longitude ? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` : 'Location'}
                 </Text>
@@ -443,14 +459,15 @@ export default function CameraScreen() {
               
               {/* Watermark Badge */}
               <View style={styles.photoBadge}>
-                <Text style={styles.photoBadgeText}>✓ Watermarked</Text>
+                <Ionicons name="checkmark-circle" size={12} color="#10B981" style={{ marginRight: 4 }} />
+                <Text style={styles.photoBadgeText}>Watermarked</Text>
               </View>
               
               <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => deletePhoto(index)}
               >
-                <Text style={styles.deleteButtonText}>✕</Text>
+                <Ionicons name="close" size={20} color="#fff" />
               </TouchableOpacity>
               
               <View style={styles.photoInfo}>
@@ -490,7 +507,8 @@ export default function CameraScreen() {
               style={[styles.actionButton, styles.galleryButton]}
               onPress={pickImage}
             >
-              <Text style={styles.actionButtonText}>🖼️ Choose from Gallery</Text>
+              <Ionicons name="images" size={18} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={styles.actionButtonText}>Choose from Gallery</Text>
             </TouchableOpacity>
           </>
         )}
@@ -504,9 +522,12 @@ export default function CameraScreen() {
             {uploading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.uploadButtonText}>
-                ✓ Upload {photos.length} Photo{photos.length > 1 ? 's' : ''}
-              </Text>
+              <>
+                <Ionicons name="checkmark-circle" size={18} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.uploadButtonText}>
+                  Upload {photos.length} Photo{photos.length > 1 ? 's' : ''}
+                </Text>
+              </>
             )}
           </TouchableOpacity>
         )}
@@ -783,6 +804,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     padding: 12,
     borderRadius: 8,
+  },
+  watermarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 2,
   },
   watermarkText: {
     color: '#fff',

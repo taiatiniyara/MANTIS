@@ -2,7 +2,7 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
-import * as FileSystem from 'expo-file-system';
+import { readAsStringAsync } from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -264,9 +264,9 @@ export const storage = {
     bucket = 'evidence-photos'
   ) => {
     try {
-      // Use expo-file-system to read the file as base64
-      const base64 = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.Base64,
+      // Use expo-file-system legacy API to read the file as base64
+      const base64 = await readAsStringAsync(fileUri, {
+        encoding: 'base64',
       });
       
       // Convert base64 to ArrayBuffer

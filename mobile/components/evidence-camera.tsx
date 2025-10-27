@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -122,7 +123,7 @@ export function EvidenceCamera({ onPhotoCapture, onClose }: EvidenceCameraProps)
       <CameraView ref={cameraRef} style={styles.camera} facing={facing}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>✕</Text>
+            <Ionicons name="close" size={32} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.title}>Evidence Photo</Text>
           <View style={styles.placeholder} />
@@ -130,7 +131,7 @@ export function EvidenceCamera({ onPhotoCapture, onClose }: EvidenceCameraProps)
 
         <View style={styles.bottomControls}>
           <TouchableOpacity style={styles.iconButton} onPress={pickFromGallery}>
-            <Text style={styles.iconText}>📷</Text>
+            <Ionicons name="images" size={32} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
@@ -138,7 +139,7 @@ export function EvidenceCamera({ onPhotoCapture, onClose }: EvidenceCameraProps)
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconButton} onPress={toggleCameraFacing}>
-            <Text style={styles.iconText}>🔄</Text>
+            <Ionicons name="camera-reverse" size={32} color="#fff" />
           </TouchableOpacity>
         </View>
       </CameraView>

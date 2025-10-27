@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 import { gpsService, LocationData } from '@/lib/gps-service';
 
 interface InfringementMarker {
@@ -207,14 +208,14 @@ export function MapComponent({
         {/* Center on User Button */}
         {location && (
           <TouchableOpacity style={styles.controlButton} onPress={centerOnUser}>
-            <Text style={styles.controlButtonText}>📍</Text>
+            <Ionicons name="navigate" size={24} color="#007AFF" />
           </TouchableOpacity>
         )}
 
         {/* Fit to Markers Button */}
         {infringements.length > 0 && (
           <TouchableOpacity style={styles.controlButton} onPress={fitToMarkers}>
-            <Text style={styles.controlButtonText}>🗺️</Text>
+            <Ionicons name="map" size={24} color="#007AFF" />
           </TouchableOpacity>
         )}
       </View>

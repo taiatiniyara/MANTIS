@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 
 interface WatermarkedImageProps {
@@ -94,11 +95,6 @@ export function WatermarkedImage({
       style={[styles.container, { width: imageDimensions.width, height: containerHeight }]} 
       collapsable={false}
     >
-      <Image
-        source={{ uri: imageUri }}
-        style={[styles.image, { width: imageDimensions.width, height: imageDimensions.height }]}
-        resizeMode="contain"
-      />
       <View style={[styles.watermarkBar, { width: imageDimensions.width }]}>
         <View style={styles.watermarkContent}>
           <View style={styles.watermarkRow}>
@@ -106,35 +102,40 @@ export function WatermarkedImage({
             <Text style={styles.watermarkText}>{timestamp}</Text>
           </View>
           <View style={styles.watermarkRow}>
-            <Text style={styles.watermarkIcon}>👤</Text>
+            <Ionicons name="person" size={12} color="#FFF" style={{ marginRight: 6 }} />
             <Text style={styles.watermarkText}>{officerName}</Text>
           </View>
           <View style={styles.watermarkRow}>
-            <Text style={styles.watermarkIcon}>📍</Text>
+            <Ionicons name="location" size={12} color="#FFF" style={{ marginRight: 6 }} />
             <Text style={styles.watermarkText} numberOfLines={1}>
               {locationText}
             </Text>
           </View>
           {vehicleId && (
             <View style={styles.watermarkRow}>
-              <Text style={styles.watermarkIcon}>🚗</Text>
+              <Ionicons name="car" size={12} color="#FFF" style={{ marginRight: 6 }} />
               <Text style={styles.watermarkText}>{vehicleId}</Text>
             </View>
           )}
           {infringementType && (
             <View style={styles.watermarkRow}>
-              <Text style={styles.watermarkIcon}>⚠️</Text>
+              <Ionicons name="warning" size={12} color="#FFF" style={{ marginRight: 6 }} />
               <Text style={styles.watermarkText} numberOfLines={1}>
                 {infringementType}
               </Text>
             </View>
           )}
           <View style={styles.watermarkRow}>
-            <Text style={styles.watermarkIcon}>🚔</Text>
+            <Ionicons name="shield-checkmark" size={12} color="#FFF" style={{ marginRight: 6 }} />
             <Text style={styles.watermarkText}>MANTIS Traffic System</Text>
           </View>
         </View>
       </View>
+      <Image
+        source={{ uri: imageUri }}
+        style={[styles.image, { width: imageDimensions.width, height: imageDimensions.height }]}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -152,8 +153,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 30,
     paddingVertical: 16,
-    borderTopWidth: 4,
-    borderTopColor: '#FFD700',
+    borderBottomWidth: 4,
+    borderBottomColor: '#FFD700',
   },
   watermarkContent: {
     gap: 14,

@@ -15,6 +15,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { infringements, storage, supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
@@ -29,7 +30,16 @@ interface Infringement {
   latitude?: number;
   longitude?: number;
   notes: string | null;
+  description?: string | null;
   created_at: string;
+  type?: {
+    code: string;
+    name: string;
+    fine_amount?: number;
+    category?: {
+      name: string;
+    };
+  };
   infringement_type?: {
     code: string;
     description: string;
@@ -50,6 +60,8 @@ export default function InfringementsScreen() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   useEffect(() => {
     loadInfringements();
@@ -169,14 +181,15 @@ export default function InfringementsScreen() {
     }
   };
 
-  const getStatusEmoji = (status: string) => {
+  const getStatusIcon = (status: string) => {
+    const iconProps = { size: 14, color: '#666' };
     switch (status) {
-      case 'all': return '📋';
-      case 'pending': return '⏳';
-      case 'paid': return '✅';
-      case 'disputed': return '⚠️';
-      case 'cancelled': return '❌';
-      default: return '📋';
+      case 'all': return <Ionicons name="list" {...iconProps} />;
+      case 'pending': return <Ionicons name="time" {...iconProps} />;
+      case 'paid': return <Ionicons name="checkmark-circle" {...iconProps} />;
+      case 'disputed': return <Ionicons name="warning" {...iconProps} />;
+      case 'cancelled': return <Ionicons name="close-circle" {...iconProps} />;
+      default: return <Ionicons name="list" {...iconProps} />;
     }
   };
 
@@ -192,7 +205,7 @@ export default function InfringementsScreen() {
         ]}
         onPress={() => setStatusFilter(value as any)}
       >
-        <Text style={styles.filterEmoji}>{getStatusEmoji(value)}</Text>
+        <View style={styles.filterIconContainer}>{getStatusIcon(value)}</View>
         <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
           {label}
         </Text>
@@ -201,12 +214,13 @@ export default function InfringementsScreen() {
   };
 
   const getVehicleIcon = (type: string) => {
+    const iconProps = { size: 24, color: '#3b82f6' };
     switch (type) {
-      case 'car': return '🚗';
-      case 'motorcycle': return '🏍️';
-      case 'truck': return '🚛';
-      case 'bus': return '🚌';
-      default: return '🚗';
+      case 'car': return <Ionicons name="car" {...iconProps} />;
+      case 'motorcycle': return <Ionicons name="bicycle" {...iconProps} />;
+      case 'truck': return <MaterialIcons name="local-shipping" {...iconProps} />;
+      case 'bus': return <Ionicons name="bus" {...iconProps} />;
+      default: return <Ionicons name="car" {...iconProps} />;
     }
   };
 
@@ -223,7 +237,7 @@ export default function InfringementsScreen() {
         {/* Header with vehicle info and status */}
         <View style={styles.cardHeader}>
           <View style={styles.vehicleInfo}>
-            <Text style={styles.vehicleIcon}>{getVehicleIcon(item.vehicle_type || 'other')}</Text>
+            <View style={styles.vehicleIconContainer}>{getVehicleIcon(item.vehicle_type || 'other')}</View>
             <View>
               <Text style={styles.vehicleId}>{item.vehicle_id}</Text>
               <Text style={styles.vehicleType}>{item.vehicle_type || 'Unknown'}</Text>
@@ -236,38 +250,16 @@ export default function InfringementsScreen() {
 
         {/* Infringement type */}
         <View style={styles.infringementType}>
-          <Text style={styles.infringementCode}>{item.infringement_type?.code || 'N/A'}</Text>
+          <Text style={styles.infringementCode}>{item.type?.code || 'N/A'}</Text>
           <Text style={styles.infringementDescription}>
-            {item.infringement_type?.description || 'No description available'}
+            {item.type?.name || 'No description available'}
           </Text>
         </View>
 
-        {/* Fine amount - prominent */}
-        <View style={styles.fineContainer}>
-          <Text style={styles.fineLabel}>Fine Amount</Text>
-          <Text style={styles.fineAmount}>$ {(item.fine_amount || 0).toFixed(2)}</Text>
-        </View>
-
-        {/* Additional details */}
+        {/* Date only */}
         <View style={styles.detailsContainer}>
-          {item.notes && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailIcon}>📝</Text>
-              <Text style={styles.detailText} numberOfLines={2}>
-                {item.notes}
-              </Text>
-            </View>
-          )}
-          
           <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📍</Text>
-            <Text style={styles.detailText}>
-              {(item.latitude || 0).toFixed(5)}, {(item.longitude || 0).toFixed(5)}
-            </Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>🕐</Text>
+            <Ionicons name="time-outline" size={16} color="#8E8E93" style={styles.detailIcon} />
             <Text style={styles.detailText}>{formatDate(item.created_at)}</Text>
           </View>
         </View>
@@ -319,7 +311,7 @@ export default function InfringementsScreen() {
               style={styles.modalCloseButton}
               onPress={() => setShowDetailsModal(false)}
             >
-              <Text style={styles.modalCloseText}>✕</Text>
+              <Ionicons name="close" size={28} color="#000" />
             </TouchableOpacity>
           </View>
 
@@ -329,116 +321,139 @@ export default function InfringementsScreen() {
               <Text style={styles.modalStatusText}>{(selectedInfringement.status || 'pending').toUpperCase()}</Text>
             </View>
 
-            {/* Vehicle Information */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionTitle}>🚗 Vehicle Information</Text>
-              <View style={styles.modalDetailCard}>
-                <View style={styles.modalDetailRow}>
-                  <Text style={styles.modalDetailLabel}>Registration:</Text>
-                  <Text style={styles.modalDetailValue}>{selectedInfringement.vehicle_id}</Text>
+            {/* Compact Info Card */}
+            <View style={styles.modalDetailCard}>
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelWithIcon}>
+                  <Ionicons name="car-outline" size={16} color="#666" />
+                  <Text style={styles.detailLabel}> Vehicle</Text>
                 </View>
-                {selectedInfringement.vehicle_type && (
-                  <View style={styles.modalDetailRow}>
-                    <Text style={styles.modalDetailLabel}>Type:</Text>
-                    <Text style={styles.modalDetailValue}>{selectedInfringement.vehicle_type}</Text>
+                <Text style={styles.detailValue}>{selectedInfringement.vehicle_id}</Text>
+              </View>
+              
+              {selectedInfringement.vehicle_type && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Type</Text>
+                  <Text style={styles.detailValue}>{selectedInfringement.vehicle_type}</Text>
+                </View>
+              )}
+
+              <View style={styles.dividerLine} />
+
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelWithIcon}>
+                  <Ionicons name="warning-outline" size={16} color="#666" />
+                  <Text style={styles.detailLabel}> Violation</Text>
+                </View>
+                <Text style={styles.detailValue}>{selectedInfringement.type?.code || 'N/A'}</Text>
+              </View>
+              
+              <Text style={styles.violationDesc}>
+                {selectedInfringement.type?.name || 'No description'}
+              </Text>
+
+              {selectedInfringement.description && (
+                <>
+                  <View style={styles.dividerLine} />
+                  <View style={styles.detailLabelWithIcon}>
+                    <Ionicons name="document-text-outline" size={16} color="#666" />
+                    <Text style={styles.detailLabel}> Summary</Text>
                   </View>
-                )}
-              </View>
-            </View>
+                  <Text style={styles.notesText}>{selectedInfringement.description}</Text>
+                </>
+              )}
 
-            {/* Infringement Type */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionTitle}>⚠️ Violation Details</Text>
-              <View style={styles.modalDetailCard}>
-                <Text style={styles.modalViolationCode}>
-                  {selectedInfringement.infringement_type?.code || 'N/A'}
-                </Text>
-                <Text style={styles.modalViolationDescription}>
-                  {selectedInfringement.infringement_type?.description || 'No description available'}
-                </Text>
-              </View>
-            </View>
+              <View style={styles.dividerLine} />
 
-            {/* Fine Amount */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionTitle}>💰 Fine Amount</Text>
-              <View style={styles.modalFineCard}>
-                <Text style={styles.modalFineAmount}>
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelWithIcon}>
+                  <Ionicons name="cash-outline" size={16} color="#666" />
+                  <Text style={styles.detailLabel}> Fine</Text>
+                </View>
+                <Text style={styles.detailValueHighlight}>
                   $ {(selectedInfringement.fine_amount || 0).toFixed(2)}
                 </Text>
               </View>
-            </View>
 
-            {/* Location */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionTitle}>📍 Location</Text>
-              <View style={styles.modalDetailCard}>
-                <View style={styles.modalDetailRow}>
-                  <Text style={styles.modalDetailLabel}>Latitude:</Text>
-                  <Text style={styles.modalDetailValue}>
-                    {(selectedInfringement.latitude || 0).toFixed(6)}
-                  </Text>
+              <View style={styles.dividerLine} />
+
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelWithIcon}>
+                  <Ionicons name="location-outline" size={16} color="#666" />
+                  <Text style={styles.detailLabel}> Location</Text>
                 </View>
-                <View style={styles.modalDetailRow}>
-                  <Text style={styles.modalDetailLabel}>Longitude:</Text>
-                  <Text style={styles.modalDetailValue}>
-                    {(selectedInfringement.longitude || 0).toFixed(6)}
-                  </Text>
-                </View>
+                <Text style={styles.detailValue}>
+                  {(selectedInfringement.latitude || 0).toFixed(4)}, {(selectedInfringement.longitude || 0).toFixed(4)}
+                </Text>
               </View>
-            </View>
 
-            {/* Notes */}
-            {selectedInfringement.notes && (
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>📝 Notes</Text>
-                <View style={styles.modalDetailCard}>
-                  <Text style={styles.modalNotesText}>{selectedInfringement.notes}</Text>
+              <View style={styles.dividerLine} />
+
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelWithIcon}>
+                  <Ionicons name="time-outline" size={16} color="#666" />
+                  <Text style={styles.detailLabel}> Time</Text>
                 </View>
-              </View>
-            )}
-
-            {/* Date/Time */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionTitle}>🕐 Recorded</Text>
-              <View style={styles.modalDetailCard}>
-                <Text style={styles.modalDateText}>
+                <Text style={styles.detailValue}>
                   {new Date(selectedInfringement.created_at).toLocaleString('en-FJ', {
-                    dateStyle: 'full',
-                    timeStyle: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </Text>
               </View>
+
+              {selectedInfringement.notes && (
+                <>
+                  <View style={styles.dividerLine} />
+                  <View style={styles.detailLabelWithIcon}>
+                    <Ionicons name="create-outline" size={16} color="#666" />
+                    <Text style={styles.detailLabel}> Notes</Text>
+                  </View>
+                  <Text style={styles.notesText}>{selectedInfringement.notes}</Text>
+                </>
+              )}
             </View>
 
-            {/* Photos - Placeholder for now, will show if photos are available */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalSectionTitle}>📸 Evidence Photos</Text>
-              <View style={styles.modalDetailCard}>
+            {/* Photos */}
+            {(loadingPhotos || photoUrls.length > 0) && (
+              <View style={styles.photoSection}>
+                <View style={styles.photoSectionHeader}>
+                  <Ionicons name="camera-outline" size={18} color="#2C3E50" />
+                  <Text style={styles.photoSectionTitle}> Photos</Text>
+                </View>
                 {loadingPhotos ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                  <View style={styles.loadingPhotosContainer}>
                     <ActivityIndicator size="large" color="#3b82f6" />
-                    <Text style={styles.modalPhotoPlaceholder}>Loading photos...</Text>
+                    <Text style={styles.loadingPhotosText}>Loading...</Text>
                   </View>
                 ) : photoUrls.length > 0 ? (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {photoUrls.map((url, index) => (
-                      <View key={index} style={{ marginRight: 12 }}>
+                      <TouchableOpacity 
+                        key={index} 
+                        style={styles.photoThumb}
+                        onPress={() => {
+                          setSelectedPhotoIndex(index);
+                          setShowPhotoViewer(true);
+                        }}
+                        activeOpacity={0.8}
+                      >
                         <Image
                           source={{ uri: url }}
-                          style={{ width: 200, height: 200, borderRadius: 8 }}
+                          style={styles.thumbnailImage}
                           resizeMode="cover"
                         />
-                      </View>
+                        <View style={styles.photoOverlay}>
+                          <Ionicons name="search" size={20} color="#FFF" />
+                        </View>
+                      </TouchableOpacity>
                     ))}
                   </ScrollView>
-                ) : (
-                  <Text style={styles.modalPhotoPlaceholder}>
-                    No photos available
-                  </Text>
-                )}
+                ) : null}
               </View>
-            </View>
+            )}
 
             <View style={{ height: 40 }} />
           </ScrollView>
@@ -468,7 +483,7 @@ export default function InfringementsScreen() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search vehicle ID..."
@@ -606,8 +621,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
     marginRight: 8,
   },
-  filterEmoji: {
-    fontSize: 14,
+  filterIconContainer: {
     marginRight: 6,
   },
   filterChipText: {
@@ -649,6 +663,9 @@ const styles = StyleSheet.create({
   },
   vehicleIcon: {
     fontSize: 32,
+    marginRight: 12,
+  },
+  vehicleIconContainer: {
     marginRight: 12,
   },
   vehicleId: {
@@ -824,6 +841,192 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 1,
   },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    flex: 0.35,
+    lineHeight: 22,
+  },
+  detailLabelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 0.35,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    flex: 0.65,
+    textAlign: 'right',
+    lineHeight: 22,
+  },
+  detailValueHighlight: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E7D32',
+    flex: 0.65,
+    textAlign: 'right',
+  },
+  violationDesc: {
+    fontSize: 13,
+    color: '#555',
+    marginTop: -8,
+    marginBottom: 10,
+    lineHeight: 20,
+    paddingLeft: 4,
+  },
+  notesText: {
+    fontSize: 13,
+    color: '#333',
+    marginTop: 8,
+    lineHeight: 21,
+    paddingLeft: 4,
+  },
+  dividerLine: {
+    height: 1,
+    backgroundColor: '#E8E8E8',
+    marginVertical: 16,
+  },
+  photoSection: {
+    marginTop: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  photoSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 14,
+  },
+  photoSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  loadingPhotosContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  loadingPhotosText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: '#666',
+  },
+  photoThumb: {
+    marginRight: 14,
+  },
+  thumbnailImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 10,
+  },
+  photoOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    borderRadius: 20,
+    padding: 8,
+  },
+  photoExpandIcon: {
+    fontSize: 16,
+  },
+  modalDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  modalDetailLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    flex: 0.4,
+  },
+  modalDetailValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#000',
+    flex: 0.6,
+    textAlign: 'right',
+  },
+  modalDetailValueHighlight: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2E7D32',
+    flex: 0.6,
+    textAlign: 'right',
+  },
+  modalViolationDesc: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: -6,
+    marginBottom: 6,
+    lineHeight: 17,
+  },
+  modalNotesText: {
+    fontSize: 13,
+    color: '#333',
+    marginTop: 6,
+    lineHeight: 19,
+  },
+  modalDividerLine: {
+    height: 1,
+    backgroundColor: '#E5E5EA',
+    marginVertical: 10,
+  },
+  modalPhotoSection: {
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  modalPhotoSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 12,
+  },
+  modalLoadingPhotosContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  modalLoadingPhotosText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: '#666',
+  },
+  modalPhotoThumb: {
+    marginRight: 12,
+  },
+  modalThumbnailImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+  },
+  modalPhotoOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    padding: 6,
+  },
+  modalPhotoExpandIcon: {
+    fontSize: 14,
+  },
   modalSection: {
     marginBottom: 20,
   },
@@ -842,56 +1045,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
-  },
-  modalDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modalDetailLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  modalDetailValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    flex: 1,
-    textAlign: 'right',
-  },
-  modalViolationCode: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#007AFF',
-    marginBottom: 8,
-  },
-  modalViolationDescription: {
-    fontSize: 15,
-    color: '#2C3E50',
-    lineHeight: 22,
-  },
-  modalFineCard: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalFineAmount: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#2E7D32',
-  },
-  modalNotesText: {
-    fontSize: 15,
-    color: '#2C3E50',
-    lineHeight: 24,
-  },
-  modalDateText: {
-    fontSize: 14,
-    color: '#2C3E50',
-    lineHeight: 22,
   },
   modalPhotoPlaceholder: {
     fontSize: 14,
