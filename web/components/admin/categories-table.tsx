@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Folder } from "lucide-react";
 import { EditCategoryDialog } from "./edit-category-dialog";
@@ -45,7 +46,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border">
+      <ScrollableTable maxHeight="calc(100vh - 18rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -100,7 +101,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollableTable>
 
       {editingCategory && (
         <EditCategoryDialog

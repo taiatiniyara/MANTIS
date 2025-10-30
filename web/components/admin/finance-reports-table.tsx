@@ -9,6 +9,7 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, DollarSign } from "lucide-react";
@@ -170,7 +171,7 @@ export function FinanceReportsTable({
         </Button>
       </div>
 
-      <div className="rounded-lg border">
+      <ScrollableTable maxHeight="calc(100vh - 20rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -256,7 +257,7 @@ export function FinanceReportsTable({
             </TableRow>
           </TableFooter>
         </Table>
-      </div>
+      </ScrollableTable>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, FileText } from "lucide-react";
@@ -58,7 +59,7 @@ export function TypesTable({ types, categories }: TypesTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border">
+      <ScrollableTable maxHeight="calc(100vh - 18rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -133,7 +134,7 @@ export function TypesTable({ types, categories }: TypesTableProps) {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollableTable>
 
       {editingType && (
         <EditTypeDialog

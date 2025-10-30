@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, FileText, Eye } from "lucide-react";
@@ -142,7 +143,7 @@ export function InfringementsTable({
 
   return (
     <>
-      <div className="rounded-lg border">
+      <ScrollableTable maxHeight="calc(100vh - 18rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -255,7 +256,7 @@ export function InfringementsTable({
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollableTable>
 
       {viewingInfringement && (
         <ViewInfringementDialog

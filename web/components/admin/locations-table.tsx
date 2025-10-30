@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Pencil, Trash2 } from "lucide-react";
@@ -82,7 +83,7 @@ export function LocationsTable({
 
   return (
     <>
-      <div className="rounded-lg border">
+      <ScrollableTable maxHeight="calc(100vh - 18rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -157,7 +158,7 @@ export function LocationsTable({
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollableTable>
 
       {editingLocation && (
         <EditLocationDialog

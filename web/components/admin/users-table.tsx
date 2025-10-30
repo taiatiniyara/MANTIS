@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Search } from "lucide-react";
@@ -144,7 +145,7 @@ export function UsersTable({ users, isSuperAdmin, currentUserId, agencies, locat
       <div className="text-sm text-muted-foreground">
         Showing {filteredUsers.length} of {users.length} users
       </div>
-      <div className="rounded-md border">
+      <ScrollableTable maxHeight="calc(100vh - 22rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -201,7 +202,7 @@ export function UsersTable({ users, isSuperAdmin, currentUserId, agencies, locat
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollableTable>
       {editingUser && (
         <EditUserDialog
           user={editingUser}

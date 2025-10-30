@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Eye, Database } from "lucide-react";
@@ -134,7 +135,7 @@ export function AuditLogsTable({ auditLogs, userRole }: AuditLogsTableProps) {
           </Button>
         </div>
 
-        <div className="rounded-lg border">
+        <ScrollableTable maxHeight="calc(100vh - 20rem)">
           <Table>
             <TableHeader>
               <TableRow>
@@ -188,7 +189,7 @@ export function AuditLogsTable({ auditLogs, userRole }: AuditLogsTableProps) {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </ScrollableTable>
       </div>
 
       {selectedLog && (

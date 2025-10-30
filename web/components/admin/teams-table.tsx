@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ScrollableTable } from "@/components/ui/scrollable-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, UserPlus, Pencil, Trash2, Route } from "lucide-react";
@@ -79,7 +80,7 @@ export function TeamsTable({
 
   return (
     <>
-      <div className="rounded-lg border">
+      <ScrollableTable maxHeight="calc(100vh - 18rem)">
         <Table>
           <TableHeader>
             <TableRow>
@@ -158,7 +159,7 @@ export function TeamsTable({
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollableTable>
 
       {editingTeam && (
         <EditTeamDialog
