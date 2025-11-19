@@ -118,10 +118,13 @@ npx supabase db push
 You should see:
 ```
 ✓ Connecting to Supabase
-✓ Applying migration 001_init.sql
-✓ Applying migration 002_finance_reports.sql
-✓ Applying migration 003_rls_policies.sql
-✓ Migrations complete!
+✓ Applying migration 20241119000001_init_core_tables.sql
+✓ Applying migration 20241119000002_infringements.sql
+✓ Applying migration 20241119000003_payments_finance.sql
+✓ Applying migration 20241119000004_gps_tracking.sql
+✓ Applying migration 20241119000005_notifications_storage.sql
+✓ Applying migration 20241119000006_auth_sync_triggers.sql
+✓ Migrations complete! (6 migrations applied)
 ```
 
 ---

@@ -37,11 +37,11 @@ A comprehensive traffic infringement management platform for Fiji, unifying the 
 **Stack**: Expo SDK 54, React Native 0.81.4, TypeScript
 
 ### 🗄️ Database
-- 35+ tables with full relational schema
-- 22 migrations for structured evolution
+- 17 core tables with full relational schema
+- 6 migrations for structured evolution
 - PostGIS integration for geospatial analysis
-- Row-Level Security (100+ policies, optional)
-- Audit logging and data archiving
+- Row-Level Security policies (optional)
+- Audit logging and notifications
 - Supabase storage for evidence photos
 
 ---
@@ -53,8 +53,8 @@ mantis/
 ├── web/                    # Next.js 15 admin portal
 ├── mobile/                 # React Native/Expo mobile app
 ├── supabase/              # Supabase configuration & migrations
-│   ├── migrations/         # 22 SQL migration files
-│   └── seeds/              # Reference data
+│   ├── migrations/         # 6 SQL migration files
+│   └── config.toml         # Supabase config
 ├── docs/                   # Documentation
 │   ├── GETTING_STARTED.md  # Setup guide
 │   ├── DATABASE_SETUP.md   # Database configuration
@@ -168,11 +168,11 @@ mantis/
 
 ## 🗺️ GIS & Mapping
 
-- **Interactive Maps**: Leaflet.js integration
-- **Route Management**: Polygon-based patrol coverage areas
-- **Waypoint System**: Route planning and visualization
+- **Web Maps**: Leaflet.js integration for admin portal
+- **Mobile Maps**: React Native Maps (Google Maps) for mobile app
+- **Route Management**: Route waypoints for patrol planning
+- **GPS Tracking**: Real-time officer location tracking
 - **Spatial Queries**: PostGIS-powered geographic analysis
-- **Heatmaps**: Traffic violation pattern visualization
 
 ---
 
@@ -256,8 +256,8 @@ Submit to Google Play Store and Apple App Store.
 - **React Components**: 70+
 - **Database Tables**: 35+
 - **API Endpoints**: 50+
-- **Database Migrations**: 22
-- **RLS Policies**: 100+ (optional)
+- **Database Migrations**: 6
+- **RLS Policies**: Enabled on all tables
 - **Mobile Screens**: 6 main screens
 
 ---
@@ -299,5 +299,5 @@ For setup and configuration help:
 Complete web dashboards, mobile app with offline support, comprehensive security, GIS integration, payment processing, and document management.
 
 **Version**: 1.0.0  
-**Last Updated**: October 27, 2025  
+**Last Updated**: November 20, 2025  
 **License**: Proprietary - Internal System Only

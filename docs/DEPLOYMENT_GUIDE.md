@@ -1,6 +1,6 @@
 # 🚀 MANTIS Production Deployment Guide
 
-**Status**: ✅ Production Ready | **Version**: 1.0.0 | **Date**: October 22, 2025
+**Status**: ✅ Production Ready | **Version**: 1.0.0 | **Date**: November 20, 2025
 
 This guide provides comprehensive instructions for deploying the MANTIS platform to production environments, including web application, mobile application, and database setup.
 
@@ -57,15 +57,15 @@ This guide provides comprehensive instructions for deploying the MANTIS platform
    supabase link --project-ref [your-project-ref]
    ```
 
-4. **Apply All Migrations** (in order):
+4. **Apply All Migrations** (6 migrations):
    ```bash
-   # Apply migrations 001-014
+   # Apply all 6 migrations at once
    supabase db push
    ```
 
 5. **Verify Migration Success**:
    - Check Supabase Dashboard → Database → Tables
-   - Should see 35+ tables including spatial tables
+   - Should see 17 core tables including gps_tracking with PostGIS
 
 ### Step 3: Configure Storage Buckets
 
@@ -171,8 +171,8 @@ This guide provides comprehensive instructions for deploying the MANTIS platform
    NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-anon-key]
    SUPABASE_SERVICE_ROLE_KEY=[your-service-role-key]
 
-   # Google Maps (Optional - for GIS features)
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=[your-google-maps-key]
+   # Web uses Leaflet (no API key needed)
+   # Mobile uses Google Maps - API key configured in mobile/.env
 
    # Payment Integration (Optional)
    STRIPE_SECRET_KEY=[your-stripe-secret-key]
@@ -244,7 +244,7 @@ This guide provides comprehensive instructions for deploying the MANTIS platform
    - Dashboard loads with analytics
    - User management works
    - Infringement recording functions
-   - Maps display correctly (if Google Maps configured)
+   - Leaflet maps display correctly (web uses OpenStreetMap tiles)
 
 3. **Performance Check**:
    - Run Lighthouse audit

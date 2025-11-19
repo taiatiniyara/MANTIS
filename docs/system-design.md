@@ -27,7 +27,8 @@ It replaces fragmented, paper‑ or Excel‑based processes with a secure, cloud
 - **Docs**
   - Markdown files for schema, API, onboarding, and sprint tracking.
 - **Migrations**
-  - SQL migrations in `supabase/migrations/` for schema evolution.
+  - 6 SQL migrations in `supabase/migrations/` for schema evolution.
+  - 17 core tables with PostGIS for spatial queries.
   - Database managed through Supabase migrations and dashboard.
 
 ---

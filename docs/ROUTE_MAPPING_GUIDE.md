@@ -1,21 +1,21 @@
 # Route Mapping Feature for Agency Admins
 
 ## Overview
-Agency admins can now plot and visualize their patrol routes on an interactive map. This feature integrates GPS coordinates from locations to display route start and end points on Google Maps.
+Agency admins can visualize patrol routes on interactive maps. The **web portal uses Leaflet.js** for admin mapping, while the **mobile app uses Google Maps** (React Native Maps) for field operations.
 
 ---
 
 ## 🗺️ Features Added
 
-### 1. Routes Map View Page
+### 1. Routes Map View Page (Web - Leaflet)
 **URL:** `/protected/routes/map`
 
 #### Capabilities
-- ✅ View all routes from your agency on an interactive map
-- ✅ See route start and end locations with markers
+- ✅ View all routes from your agency on an interactive Leaflet map
+- ✅ See route waypoints with markers
 - ✅ Detailed route information with GPS coordinates
 - ✅ Visual indicators for routes missing GPS data
-- ✅ Interactive Google Maps integration
+- ✅ Interactive mapping with OpenStreetMap tiles
 
 #### Access
 - Navigate to Routes Management (`/protected/routes`)
@@ -434,7 +434,8 @@ Potential improvements:
 - [Agency Admin Management Guide](./AGENCY_ADMIN_MANAGEMENT.md)
 - [Agency Admin UI Guide](./AGENCY_ADMIN_UI_GUIDE.md)
 - **GIS Integration:** Included in `supabase/migrations/20241119000004_gps_tracking.sql`
-- [Google Maps Setup](./WINDOWS_SETUP.md)
+- **Web Maps:** Leaflet.js (no API key needed)
+- **Mobile Maps:** React Native Maps with Google Maps provider
 
 ---
 

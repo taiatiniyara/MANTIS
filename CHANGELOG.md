@@ -7,26 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - October 27, 2025
+## [1.0.0] - November 20, 2025
 
 ### 🎉 Production Release
-MANTIS Platform is now **100% complete and production-ready** with all features implemented, tested, and documented.
+MANTIS Platform is now **production-ready** with core features implemented, tested, and documented.
 
 ### ✨ Added
 
 #### GIS & Mapping
-- **Leaflet.js Integration** - Migrated from Google Maps to Leaflet for better control and no API costs
-- **Polygon Coverage Areas** - Route patrol areas can now be defined using polygon drawing tools
-- **Route Waypoints** - Added waypoint management for route planning
-- **Heatmap Overlays** - Visualize infringement hotspots with density mapping
+- **Leaflet.js Integration** - Web portal uses Leaflet.js for mapping
+- **React Native Maps** - Mobile app uses Google Maps via react-native-maps
+- **Route Waypoints** - Waypoint management for route planning
+- **GPS Tracking** - Real-time officer location tracking with PostGIS
 - **PostGIS Spatial Queries** - Advanced geospatial analysis capabilities
 
 #### Database
-- **Migration 015** - Supabase storage bucket configuration
-- **Migration 016** - Route waypoint management schema
-- **Migration 017** - Polygon coverage areas for routes
-- **Migration 018** - Schema optimization (removed location_id from infringements)
-- **Migration 019** - Optional RLS disable for development environments
+- **Migration 001** - Core tables (agencies, users, locations, teams, routes)
+- **Migration 002** - Infringement system (categories, types, infringements, evidence)
+- **Migration 003** - Payments and finance tracking
+- **Migration 004** - GPS tracking with PostGIS
+- **Migration 005** - Notifications and audit logging
+- **Migration 006** - Auth sync triggers and automation
 
 #### Mobile Application
 - **Biometric Authentication** - Face ID, Touch ID, and Fingerprint support
@@ -44,22 +45,23 @@ MANTIS Platform is now **100% complete and production-ready** with all features 
 
 ### 🔄 Changed
 
-#### GIS Migration
-- **Replaced Google Maps** with Leaflet.js throughout the application
-- **Updated all map components** to use Leaflet API
-- **Migrated coordinates** to Leaflet's [lat, lng] format
-- **Improved performance** with client-side rendering
+#### Platform Architecture
+- **Web Portal** - Uses Leaflet.js for interactive mapping
+- **Mobile App** - Uses React Native Maps (Google Maps provider)
+- **Database** - PostgreSQL with PostGIS extension for spatial queries
+- **Authentication** - Supabase Auth with automatic user profile creation
 
 #### Documentation
-- **Updated all references** from Google Maps to Leaflet
-- **Added migration guide** (GOOGLE_MAPS_TO_LEAFLET_MIGRATION.md)
-- **Enhanced GPS documentation** (GPS_COORDINATES_REFERENCE.md)
-- **Updated route mapping guide** (ROUTE_MAPPING_GUIDE.md)
+- **Updated README** to reflect actual project state
+- **Clarified mapping strategy** - Leaflet for web, Google Maps for mobile
+- **Accurate migration count** - 6 migrations, 17 core tables
+- **Updated guides** to match implemented features
 
 #### Database
-- **Optimized schema** by removing redundant location_id field
-- **Added spatial indexes** for improved query performance
-- **Enhanced storage integration** with Supabase buckets
+- **Core schema** includes all essential tables for traffic management
+- **Spatial indexes** on GPS tracking for performance
+- **RLS policies** enabled on all tables for security
+- **Audit logging** tracks all system changes
 
 ### 🐛 Fixed
 - **Map rendering issues** on mobile devices
@@ -179,54 +181,48 @@ MANTIS Platform is now **100% complete and production-ready** with all features 
 
 ## Migration Guide
 
-### From 0.9.5 to 1.0.0
+### Setting Up the Project
 
 #### Database Migrations
-Run migrations 015-019 in order:
+Run all 6 migrations in order:
 ```bash
-# Migration 015: Storage buckets
-supabase migration up 015_storage_buckets.sql
+# Apply all migrations at once
+supabase db push
 
-# Migration 016: Route waypoints
-supabase migration up 016_route_waypoints.sql
-
-# Migration 017: Polygon coverage areas
-supabase migration up 017_route_polygon_areas.sql
-
-# Migration 018: Schema optimization
-supabase migration up 018_remove_location_id_from_infringements.sql
-
-# Migration 019: Optional RLS disable (development only)
-# Only run if you want to disable RLS for development
-supabase migration up 019_disable_all_rls.sql
+# Or apply individually:
+supabase migration up 20241119000001_init_core_tables.sql
+supabase migration up 20241119000002_infringements.sql
+supabase migration up 20241119000003_payments_finance.sql
+supabase migration up 20241119000004_gps_tracking.sql
+supabase migration up 20241119000005_notifications_storage.sql
+supabase migration up 20241119000006_auth_sync_triggers.sql
 ```
 
-#### Map Component Updates
-Replace Google Maps imports with Leaflet:
+#### Web Application (Leaflet)
+The web portal uses Leaflet.js for mapping:
 ```typescript
-// Old
-import { GoogleMap, Marker } from '@react-google-maps/api';
-
-// New
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+const map = L.map('map').setView([-18.1416, 178.4419], 13);
 ```
 
-#### Coordinate Format
-Update coordinate order from [lng, lat] to [lat, lng]:
+#### Mobile Application (Google Maps)
+The mobile app uses React Native Maps:
 ```typescript
-// Old (Google Maps)
-const position = { lat: -18.1416, lng: 178.4419 };
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
-// New (Leaflet)
-const position = [-18.1416, 178.4419]; // [lat, lng]
+<MapView
+  provider={PROVIDER_GOOGLE}
+  region={{ latitude: -18.1416, longitude: 178.4419, ... }}
+/>
 ```
 
-### Breaking Changes
-- **Map API**: Google Maps replaced with Leaflet
-- **Coordinate Format**: Changed to [lat, lng] format
-- **Storage**: Now requires Supabase storage buckets setup
-- **RLS**: Optional in development (migration 019)
+### Key Features
+- **6 Database Migrations**: Complete schema with 17 core tables
+- **Dual Map Strategy**: Leaflet for web, Google Maps for mobile
+- **PostGIS Enabled**: Spatial queries and GPS tracking
+- **RLS Policies**: Row-level security on all tables
 
 ---
 
@@ -286,7 +282,7 @@ supabase migration up 018_remove_location_id_from_infringements.sql
 
 **Current Version**: 1.0.0  
 **Status**: Production Ready  
-**Last Updated**: October 27, 2025
+**Last Updated**: November 20, 2025
 
 ---
 

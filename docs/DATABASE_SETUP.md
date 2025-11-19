@@ -90,15 +90,27 @@ Apply all database migrations:
 supabase db push
 ```
 
-This will create all the tables:
-- ✅ agencies
-- ✅ locations
-- ✅ users
-- ✅ teams
-- ✅ routes
-- ✅ team_routes
-- ✅ team_members
-- ✅ infringement_categories
+This will create all 17 tables across 6 migrations:
+
+**Migration 001**: Core tables
+- ✅ agencies, locations, users, teams, routes
+- ✅ route_waypoints, team_members, team_routes
+
+**Migration 002**: Infringement system
+- ✅ infringement_categories, infringement_types
+- ✅ infringements, evidence_photos
+
+**Migration 003**: Finance
+- ✅ payments, payment_reminders
+
+**Migration 004**: GPS tracking
+- ✅ gps_tracking (with PostGIS)
+
+**Migration 005**: System features
+- ✅ notifications, audit_logs
+
+**Migration 006**: Auth sync
+- ✅ Triggers and functions
 - ✅ infringement_types
 - ✅ infringements
 - ✅ finance_reports (view)
