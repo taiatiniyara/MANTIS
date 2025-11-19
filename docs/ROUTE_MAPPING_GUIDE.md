@@ -433,7 +433,7 @@ Potential improvements:
 
 - [Agency Admin Management Guide](./AGENCY_ADMIN_MANAGEMENT.md)
 - [Agency Admin UI Guide](./AGENCY_ADMIN_UI_GUIDE.md)
-- [GIS Integration](../db/migrations/014_gis_integration.sql)
+- **GIS Integration:** Included in `supabase/migrations/20241119000004_gps_tracking.sql`
 - [Google Maps Setup](./WINDOWS_SETUP.md)
 
 ---

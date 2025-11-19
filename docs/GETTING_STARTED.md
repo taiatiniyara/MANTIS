@@ -79,7 +79,7 @@ npm start
 MANTIS/
 ├── web/              # Next.js admin dashboard
 ├── mobile/           # React Native officer app
-├── db/               # Database migrations & seeds
+├── supabase/         # Supabase configuration & migrations
 ├── docs/             # Documentation
 └── supabase/         # Supabase config
 ```

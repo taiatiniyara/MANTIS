@@ -52,7 +52,7 @@ A comprehensive traffic infringement management platform for Fiji, unifying the 
 mantis/
 ├── web/                    # Next.js 15 admin portal
 ├── mobile/                 # React Native/Expo mobile app
-├── db/                     # Database migrations & seeds
+├── supabase/              # Supabase configuration & migrations
 │   ├── migrations/         # 22 SQL migration files
 │   └── seeds/              # Reference data
 ├── docs/                   # Documentation

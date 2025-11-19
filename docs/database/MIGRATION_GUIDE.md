@@ -35,7 +35,7 @@ You must apply these migrations in sequence:
 
 **Steps**:
 1. In SQL Editor, click **New Query**
-2. Open file: `db/migrations/013_add_team_leader.sql`
+2. Run migration: The `leader_id` field is included in `supabase/migrations/20241119000001_init_core_tables.sql`
 3. Copy **ALL** content from the file
 4. Paste into the Supabase SQL Editor
 5. Click **Run** (or press `Ctrl+Enter`)
@@ -57,7 +57,7 @@ You must apply these migrations in sequence:
 
 **Steps**:
 1. In SQL Editor, click **New Query** (new tab)
-2. Open file: `db/migrations/014_gis_integration.sql`
+2. Run migration: GIS features are in `supabase/migrations/20241119000004_gps_tracking.sql`
 3. Copy **ALL** content from the file
 4. Paste into the Supabase SQL Editor
 5. Click **Run** (or press `Ctrl+Enter`)

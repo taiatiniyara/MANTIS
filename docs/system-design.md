@@ -27,8 +27,8 @@ It replaces fragmented, paper‑ or Excel‑based processes with a secure, cloud
 - **Docs**
   - Markdown files for schema, API, onboarding, and sprint tracking.
 - **Migrations**
-  - SQL migrations in `db/migrations/` for schema evolution.
-  - Seed data in `db/seeds/` for agencies, locations, categories, and types.
+  - SQL migrations in `supabase/migrations/` for schema evolution.
+  - Database managed through Supabase migrations and dashboard.
 
 ---
 
@@ -161,8 +161,7 @@ It replaces fragmented, paper‑ or Excel‑based processes with a secure, cloud
 - `docs/onboarding.md`: setup guide.
 - `docs/sprint-tracker.md`: sprint planning.
 - `docs/system-design.md`: architecture, roles, flows.
-- `db/migrations/`: SQL migrations.
-- `db/seeds/`: seed data SQL scripts.
+- `supabase/migrations/`: SQL migrations for database schema.
 - `apps/web/`: Next.js web dashboard.
 - `apps/mobile/`: React Native/Expo mobile app.
 - `docs/ui-spec.md`: Defines theme (blue + zinc), typography, and component guidelines.

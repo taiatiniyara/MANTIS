@@ -376,7 +376,7 @@ CREATE TABLE infringement_photos (
 );
 ```
 
-Already defined in `db/migrations/015_storage_buckets.sql`
+Already defined in `supabase/migrations/20241119000005_notifications_storage.sql`
 
 ---
 
@@ -419,8 +419,7 @@ Already defined in `db/migrations/015_storage_buckets.sql`
 
 - **Mobile Setup:** `mobile/STORAGE_SETUP.md`
 - **Quick Fix Guide:** `FIX_STORAGE_NOW.md`
-- **SQL Migration:** `db/migrations/015_storage_buckets.sql`
-- **Quick SQL Setup:** `db/QUICK_FIX_STORAGE.sql`
+- **SQL Migration:** Included in `supabase/migrations/20241119000005_notifications_storage.sql`
 - **Web Storage Utils:** `web/lib/supabase/storage.ts`
 
 ---
