@@ -9,16 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SuperAdminIndexRouteImport } from './routes/super-admin/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as SuperAdminTeamsIndexRouteImport } from './routes/super-admin/teams/index'
+import { Route as SuperAdminLocationsIndexRouteImport } from './routes/super-admin/locations/index'
+import { Route as SuperAdminTeamsCreateRouteImport } from './routes/super-admin/teams/create'
+import { Route as SuperAdminLocationsCreateRouteImport } from './routes/super-admin/locations/create'
 
+const SuperAdminRoute = SuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SuperAdminIndexRoute = SuperAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SuperAdminRoute,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
@@ -40,13 +56,41 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperAdminTeamsIndexRoute = SuperAdminTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
+const SuperAdminLocationsIndexRoute =
+  SuperAdminLocationsIndexRouteImport.update({
+    id: '/locations/',
+    path: '/locations/',
+    getParentRoute: () => SuperAdminRoute,
+  } as any)
+const SuperAdminTeamsCreateRoute = SuperAdminTeamsCreateRouteImport.update({
+  id: '/teams/create',
+  path: '/teams/create',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
+const SuperAdminLocationsCreateRoute =
+  SuperAdminLocationsCreateRouteImport.update({
+    id: '/locations/create',
+    path: '/locations/create',
+    getParentRoute: () => SuperAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/docs': typeof DocsIndexRoute
+  '/super-admin/': typeof SuperAdminIndexRoute
+  '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
+  '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
+  '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,36 +98,70 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/docs': typeof DocsIndexRoute
+  '/super-admin': typeof SuperAdminIndexRoute
+  '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
+  '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
+  '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/docs/': typeof DocsIndexRoute
+  '/super-admin/': typeof SuperAdminIndexRoute
+  '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
+  '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/locations/': typeof SuperAdminLocationsIndexRoute
+  '/super-admin/teams/': typeof SuperAdminTeamsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/super-admin'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
     | '/docs'
+    | '/super-admin/'
+    | '/super-admin/locations/create'
+    | '/super-admin/teams/create'
+    | '/super-admin/locations'
+    | '/super-admin/teams'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/forgot-password' | '/auth/login' | '/auth/register' | '/docs'
-  id:
-    | '__root__'
+  to:
     | '/'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/docs'
+    | '/super-admin'
+    | '/super-admin/locations/create'
+    | '/super-admin/teams/create'
+    | '/super-admin/locations'
+    | '/super-admin/teams'
+  id:
+    | '__root__'
+    | '/'
+    | '/super-admin'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/register'
     | '/docs/'
+    | '/super-admin/'
+    | '/super-admin/locations/create'
+    | '/super-admin/teams/create'
+    | '/super-admin/locations/'
+    | '/super-admin/teams/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SuperAdminRoute: typeof SuperAdminRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
@@ -92,12 +170,26 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/super-admin': {
+      id: '/super-admin'
+      path: '/super-admin'
+      fullPath: '/super-admin'
+      preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/super-admin/': {
+      id: '/super-admin/'
+      path: '/'
+      fullPath: '/super-admin/'
+      preLoaderRoute: typeof SuperAdminIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
     }
     '/docs/': {
       id: '/docs/'
@@ -127,11 +219,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/super-admin/teams/': {
+      id: '/super-admin/teams/'
+      path: '/teams'
+      fullPath: '/super-admin/teams'
+      preLoaderRoute: typeof SuperAdminTeamsIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/locations/': {
+      id: '/super-admin/locations/'
+      path: '/locations'
+      fullPath: '/super-admin/locations'
+      preLoaderRoute: typeof SuperAdminLocationsIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/teams/create': {
+      id: '/super-admin/teams/create'
+      path: '/teams/create'
+      fullPath: '/super-admin/teams/create'
+      preLoaderRoute: typeof SuperAdminTeamsCreateRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/locations/create': {
+      id: '/super-admin/locations/create'
+      path: '/locations/create'
+      fullPath: '/super-admin/locations/create'
+      preLoaderRoute: typeof SuperAdminLocationsCreateRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
   }
 }
 
+interface SuperAdminRouteChildren {
+  SuperAdminIndexRoute: typeof SuperAdminIndexRoute
+  SuperAdminLocationsCreateRoute: typeof SuperAdminLocationsCreateRoute
+  SuperAdminTeamsCreateRoute: typeof SuperAdminTeamsCreateRoute
+  SuperAdminLocationsIndexRoute: typeof SuperAdminLocationsIndexRoute
+  SuperAdminTeamsIndexRoute: typeof SuperAdminTeamsIndexRoute
+}
+
+const SuperAdminRouteChildren: SuperAdminRouteChildren = {
+  SuperAdminIndexRoute: SuperAdminIndexRoute,
+  SuperAdminLocationsCreateRoute: SuperAdminLocationsCreateRoute,
+  SuperAdminTeamsCreateRoute: SuperAdminTeamsCreateRoute,
+  SuperAdminLocationsIndexRoute: SuperAdminLocationsIndexRoute,
+  SuperAdminTeamsIndexRoute: SuperAdminTeamsIndexRoute,
+}
+
+const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
+  SuperAdminRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SuperAdminRoute: SuperAdminRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,

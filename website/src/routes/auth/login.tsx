@@ -12,7 +12,7 @@ export const Route = createFileRoute("/auth/login")({
 
 function RouteComponent() {
   return (
-    <div className="flex justify-center items-center w-full h-screen space-y-4 flex-col">
+    <div className="flex justify-center items-center w-full h-screen space-y-6 flex-col">
       <Logo />
 
       <FormSubmission
@@ -46,6 +46,7 @@ function RouteComponent() {
           </a>
         </p>
         <hr />
+
         <InputWithLabel
           label="Email"
           name="email"

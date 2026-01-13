@@ -10,11 +10,14 @@ import {
 // -----------------------------------------------------
 // Agencies (LTA, Police, Municipal Councils, etc.)
 // -----------------------------------------------------
+
+export type AgencyType = "National" | "Municipal" | "Police";
+
 export const agencies = pgTable("agencies", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),          // e.g., "Suva City Council"
   code: text("code").notNull().unique(), // e.g., "SCC", "LTA", "FJPOL"
-  type: text("type").notNull(),          // national, municipal, police
+  type: text("type").notNull().$type<AgencyType>(),          // national, municipal, police
   createdAt: timestamp("created_at").defaultNow(),
 });
 export type Agency = typeof agencies.$inferSelect;
@@ -31,10 +34,10 @@ export const locations = pgTable("locations", {
 
   name: text("name").notNull(),
 
-  parentId: uuid("parent_id"),
+  parent_id: uuid("parent_id"),
 
   // Optional: which agency this location belongs to
-  agencyId: uuid("agency_id").references(() => agencies.id),
+  agency_id: uuid("agency_id").references(() => agencies.id),
 
   // GeoJSON string for boundaries (Polygon) or points (Point)
   geom: text("geom"),
@@ -50,11 +53,11 @@ export type NewLocation = typeof locations.$inferInsert;
 export const teams = pgTable("teams", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  agencyId: uuid("agency_id")
+  agency_id: uuid("agency_id")
     .notNull()
     .references(() => agencies.id),
 
-  locationId: uuid("location_id").references(() => locations.id),
+  location_id: uuid("location_id").references(() => locations.id),
 
   name: text("name").notNull(), // e.g., "Suva Parking Enforcement", "Traffic West"
 
@@ -71,15 +74,15 @@ export type Role = "Super Admin" | "Agency Admin" | "Team Leader" | "Officer" | 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(), // Supabase auth.user.id
 
-  agencyId: uuid("agency_id")
+  agency_id: uuid("agency_id")
     .notNull()
     .references(() => agencies.id),
 
-  teamId: uuid("team_id").references(() => teams.id),
+  team_id: uuid("team_id").references(() => teams.id),
 
   role: text("role").notNull().$type<Role>(), // officer, supervisor, finance, admin, super_admin
 
-  displayName: text("display_name"),
+  display_name: text("display_name"),
 
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -109,7 +112,7 @@ export const vehicles = pgTable("vehicles", {
   make: text("make"),
   model: text("model"),
   color: text("color"),
-  ownerId: uuid("owner_id").references(() => drivers.id),
+  owner_id: uuid("owner_id").references(() => drivers.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 export type Vehicle = typeof vehicles.$inferSelect;
@@ -121,18 +124,18 @@ export type NewVehicle = typeof vehicles.$inferInsert;
 export const infringements = pgTable("infringements", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  agencyId: uuid("agency_id")
+  agency_id: uuid("agency_id")
     .notNull()
     .references(() => agencies.id),
 
-  teamId: uuid("team_id").references(() => teams.id),
+  team_id: uuid("team_id").references(() => teams.id),
 
-  officerId: uuid("officer_id")
+  officer_id: uuid("officer_id")
     .notNull()
     .references(() => users.id),
 
-  driverId: uuid("driver_id").references(() => drivers.id),
-  vehicleId: uuid("vehicle_id").references(() => vehicles.id),
+  driver_id: uuid("driver_id").references(() => drivers.id),
+  vehicle_id: uuid("vehicle_id").references(() => vehicles.id),
 
   offenceCode: text("offence_code").notNull(),
   description: text("description"),
@@ -142,7 +145,7 @@ export const infringements = pgTable("infringements", {
   location: text("location"),
 
   // Jurisdiction resolved via GIS
-  jurisdictionLocationId: uuid("jurisdiction_location_id").references(
+  jurisdictionLocation_id: uuid("jurisdiction_location_id").references(
     () => locations.id
   ),
 
@@ -157,7 +160,7 @@ export type NewInfringement = typeof infringements.$inferInsert;
 // -----------------------------------------------------
 export const evidenceFiles = pgTable("evidence_files", {
   id: uuid("id").primaryKey().defaultRandom(),
-  infringementId: uuid("infringement_id")
+  infringement_id: uuid("infringement_id")
     .notNull()
     .references(() => infringements.id),
   filePath: text("file_path").notNull(),
@@ -172,7 +175,7 @@ export type NewEvidenceFile = typeof evidenceFiles.$inferInsert;
 // -----------------------------------------------------
 export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().defaultRandom(),
-  infringementId: uuid("infringement_id")
+  infringement_id: uuid("infringement_id")
     .notNull()
     .references(() => infringements.id),
   amount: integer("amount").notNull(),
@@ -188,7 +191,7 @@ export type NewPayment = typeof payments.$inferInsert;
 // -----------------------------------------------------
 export const appeals = pgTable("appeals", {
   id: uuid("id").primaryKey().defaultRandom(),
-  infringementId: uuid("infringement_id")
+  infringement_id: uuid("infringement_id")
     .notNull()
     .references(() => infringements.id),
   submittedBy: uuid("submitted_by").references(() => drivers.id),
@@ -205,7 +208,7 @@ export type NewAppeal = typeof appeals.$inferInsert;
 // -----------------------------------------------------
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
+  user_id: uuid("user_id").references(() => users.id),
   action: text("action").notNull(),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -226,3 +229,17 @@ export const tables = {
   appeals,
   auditLogs,
 }
+
+export const tableNames = {
+  agencies: "agencies",
+  locations: "locations",
+  teams: "teams",
+  users: "users",
+  drivers: "drivers",
+  vehicles: "vehicles",
+  infringements: "infringements",
+  evidenceFiles: "evidence_files",
+  payments: "payments",
+  appeals: "appeals",
+  auditLogs: "audit_logs",
+};

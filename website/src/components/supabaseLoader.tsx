@@ -17,7 +17,7 @@ export default function SupabaseDataLoader<T>({
     return (
       <div className="m-4 p-4 flex justify-center items-center flex-col gap-2 text-neutral-500">
         <PuffLoader color="#1d4ed8" />
-        <p>Loading Data</p>
+        <p>Loading data...</p>
       </div>
     );
   }
