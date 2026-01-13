@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/lib/types";
@@ -158,9 +158,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         >
           {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
-        <Link to="/" className="ml-4">
+        <a href="/" className="ml-4">
           <img src="/icon.svg" alt="MANTIS" className="h-8 w-8" />
-        </Link>
+        </a>
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -180,13 +180,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       )}>
         {/* Logo/Icon Section */}
         <div className="p-6 border-b border-neutral-200 mt-16 md:mt-0">
-          <Link to="/" className="flex items-center justify-center">
+          <a href="/" className="flex items-center justify-center">
             <img
               src="/icon.svg"
               alt="MANTIS Icon"
               className="h-12 w-12"
             />
-          </Link>
+          </a>
         </div>
 
         {/* Navigation Menu */}
@@ -197,9 +197,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = currentPath === item.path;
               
               return (
-                <Link
+                <a
                   key={item.path}
-                  to={item.path}
+                  href={item.path}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                     isActive
@@ -209,7 +209,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                </Link>
+                </a>
               );
             })}
           </div>

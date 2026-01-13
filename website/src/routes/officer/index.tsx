@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, CheckCircle, Clock, TrendingUp, AlertCircle, Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,8 +20,9 @@ function RouteComponent() {
     queryKey: ['officer-infringements', user?.id || "uid"],
     filter: {
       column: 'officer_id',
-      value: user?.id || '',
+      value: user?.id || "",
     },
+    enabled: Boolean(user?.id),
   })
 
   const totalInfringements = infringements.data?.length || 0
@@ -186,20 +187,20 @@ function RouteComponent() {
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link to="/officer/reports/create" className="block">
+            <a href="/officer/reports/create" className="block">
               <Button className="w-full h-auto py-4 flex-col gap-2" variant="default">
                 <Plus className="h-6 w-6" />
                 <span className="font-semibold">New Infringement</span>
                 <span className="text-xs opacity-90">Issue a new ticket</span>
               </Button>
-            </Link>
-            <Link to="/officer/reports" className="block">
+            </a>
+            <a href="/officer/reports" className="block">
               <Button className="w-full h-auto py-4 flex-col gap-2" variant="outline">
                 <FileText className="h-6 w-6" />
                 <span className="font-semibold">View All Infringements</span>
                 <span className="text-xs opacity-70">See all your tickets</span>
               </Button>
-            </Link>
+            </a>
           </div>
         </CardContent>
       </Card>

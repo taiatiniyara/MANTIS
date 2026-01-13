@@ -19,8 +19,9 @@ function RouteComponent() {
     queryKey: ['agency-teams', userMetadata?.agency_id || "agid"],
     filter: {
       column: 'agency_id',
-      value: userMetadata?.agency_id || '',
+      value: userMetadata?.agency_id || "",
     },
+    enabled: Boolean(userMetadata?.agency_id),
   })
 
   // Fetch agency locations
@@ -29,8 +30,9 @@ function RouteComponent() {
     queryKey: ['agency-locations', userMetadata?.agency_id || "agid"],
     filter: {
       column: 'agency_id',
-      value: userMetadata?.agency_id || '',
+      value: userMetadata?.agency_id || "",
     },
+    enabled: Boolean(userMetadata?.agency_id),
   })
 
   // Fetch agency infringements
@@ -39,8 +41,9 @@ function RouteComponent() {
     queryKey: ['agency-infringements', userMetadata?.agency_id || "agid"],
     filter: {
       column: 'agency_id',
-      value: userMetadata?.agency_id || '',
+      value: userMetadata?.agency_id || "",
     },
+    enabled: Boolean(userMetadata?.agency_id),
   })
 
   const activeInfringements = infringements.data?.filter(

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Plus, Search } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -24,8 +24,9 @@ function RouteComponent() {
     queryKey: ['officer-infringements', user?.id || "uid"],
     filter: {
       column: 'officer_id',
-      value: user?.id || '',
+      value: user?.id || "",
     },
+    enabled: Boolean(user?.id),
   })
 
   const getStatusBadge = (status: string) => {
@@ -66,12 +67,12 @@ function RouteComponent() {
             Manage and track your issued infringements
           </p>
         </div>
-        <Link to="/officer/reports/create">
+        <a href="/officer/reports/create">
           <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             New Infringement
           </Button>
-        </Link>
+        </a>
       </div>
 
       {/* Search and Filter Bar */}
@@ -133,10 +134,9 @@ function RouteComponent() {
           ) : sortedInfringements && sortedInfringements.length > 0 ? (
             <div className="divide-y">
               {sortedInfringements.map((inf) => (
-                <Link 
+                <a 
                   key={inf.id} 
-                  to="/officer/reports/$id" 
-                  params={{ id: inf.id }}
+                  href="/officer/reports/$id" 
                   className="block"
                 >
                   <div className="p-4 sm:p-6 hover:bg-muted/50 transition-colors cursor-pointer">
@@ -192,7 +192,7 @@ function RouteComponent() {
                     </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               ))}
             </div>
           ) : (
@@ -208,12 +208,12 @@ function RouteComponent() {
                   ? 'Try adjusting your search or filters'
                   : 'Create your first infringement to get started'}
               </p>
-              <Link to="/officer/reports/create">
+              <a href="/officer/reports/create">
                 <Button variant="outline" className="mt-4">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Infringement
                 </Button>
-              </Link>
+              </a>
             </div>
           )}
         </CardContent>

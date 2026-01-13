@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import type { Location } from "@/lib/supabase/schema";
@@ -134,12 +134,12 @@ function RouteComponent() {
               {locationsWithCoords.length !== 1 ? "s" : ""} on map
             </p>
           </div>
-          <Link to="/super-admin/locations/create" className="w-full sm:w-auto">
+          <a href="/super-admin/locations/create" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Location
             </Button>
-          </Link>
+          </a>
         </div>
       </div>
 

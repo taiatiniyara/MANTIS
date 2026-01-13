@@ -3,7 +3,7 @@ import Logo from "@/components/logo";
 import { InputWithLabel } from "@/components/ui/inputWithLabel";
 import { H2 } from "@/components/ui/heading";
 import { supabase } from "@/lib/supabase/client";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { tableNames } from "@/lib/supabase/schema";
 import { roleToLink } from "@/lib/utils";
@@ -70,12 +70,12 @@ function RouteComponent() {
           placeholder="Enter your password"
         />
 
-        <Link
-          to="/auth/forgot-password"
+        <a
+          href="/auth/forgot-password"
           className="text-sm text-primary hover:underline font-bold"
         >
           Forgot password?
-        </Link>
+        </a>
         </FormSubmission>
       </div>
     </div>

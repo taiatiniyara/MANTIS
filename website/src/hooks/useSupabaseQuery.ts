@@ -16,17 +16,28 @@ interface useSupabaseQueryProps<T> {
         column: keyof T;
         ascending: boolean;
     }[];
+    enabled?: boolean;
 }
 
 export function useSupabaseQuery<T>({
-    queryKey, tableName, columns, filter, limit, orderBy
+    queryKey, tableName, columns, filter, limit, orderBy, enabled
 }: useSupabaseQueryProps<T>) {
+    const filterHasValue = (() => {
+        if (!filter) return true;
+
+        const value = filter.value;
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'string') return value.trim() !== '';
+        return value !== null && value !== undefined;
+    })();
+
     const { data, error, isLoading } = useQuery({
         queryKey,
+        enabled: enabled ?? filterHasValue,
         queryFn: async () => {
             let query = supabase.from(tableName).select(columns ? columns.join(", ") : "*");
 
-            if (filter && filter.value !== null && filter.value !== undefined && filter.value !== '') {
+            if (filter && filterHasValue) {
                 query = query.eq(filter.column as string, filter.value);
             }
 

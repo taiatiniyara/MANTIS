@@ -2,7 +2,7 @@ import SupabaseDataLoader from "@/components/supabaseLoader";
 import { H2 } from "@/components/ui/heading";
 import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
 import { type Team } from "@/lib/supabase/schema";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Users } from "lucide-react";
@@ -27,12 +27,12 @@ function RouteComponent() {
             Manage teams across all agencies
           </p>
         </div>
-        <Link to="/super-admin/teams/create">
+        <a href="/super-admin/teams/create">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             Create Team
           </Button>
-        </Link>
+        </a>
       </div>
 
       <SupabaseDataLoader
@@ -86,12 +86,12 @@ function RouteComponent() {
               <p className="text-muted-foreground text-center mb-4">
                 Get started by creating your first team
               </p>
-              <Link to="/super-admin/teams/create">
+              <a href="/super-admin/teams/create">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
                   Create Team
                 </Button>
-              </Link>
+              </a>
             </CardContent>
           </Card>
         )}
