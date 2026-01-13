@@ -13,6 +13,7 @@ import {
   Shield,
   Menu,
   X,
+  User,
 } from "lucide-react";
 
 interface MenuItem {
@@ -60,6 +61,12 @@ const menuItems: MenuItem[] = [
     roles: ["Agency Admin"],
   },
   {
+    label: "Locations",
+    path: "/agency-admin/locations",
+    icon: MapPin,
+    roles: ["Agency Admin"],
+  },
+  {
     label: "Reports",
     path: "/agency-admin/reports",
     icon: FileText,
@@ -93,6 +100,12 @@ const menuItems: MenuItem[] = [
     label: "My Reports",
     path: "/officer/reports",
     icon: FileText,
+    roles: ["Officer"],
+  },
+  {
+    label: "Profile",
+    path: "/officer/profile",
+    icon: User,
     roles: ["Officer"],
   },
 ];

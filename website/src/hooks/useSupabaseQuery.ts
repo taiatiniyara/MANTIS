@@ -9,7 +9,6 @@ interface useSupabaseQueryProps<T> {
     columns?: (keyof T)[];
     filter?: {
         column: keyof T;
-        operator: "=" | "!=" | "<" | "<=" | ">" | ">=" | "like" | "ilike" | "in" | "is" | "fts" | "plfts" | "phfts";
         value: T[keyof T] | T[keyof T][];
     };
     limit?: number;
@@ -28,7 +27,7 @@ export function useSupabaseQuery<T>({
             let query = supabase.from(tableName).select(columns ? columns.join(", ") : "*");
 
             if (filter) {
-                query = query.filter(filter.column as string, filter.operator, filter.value);
+                query = query.eq(filter.column as string, filter.value);
             }
 
             if (limit) {

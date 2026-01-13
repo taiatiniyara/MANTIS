@@ -14,7 +14,10 @@ import { Route as OfficerRouteImport } from './routes/officer'
 import { Route as AgencyAdminRouteImport } from './routes/agency-admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SuperAdminIndexRouteImport } from './routes/super-admin/index'
+import { Route as OfficerIndexRouteImport } from './routes/officer/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as AgencyAdminIndexRouteImport } from './routes/agency-admin/index'
+import { Route as OfficerProfileRouteImport } from './routes/officer/profile'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
@@ -22,9 +25,13 @@ import { Route as SuperAdminUsersIndexRouteImport } from './routes/super-admin/u
 import { Route as SuperAdminTeamsIndexRouteImport } from './routes/super-admin/teams/index'
 import { Route as SuperAdminLocationsIndexRouteImport } from './routes/super-admin/locations/index'
 import { Route as SuperAdminAgenciesIndexRouteImport } from './routes/super-admin/agencies/index'
+import { Route as OfficerReportsIndexRouteImport } from './routes/officer/reports/index'
+import { Route as AgencyAdminTeamsIndexRouteImport } from './routes/agency-admin/teams/index'
+import { Route as AgencyAdminLocationsIndexRouteImport } from './routes/agency-admin/locations/index'
 import { Route as SuperAdminTeamsCreateRouteImport } from './routes/super-admin/teams/create'
 import { Route as SuperAdminLocationsCreateRouteImport } from './routes/super-admin/locations/create'
 import { Route as SuperAdminAgenciesIdRouteImport } from './routes/super-admin/agencies/$id'
+import { Route as OfficerReportsCreateRouteImport } from './routes/officer/reports/create'
 
 const SuperAdminRoute = SuperAdminRouteImport.update({
   id: '/super-admin',
@@ -51,10 +58,25 @@ const SuperAdminIndexRoute = SuperAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const OfficerIndexRoute = OfficerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OfficerRoute,
+} as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AgencyAdminIndexRoute = AgencyAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgencyAdminRoute,
+} as any)
+const OfficerProfileRoute = OfficerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OfficerRoute,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/auth/register',
@@ -92,6 +114,22 @@ const SuperAdminAgenciesIndexRoute = SuperAdminAgenciesIndexRouteImport.update({
   path: '/agencies/',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const OfficerReportsIndexRoute = OfficerReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => OfficerRoute,
+} as any)
+const AgencyAdminTeamsIndexRoute = AgencyAdminTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => AgencyAdminRoute,
+} as any)
+const AgencyAdminLocationsIndexRoute =
+  AgencyAdminLocationsIndexRouteImport.update({
+    id: '/locations/',
+    path: '/locations/',
+    getParentRoute: () => AgencyAdminRoute,
+  } as any)
 const SuperAdminTeamsCreateRoute = SuperAdminTeamsCreateRouteImport.update({
   id: '/teams/create',
   path: '/teams/create',
@@ -108,20 +146,32 @@ const SuperAdminAgenciesIdRoute = SuperAdminAgenciesIdRouteImport.update({
   path: '/agencies/$id',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const OfficerReportsCreateRoute = OfficerReportsCreateRouteImport.update({
+  id: '/reports/create',
+  path: '/reports/create',
+  getParentRoute: () => OfficerRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/agency-admin': typeof AgencyAdminRoute
-  '/officer': typeof OfficerRoute
+  '/agency-admin': typeof AgencyAdminRouteWithChildren
+  '/officer': typeof OfficerRouteWithChildren
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/officer/profile': typeof OfficerProfileRoute
+  '/agency-admin/': typeof AgencyAdminIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/agency-admin/locations': typeof AgencyAdminLocationsIndexRoute
+  '/agency-admin/teams': typeof AgencyAdminTeamsIndexRoute
+  '/officer/reports': typeof OfficerReportsIndexRoute
   '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
@@ -129,16 +179,21 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/agency-admin': typeof AgencyAdminRoute
-  '/officer': typeof OfficerRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/officer/profile': typeof OfficerProfileRoute
+  '/agency-admin': typeof AgencyAdminIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/officer': typeof OfficerIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
+  '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/agency-admin/locations': typeof AgencyAdminLocationsIndexRoute
+  '/agency-admin/teams': typeof AgencyAdminTeamsIndexRoute
+  '/officer/reports': typeof OfficerReportsIndexRoute
   '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
@@ -147,17 +202,24 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/agency-admin': typeof AgencyAdminRoute
-  '/officer': typeof OfficerRoute
+  '/agency-admin': typeof AgencyAdminRouteWithChildren
+  '/officer': typeof OfficerRouteWithChildren
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/officer/profile': typeof OfficerProfileRoute
+  '/agency-admin/': typeof AgencyAdminIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/agency-admin/locations/': typeof AgencyAdminLocationsIndexRoute
+  '/agency-admin/teams/': typeof AgencyAdminTeamsIndexRoute
+  '/officer/reports/': typeof OfficerReportsIndexRoute
   '/super-admin/agencies/': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations/': typeof SuperAdminLocationsIndexRoute
   '/super-admin/teams/': typeof SuperAdminTeamsIndexRoute
@@ -173,11 +235,18 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/officer/profile'
+    | '/agency-admin/'
     | '/docs'
+    | '/officer/'
     | '/super-admin/'
+    | '/officer/reports/create'
     | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
     | '/super-admin/teams/create'
+    | '/agency-admin/locations'
+    | '/agency-admin/teams'
+    | '/officer/reports'
     | '/super-admin/agencies'
     | '/super-admin/locations'
     | '/super-admin/teams'
@@ -185,16 +254,21 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/agency-admin'
-    | '/officer'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/officer/profile'
+    | '/agency-admin'
     | '/docs'
+    | '/officer'
     | '/super-admin'
+    | '/officer/reports/create'
     | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
     | '/super-admin/teams/create'
+    | '/agency-admin/locations'
+    | '/agency-admin/teams'
+    | '/officer/reports'
     | '/super-admin/agencies'
     | '/super-admin/locations'
     | '/super-admin/teams'
@@ -208,11 +282,18 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/officer/profile'
+    | '/agency-admin/'
     | '/docs/'
+    | '/officer/'
     | '/super-admin/'
+    | '/officer/reports/create'
     | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
     | '/super-admin/teams/create'
+    | '/agency-admin/locations/'
+    | '/agency-admin/teams/'
+    | '/officer/reports/'
     | '/super-admin/agencies/'
     | '/super-admin/locations/'
     | '/super-admin/teams/'
@@ -221,8 +302,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AgencyAdminRoute: typeof AgencyAdminRoute
-  OfficerRoute: typeof OfficerRoute
+  AgencyAdminRoute: typeof AgencyAdminRouteWithChildren
+  OfficerRoute: typeof OfficerRouteWithChildren
   SuperAdminRoute: typeof SuperAdminRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
@@ -267,12 +348,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminIndexRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/officer/': {
+      id: '/officer/'
+      path: '/'
+      fullPath: '/officer/'
+      preLoaderRoute: typeof OfficerIndexRouteImport
+      parentRoute: typeof OfficerRoute
+    }
     '/docs/': {
       id: '/docs/'
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/agency-admin/': {
+      id: '/agency-admin/'
+      path: '/'
+      fullPath: '/agency-admin/'
+      preLoaderRoute: typeof AgencyAdminIndexRouteImport
+      parentRoute: typeof AgencyAdminRoute
+    }
+    '/officer/profile': {
+      id: '/officer/profile'
+      path: '/profile'
+      fullPath: '/officer/profile'
+      preLoaderRoute: typeof OfficerProfileRouteImport
+      parentRoute: typeof OfficerRoute
     }
     '/auth/register': {
       id: '/auth/register'
@@ -323,6 +425,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminAgenciesIndexRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/officer/reports/': {
+      id: '/officer/reports/'
+      path: '/reports'
+      fullPath: '/officer/reports'
+      preLoaderRoute: typeof OfficerReportsIndexRouteImport
+      parentRoute: typeof OfficerRoute
+    }
+    '/agency-admin/teams/': {
+      id: '/agency-admin/teams/'
+      path: '/teams'
+      fullPath: '/agency-admin/teams'
+      preLoaderRoute: typeof AgencyAdminTeamsIndexRouteImport
+      parentRoute: typeof AgencyAdminRoute
+    }
+    '/agency-admin/locations/': {
+      id: '/agency-admin/locations/'
+      path: '/locations'
+      fullPath: '/agency-admin/locations'
+      preLoaderRoute: typeof AgencyAdminLocationsIndexRouteImport
+      parentRoute: typeof AgencyAdminRoute
+    }
     '/super-admin/teams/create': {
       id: '/super-admin/teams/create'
       path: '/teams/create'
@@ -344,8 +467,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminAgenciesIdRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/officer/reports/create': {
+      id: '/officer/reports/create'
+      path: '/reports/create'
+      fullPath: '/officer/reports/create'
+      preLoaderRoute: typeof OfficerReportsCreateRouteImport
+      parentRoute: typeof OfficerRoute
+    }
   }
 }
+
+interface AgencyAdminRouteChildren {
+  AgencyAdminIndexRoute: typeof AgencyAdminIndexRoute
+  AgencyAdminLocationsIndexRoute: typeof AgencyAdminLocationsIndexRoute
+  AgencyAdminTeamsIndexRoute: typeof AgencyAdminTeamsIndexRoute
+}
+
+const AgencyAdminRouteChildren: AgencyAdminRouteChildren = {
+  AgencyAdminIndexRoute: AgencyAdminIndexRoute,
+  AgencyAdminLocationsIndexRoute: AgencyAdminLocationsIndexRoute,
+  AgencyAdminTeamsIndexRoute: AgencyAdminTeamsIndexRoute,
+}
+
+const AgencyAdminRouteWithChildren = AgencyAdminRoute._addFileChildren(
+  AgencyAdminRouteChildren,
+)
+
+interface OfficerRouteChildren {
+  OfficerProfileRoute: typeof OfficerProfileRoute
+  OfficerIndexRoute: typeof OfficerIndexRoute
+  OfficerReportsCreateRoute: typeof OfficerReportsCreateRoute
+  OfficerReportsIndexRoute: typeof OfficerReportsIndexRoute
+}
+
+const OfficerRouteChildren: OfficerRouteChildren = {
+  OfficerProfileRoute: OfficerProfileRoute,
+  OfficerIndexRoute: OfficerIndexRoute,
+  OfficerReportsCreateRoute: OfficerReportsCreateRoute,
+  OfficerReportsIndexRoute: OfficerReportsIndexRoute,
+}
+
+const OfficerRouteWithChildren =
+  OfficerRoute._addFileChildren(OfficerRouteChildren)
 
 interface SuperAdminRouteChildren {
   SuperAdminIndexRoute: typeof SuperAdminIndexRoute
@@ -375,8 +538,8 @@ const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AgencyAdminRoute: AgencyAdminRoute,
-  OfficerRoute: OfficerRoute,
+  AgencyAdminRoute: AgencyAdminRouteWithChildren,
+  OfficerRoute: OfficerRouteWithChildren,
   SuperAdminRoute: SuperAdminRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,

@@ -15,7 +15,6 @@ function RouteComponent() {
     queryKey: ["agency1", id || "id-missing"],
     filter: {
       column: "id",
-      operator: "=",
       value: id as string,
     },
     limit: 1,
