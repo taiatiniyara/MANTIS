@@ -23,6 +23,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Save, MapPin, Search, Camera, X } from "lucide-react";
 import { MapPicker } from "@/components/ui/map";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/officer/reports/create")({
   component: RouteComponent,
@@ -45,6 +46,12 @@ function RouteComponent() {
   const [isLoadingOffences, setIsLoadingOffences] = useState(true);
   const [selectedOffence, setSelectedOffence] = useState<any | null>(null);
 
+  // Offence categories state
+  const [offenceCategories, setOffenceCategories] = useState<any[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [filteredOffences, setFilteredOffences] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     offence_code: "",
     description: "",
@@ -59,9 +66,24 @@ function RouteComponent() {
 
   // Fetch offences from database
   useEffect(() => {
-    const fetchOffences = async () => {
+    const fetchData = async () => {
       setIsLoadingOffences(true);
+      setIsLoadingCategories(true);
       try {
+        // Fetch offence categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from("offence_categories")
+          .select("*")
+          .order("name", { ascending: true });
+
+        if (categoriesError) {
+          toast.error("Failed to load offence categories");
+        } else {
+          setOffenceCategories(categoriesData || []);
+        }
+        setIsLoadingCategories(false);
+
+        // Fetch offences
         const { data, error } = await supabase
           .from("offences")
           .select("*")
@@ -69,22 +91,34 @@ function RouteComponent() {
           .order("code", { ascending: true });
 
         if (error) {
-          console.error("Error fetching offences:", error);
+          toast.error("Failed to load offences list");
           setError("Failed to load offences list");
         } else {
-          console.log("Offences loaded:", data);
           setOffences(data || []);
+          setFilteredOffences(data || []);
         }
       } catch (err) {
-        console.error("Error loading offences:", err);
+        console.error("Error loading data:", err);
         setError("Failed to load offences list");
       } finally {
         setIsLoadingOffences(false);
       }
     };
 
-    fetchOffences();
+    fetchData();
   }, []);
+
+  // Filter offences by category
+  useEffect(() => {
+    if (!selectedCategory) {
+      setFilteredOffences(offences);
+    } else {
+      const filtered = offences.filter(
+        (offence) => offence.category_id === selectedCategory,
+      );
+      setFilteredOffences(filtered);
+    }
+  }, [selectedCategory, offences]);
 
   // Auto-detect location on component mount
   useEffect(() => {
@@ -131,11 +165,14 @@ function RouteComponent() {
 
   const handleOffenceSelect = (offenceValue: string | null) => {
     if (!offenceValue) return;
-    const offence = offences.find((o) => `${o.code} - ${o.name}` === offenceValue);
+    const offence = filteredOffences.find(
+      (o) => `${o.code} - ${o.name}` === offenceValue,
+    );
     if (offence) {
       setSelectedOffence(offence);
       // Handle both camelCase and snake_case from Supabase
-      const penalty = (offence as any).fixed_penalty || (offence as any).fixedPenalty || 0;
+      const penalty =
+        (offence as any).fixed_penalty || (offence as any).fixedPenalty || 0;
       setFormData((prev) => ({
         ...prev,
         offence_code: offence.code || "",
@@ -143,6 +180,18 @@ function RouteComponent() {
         description: offence.description || "",
       }));
     }
+  };
+
+  const handleCategorySelect = (categoryValue: string | null) => {
+    setSelectedCategory(categoryValue);
+    // Reset selected offence when category changes
+    setSelectedOffence(null);
+    setFormData((prev) => ({
+      ...prev,
+      offence_code: "",
+      fine_amount: "",
+      description: "",
+    }));
   };
 
   const handleLocationChange = (lat: number, lng: number) => {
@@ -338,7 +387,9 @@ function RouteComponent() {
         type: "Point",
         coordinates: [formData.longitude, formData.latitude],
         properties: {
-          address: formData.location || `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`,
+          address:
+            formData.location ||
+            `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`,
         },
       });
 
@@ -390,7 +441,7 @@ function RouteComponent() {
               console.error("Error saving evidence records:", evidenceError);
               // Don't fail the whole operation, just show a warning
               alert(
-                "Infringement created successfully, but some evidence photos could not be saved."
+                "Infringement created successfully, but some evidence photos could not be saved.",
               );
             }
           }
@@ -399,11 +450,11 @@ function RouteComponent() {
           // Storage RLS policy issue - show helpful message
           if (uploadError.message?.includes("row-level security")) {
             alert(
-              "Infringement created successfully!\n\nNote: Photo upload failed due to storage permissions. Please contact your administrator to configure storage access policies."
+              "Infringement created successfully!\n\nNote: Photo upload failed due to storage permissions. Please contact your administrator to configure storage access policies.",
             );
           } else {
             alert(
-              "Infringement created successfully, but evidence photos could not be uploaded."
+              "Infringement created successfully, but evidence photos could not be uploaded.",
             );
           }
         } finally {
@@ -453,7 +504,6 @@ function RouteComponent() {
               </div>
             )}
 
-            
             {/* Vehicle Information */}
             <div className="space-y-4 pt-4 border-t">
               <h3 className="font-semibold text-sm">
@@ -510,6 +560,80 @@ function RouteComponent() {
               <h3 className="font-semibold text-sm">Offence Information</h3>
 
               <div className="grid grid-cols-1 gap-4">
+                {/* Offence Category Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="offence_category">Offence Category</Label>
+                  {isLoadingCategories ? (
+                    <div className="text-sm text-muted-foreground">
+                      Loading categories...
+                    </div>
+                  ) : (
+                    <Combobox
+                      items={[
+                        "All Categories",
+                        ...offenceCategories.map((c) => c.name),
+                      ]}
+                      value={
+                        selectedCategory
+                          ? offenceCategories.find(
+                              (c) => c.id === selectedCategory,
+                            )?.name || ""
+                          : "All Categories"
+                      }
+                      onValueChange={(value) => {
+                        if (value === "All Categories") {
+                          handleCategorySelect(null);
+                        } else {
+                          const category = offenceCategories.find(
+                            (c) => c.name === value,
+                          );
+                          handleCategorySelect(category?.id || null);
+                        }
+                      }}
+                    >
+                      <ComboboxInput
+                        placeholder="Filter by category..."
+                        showTrigger
+                        showClear
+                      />
+                      <ComboboxContent>
+                        <ComboboxEmpty>No category found</ComboboxEmpty>
+                        <ComboboxList>
+                          {(label) => (
+                            <ComboboxItem
+                              key={label}
+                              value={label}
+                            >
+                              {label}
+                              {label !== "All Categories" && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (
+                                  {
+                                    offences.filter(
+                                      (o) =>
+                                        o.category_id ===
+                                        offenceCategories.find(
+                                          (c) => c.name === label,
+                                        )?.id,
+                                    ).length
+                                  }{" "}
+                                  offences)
+                                </span>
+                              )}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  )}
+                  {selectedCategory && (
+                    <div className="text-xs text-muted-foreground">
+                      Showing {filteredOffences.length} offence(s) in this
+                      category
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label
                     htmlFor="offence_code"
@@ -523,8 +647,14 @@ function RouteComponent() {
                     </div>
                   ) : (
                     <Combobox
-                      items={offences.map(o => `${o.code} - ${o.name}`)}
-                      value={selectedOffence ? `${selectedOffence.code} - ${selectedOffence.name}` : ""}
+                      items={filteredOffences.map(
+                        (o) => `${o.code} - ${o.name}`,
+                      )}
+                      value={
+                        selectedOffence
+                          ? `${selectedOffence.code} - ${selectedOffence.name}`
+                          : ""
+                      }
                       onValueChange={handleOffenceSelect}
                     >
                       <ComboboxInput
@@ -536,15 +666,24 @@ function RouteComponent() {
                         <ComboboxEmpty>No offence found</ComboboxEmpty>
                         <ComboboxList>
                           {(label) => {
-                            const offence = offences.find(o => `${o.code} - ${o.name}` === label);
+                            const offence = filteredOffences.find(
+                              (o) => `${o.code} - ${o.name}` === label,
+                            );
                             return offence ? (
-                              <ComboboxItem key={offence.id} value={label}>
+                              <ComboboxItem
+                                key={offence.id}
+                                value={label}
+                              >
                                 <div className="flex flex-col">
                                   <span className="font-medium">
                                     {offence.code} - {offence.name}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
-                                    FJD {(offence as any).fixed_penalty || (offence as any).fixedPenalty || 0} • {offence.severity}
+                                    FJD{" "}
+                                    {(offence as any).fixed_penalty ||
+                                      (offence as any).fixedPenalty ||
+                                      0}{" "}
+                                    • {offence.severity}
                                   </span>
                                 </div>
                               </ComboboxItem>
@@ -556,13 +695,18 @@ function RouteComponent() {
                   )}
                   {selectedOffence && (
                     <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md">
-                      <strong>Selected:</strong> {selectedOffence.code} - {selectedOffence.name}
+                      <strong>Selected:</strong> {selectedOffence.code} -{" "}
+                      {selectedOffence.name}
                       <br />
-                      <strong>Penalty:</strong> FJD {(selectedOffence as any).fixed_penalty || (selectedOffence as any).fixedPenalty || 0}
+                      <strong>Penalty:</strong> FJD{" "}
+                      {(selectedOffence as any).fixed_penalty ||
+                        (selectedOffence as any).fixedPenalty ||
+                        0}
                       {selectedOffence.description && (
                         <>
                           <br />
-                          <strong>Description:</strong> {selectedOffence.description}
+                          <strong>Description:</strong>{" "}
+                          {selectedOffence.description}
                         </>
                       )}
                     </div>

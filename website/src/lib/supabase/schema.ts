@@ -119,12 +119,20 @@ export const vehicles = pgTable("vehicles", {
 export type Vehicle = typeof vehicles.$inferSelect;
 export type NewVehicle = typeof vehicles.$inferInsert;
 
+export const offenceCategories = pgTable("offence_categories", {
+  id: uuid("id").primaryKey().defaultRandom(), // e.g. "Speeding", "Parking", "Licensing", "Vehicle Condition" 
+  name: text("name").notNull().unique(), // Optional longer description 
+  description: text("description"),
+  created_at: timestamp("created_at").defaultNow(),
+});
 
 export const offences = pgTable("offences", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   // e.g. "LTA-001", "POL-045", "MUNI-SUVA-12"
   code: text("code").notNull().unique(),
+
+  category_id: uuid("category_id").references(() => offenceCategories.id),
 
   // Human-readable name
   name: text("name").notNull(),
