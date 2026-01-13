@@ -28,8 +28,19 @@ export default function FormSubmission({
       }}
     >
       {children}
-      <Button disabled={submitting} className="mt-4 min-w-25" type="submit">
-        {submitting ? "..." : btnText}
+      <Button 
+        disabled={submitting} 
+        className="mt-4 sm:mt-6 w-full sm:w-auto sm:min-w-40 min-h-11 text-base font-medium" 
+        type="submit"
+      >
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <span className="animate-spin">⏳</span>
+            <span>Processing...</span>
+          </span>
+        ) : (
+          btnText
+        )}
       </Button>
     </form>
   );

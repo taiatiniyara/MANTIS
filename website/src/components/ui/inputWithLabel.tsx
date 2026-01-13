@@ -12,9 +12,9 @@ interface InputWithLabelProps
 
 export function InputWithLabel(props: InputWithLabelProps) {
   return (
-    <div className="grid w-full max-w-sm space-y-1 items-center">
-      <Label htmlFor={props.name}>{props.label}</Label>
-      <Input {...props} />
+    <div className="grid w-full space-y-2 items-center">
+      <Label htmlFor={props.name} className="text-sm sm:text-base">{props.label}</Label>
+      <Input {...props} className="h-11 text-base" />
     </div>
   );
 }
@@ -28,10 +28,10 @@ export function SelectWithLabel(props: {
   }[];
 }) {
   return (
-    <div className="space-y-1">
-      <Label>{props.label}</Label>
+    <div className="space-y-2 w-full">
+      <Label className="text-sm sm:text-base">{props.label}</Label>
       <select
-        className="border h-9 rounded shadow-xs w-full px-2"
+        className="border h-11 rounded shadow-xs w-full px-3 text-base bg-white"
         name={props.name}
       >
         <option className="w-full">{`Select ${props.label}`}</option>

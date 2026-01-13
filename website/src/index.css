@@ -125,5 +125,16 @@
     }
   html {
     @apply font-sans;
+    /* Mobile viewport optimizations */
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    }
+  /* Touch-friendly tap targets */
+  button, a, input, select, textarea {
+    @apply min-h-[44px] sm:min-h-0;
+    }
+  /* Prevent horizontal scroll on mobile */
+  body {
+    @apply overflow-x-hidden;
     }
 }

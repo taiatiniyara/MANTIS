@@ -43,10 +43,10 @@ function RouteComponent() {
     return <div>Error loading locations: {locations.error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <H2>Create New Team</H2>
-        <p className="text-muted-foreground mt-2">
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-4xl">
+      <div className="mb-6 sm:mb-8">
+        <H2 className="text-xl sm:text-2xl">Create New Team</H2>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
           Add a new team to an agency
         </p>
       </div>
@@ -90,7 +90,7 @@ function RouteComponent() {
               }
             }}
             btnText="Create Team"
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
             <InputWithLabel
               label="Team Name"

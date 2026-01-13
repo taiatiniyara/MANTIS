@@ -5,5 +5,5 @@ export type UserRole = "Super Admin" | "Agency Admin" | "Team Leader" | "Officer
 export interface UserMetaData {
     role: UserRole;
     agency_id?: Agency["id"];
-    teamId?: Team["id"];
+    team_id?: Team["id"];
 }

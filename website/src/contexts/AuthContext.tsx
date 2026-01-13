@@ -1,15 +1,25 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { User, Session, AuthError } from "@supabase/supabase-js";
+import type { User as AuthUser, Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
-import type { UserMetaData } from "@/lib/types";
+import type { Role } from "@/lib/supabase/schema";
+import { tableNames } from "@/lib/supabase/schema";
+
+// Simplified user profile with only essential fields
+interface UserProfile {
+  name: string;
+  email: string;
+  agency_id: string;
+  team_id: string | null;
+  role: Role;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   session: Session | null;
-  userMetadata: UserMetaData | null;
+  userMetadata: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string, metadata?: Partial<UserMetaData>) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
@@ -30,27 +40,60 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userMetadata, setUserMetadata] = useState<UserMetaData | null>(null);
+  const [userMetadata, setUserMetadata] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Fetch user profile from users table
+  const fetchUserProfile = async (authUser: AuthUser) => {
+    const { data, error } = await supabase
+      .from(tableNames.users)
+      .select('display_name, agency_id, team_id, role')
+      .eq('id', authUser.id)
+      .single();
+    
+    if (!error && data) {
+      setUserMetadata({
+        name: data.display_name || '',
+        email: authUser.email || '',
+        agency_id: data.agency_id,
+        team_id: data.team_id,
+        role: data.role,
+      });
+    } else {
+      setUserMetadata(null);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setUserMetadata((session?.user?.user_metadata as UserMetaData) ?? null);
+      
+      if (session?.user) {
+        await fetchUserProfile(session.user);
+      } else {
+        setUserMetadata(null);
+      }
+      
       setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setUserMetadata((session?.user?.user_metadata as UserMetaData) ?? null);
+      
+      if (session?.user) {
+        await fetchUserProfile(session.user);
+      } else {
+        setUserMetadata(null);
+      }
+      
       setLoading(false);
     });
 
@@ -65,17 +108,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
-  const signUp = async (
-    email: string,
-    password: string,
-    metadata?: Partial<UserMetaData>
-  ) => {
+  const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: metadata,
-      },
     });
     return { error };
   };

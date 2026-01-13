@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 const headingVariants = cva("font-semibold tracking-tight", {
   variants: {
     variant: {
-      h1: "text-4xl lg:text-5xl",
-      h2: "text-3xl lg:text-4xl",
-      h3: "text-2xl lg:text-3xl",
-      h4: "text-xl lg:text-2xl",
-      h5: "text-lg lg:text-xl",
-      h6: "text-base lg:text-lg",
+      h1: "text-3xl sm:text-4xl lg:text-5xl",
+      h2: "text-2xl sm:text-3xl lg:text-4xl",
+      h3: "text-xl sm:text-2xl lg:text-3xl",
+      h4: "text-lg sm:text-xl lg:text-2xl",
+      h5: "text-base sm:text-lg lg:text-xl",
+      h6: "text-sm sm:text-base lg:text-lg",
     },
     weight: {
       normal: "font-normal",
@@ -21,7 +21,7 @@ const headingVariants = cva("font-semibold tracking-tight", {
   },
   defaultVariants: {
     variant: "h1",
-    weight: "semibold",
+    weight: "bold",
   },
 });
 
@@ -43,7 +43,7 @@ const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
     );
   }
 );
-Heading.display_name = "Heading";
+Heading.displayName = "Heading";
 
 // Convenience components for each heading level
 const H1 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
@@ -51,41 +51,41 @@ const H1 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
     <Heading ref={ref} variant="h1" as="h1" className={className} {...props} />
   )
 );
-H1.display_name = "H1";
+H1.displayName = "H1";
 
 const H2 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
   ({ className, ...props }, ref) => (
     <Heading ref={ref} variant="h2" as="h2" className={className} {...props} />
   )
 );
-H2.display_name = "H2";
+H2.displayName = "H2";
 
 const H3 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
   ({ className, ...props }, ref) => (
     <Heading ref={ref} variant="h3" as="h3" className={className} {...props} />
   )
 );
-H3.display_name = "H3";
+H3.displayName = "H3";
 
 const H4 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
   ({ className, ...props }, ref) => (
     <Heading ref={ref} variant="h4" as="h4" className={className} {...props} />
   )
 );
-H4.display_name = "H4";
+H4.displayName = "H4";
 
 const H5 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
   ({ className, ...props }, ref) => (
     <Heading ref={ref} variant="h5" as="h5" className={className} {...props} />
   )
 );
-H5.display_name = "H5";
+H5.displayName = "H5";
 
 const H6 = React.forwardRef<HTMLHeadingElement, Omit<HeadingProps, "variant">>(
   ({ className, ...props }, ref) => (
     <Heading ref={ref} variant="h6" as="h6" className={className} {...props} />
   )
 );
-H6.display_name = "H6";
+H6.displayName = "H6";
 
 export { Heading, H1, H2, H3, H4, H5, H6, headingVariants };

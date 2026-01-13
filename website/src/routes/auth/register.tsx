@@ -47,10 +47,11 @@ function RouteComponent() {
     );
 
   return (
-    <div className="flex justify-center items-center w-full min-h-screen space-y-4 flex-col p-8">
-      <Logo />
-      <FormSubmission
-        onSubmit={async (e) => {
+    <div className="flex justify-center items-center w-full min-h-screen py-8 px-4 sm:px-6">
+      <div className="w-full max-w-md space-y-6 flex flex-col">
+        <Logo />
+        <FormSubmission
+          onSubmit={async (e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
           const email = formData.get("email") as string;
@@ -58,7 +59,7 @@ function RouteComponent() {
           const firstName = formData.get("firstName") as string;
           const lastName = formData.get("lastName") as string;
           const agency_id = formData.get("agency") as string;
-          const teamId = formData.get("team") as string;
+          const team_id = formData.get("team") as string;
 
           const r = await supabase.auth.signUp({
             email,
@@ -77,7 +78,7 @@ function RouteComponent() {
             agency_id: agency_id,
             role: "Officer",
             display_name: `${firstName} ${lastName}`,
-            teamId: teamId || undefined,
+            team_id: team_id || undefined,
           };
 
           const us = await supabase.from(tableNames.users).insert(newUser);
@@ -88,9 +89,9 @@ function RouteComponent() {
 
           toast.success("Registered successfully! Please check your email.");
         }}
-        className="space-y-6 flex flex-col border p-8 rounded-lg shadow-md w-full max-w-md"
+        className="space-y-4 sm:space-y-6 flex flex-col border p-6 sm:p-8 rounded-lg shadow-md w-full"
       >
-        <H2 className="text-center">Register</H2>
+        <H2 className="text-center text-xl sm:text-2xl">Register</H2>
         <p className="text-center font-medium text-sm">
           Or{" "}
           <a
@@ -149,7 +150,8 @@ function RouteComponent() {
           type="password"
           placeholder="Enter your password"
         />
-      </FormSubmission>
+        </FormSubmission>
+      </div>
     </div>
   );
 }

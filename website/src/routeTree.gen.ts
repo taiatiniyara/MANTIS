@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
+import { Route as OfficerRouteImport } from './routes/officer'
+import { Route as AgencyAdminRouteImport } from './routes/agency-admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SuperAdminIndexRouteImport } from './routes/super-admin/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
@@ -24,6 +26,16 @@ import { Route as SuperAdminLocationsCreateRouteImport } from './routes/super-ad
 const SuperAdminRoute = SuperAdminRouteImport.update({
   id: '/super-admin',
   path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfficerRoute = OfficerRouteImport.update({
+  id: '/officer',
+  path: '/officer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgencyAdminRoute = AgencyAdminRouteImport.update({
+  id: '/agency-admin',
+  path: '/agency-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -81,6 +93,8 @@ const SuperAdminLocationsCreateRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agency-admin': typeof AgencyAdminRoute
+  '/officer': typeof OfficerRoute
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agency-admin': typeof AgencyAdminRoute
+  '/officer': typeof OfficerRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -107,6 +123,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agency-admin': typeof AgencyAdminRoute
+  '/officer': typeof OfficerRoute
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -122,6 +140,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agency-admin'
+    | '/officer'
     | '/super-admin'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -135,6 +155,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agency-admin'
+    | '/officer'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -147,6 +169,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/agency-admin'
+    | '/officer'
     | '/super-admin'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -161,6 +185,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgencyAdminRoute: typeof AgencyAdminRoute
+  OfficerRoute: typeof OfficerRoute
   SuperAdminRoute: typeof SuperAdminRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
@@ -175,6 +201,20 @@ declare module '@tanstack/react-router' {
       path: '/super-admin'
       fullPath: '/super-admin'
       preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/officer': {
+      id: '/officer'
+      path: '/officer'
+      fullPath: '/officer'
+      preLoaderRoute: typeof OfficerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agency-admin': {
+      id: '/agency-admin'
+      path: '/agency-admin'
+      fullPath: '/agency-admin'
+      preLoaderRoute: typeof AgencyAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -272,6 +312,8 @@ const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgencyAdminRoute: AgencyAdminRoute,
+  OfficerRoute: OfficerRoute,
   SuperAdminRoute: SuperAdminRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,

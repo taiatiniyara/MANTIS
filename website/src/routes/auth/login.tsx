@@ -12,11 +12,12 @@ export const Route = createFileRoute("/auth/login")({
 
 function RouteComponent() {
   return (
-    <div className="flex justify-center items-center w-full h-screen space-y-6 flex-col">
-      <Logo />
+    <div className="flex justify-center items-center w-full min-h-screen py-8 px-4 sm:px-6">
+      <div className="w-full max-w-md space-y-6 flex flex-col">
+        <Logo />
 
-      <FormSubmission
-        onSubmit={async (e) => {
+        <FormSubmission
+          onSubmit={async (e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
           const email = formData.get("email") as string;
@@ -33,9 +34,9 @@ function RouteComponent() {
           }
         }}
         btnText="Login"
-        className="space-y-4 w-100 flex flex-col border p-8 rounded-lg shadow-md"
+        className="space-y-4 w-full flex flex-col border p-6 sm:p-8 rounded-lg shadow-md"
       >
-        <H2 className="text-center">Login</H2>
+        <H2 className="text-center text-xl sm:text-2xl">Login</H2>
         <p className="text-center font-medium text-sm">
           Or{" "}
           <a
@@ -66,7 +67,8 @@ function RouteComponent() {
         >
           Forgot password?
         </Link>
-      </FormSubmission>
+        </FormSubmission>
+      </div>
     </div>
   );
 }

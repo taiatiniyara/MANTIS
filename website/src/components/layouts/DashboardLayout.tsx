@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/lib/types";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   MapPin,
@@ -10,6 +11,8 @@ import {
   FileText,
   LogOut,
   Shield,
+  Menu,
+  X,
 } from "lucide-react";
 
 interface MenuItem {
@@ -102,13 +105,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { userMetadata, signOut } = useAuth();
   const router = useRouterState();
   const currentPath = router.location.pathname;
-
-  const userRole = userMetadata?.role || "Guest";
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) =>
-    item.roles.includes(userRole)
+    item.roles.includes(userMetadata?.role as UserRole)
   );
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [currentPath]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -116,10 +135,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 flex items-center px-4">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Toggle menu"
+        >
+          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+        <Link to="/" className="ml-4">
+          <img src="/icon.svg" alt="MANTIS" className="h-8 w-8" />
+        </Link>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <aside className={cn(
+        "w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out",
+        "md:translate-x-0 md:relative md:z-auto",
+        "fixed inset-y-0 left-0 z-50",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
         {/* Logo/Icon Section */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 mt-16 md:mt-0">
           <Link to="/" className="flex items-center justify-center">
             <img
               src="/icon.svg"
@@ -162,7 +208,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Shield className="h-3 w-3" />
               <span className="font-semibold">Role</span>
             </div>
-            <div className="text-sm font-medium text-gray-900">{userRole}</div>
+            <div className="text-sm font-medium text-gray-900">{userMetadata?.role || "Guest"}</div>
           </div>
           
           <button
@@ -176,7 +222,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto mt-16 md:mt-0">
         <div className="h-full">{children}</div>
       </main>
     </div>
