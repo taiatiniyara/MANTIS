@@ -5,6 +5,7 @@ import {
   timestamp,
   integer,
   jsonb,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 // -----------------------------------------------------
@@ -118,6 +119,46 @@ export const vehicles = pgTable("vehicles", {
 export type Vehicle = typeof vehicles.$inferSelect;
 export type NewVehicle = typeof vehicles.$inferInsert;
 
+
+export const offences = pgTable("offences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  // e.g. "LTA-001", "POL-045", "MUNI-SUVA-12"
+  code: text("code").notNull().unique(),
+
+  // Human-readable name
+  name: text("name").notNull(),
+
+  // Longer description from legislation/bylaws
+  description: text("description"),
+
+  // Which agency owns this offence
+  // e.g. "LTA", "POLICE", "MUNICIPAL"
+  agencyType: text("agency_type").notNull(),
+
+  // Optional: specific agency (e.g., Suva City Council)
+  agencyId: uuid("agency_id").references(() => agencies.id),
+
+  // Fixed penalty amount (in FJD)
+  fixedPenalty: integer("fixed_penalty").notNull(),
+
+  // Severity classification
+  // e.g. "minor", "serious", "critical"
+  severity: text("severity").notNull().default("minor"),
+
+  // Whether photographic evidence is required
+  requiresEvidence: boolean("requires_evidence").default(false),
+
+  // Whether GPS location is required (e.g., parking, speeding)
+  requiresLocation: boolean("requires_location").default(true),
+
+  // Whether this offence is active (for future law changes)
+  active: boolean("active").default(true),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type Offence = typeof offences.$inferSelect;
+export type NewOffence = typeof offences.$inferInsert;
 // -----------------------------------------------------
 // Infringements (core record)
 // -----------------------------------------------------
@@ -137,7 +178,7 @@ export const infringements = pgTable("infringements", {
   driver_id: uuid("driver_id").references(() => drivers.id),
   vehicle_id: uuid("vehicle_id").references(() => vehicles.id),
 
-  offenceCode: text("offence_code").notNull(),
+  offenceCode: text("offence_code").notNull().references(() => offences.code),
   description: text("description"),
   fineAmount: integer("fine_amount").notNull(),
 

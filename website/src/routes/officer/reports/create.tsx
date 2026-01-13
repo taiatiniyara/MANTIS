@@ -10,6 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
 import { useState, useEffect, useRef } from "react";
@@ -32,6 +40,11 @@ function RouteComponent() {
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Offences state
+  const [offences, setOffences] = useState<any[]>([]);
+  const [isLoadingOffences, setIsLoadingOffences] = useState(true);
+  const [selectedOffence, setSelectedOffence] = useState<any | null>(null);
+
   const [formData, setFormData] = useState({
     offenceCode: "",
     description: "",
@@ -43,6 +56,34 @@ function RouteComponent() {
     latitude: -18.1416, // Default to Suva, Fiji
     longitude: 178.4419,
   });
+
+  // Fetch offences from database
+  useEffect(() => {
+    const fetchOffences = async () => {
+      setIsLoadingOffences(true);
+      try {
+        const { data, error } = await supabase
+          .from("offences")
+          .select("*")
+          .eq("active", true)
+          .order("code", { ascending: true });
+
+        if (error) {
+          console.error("Error fetching offences:", error);
+          setError("Failed to load offences list");
+        } else {
+          setOffences(data || []);
+        }
+      } catch (err) {
+        console.error("Error loading offences:", err);
+        setError("Failed to load offences list");
+      } finally {
+        setIsLoadingOffences(false);
+      }
+    };
+
+    fetchOffences();
+  }, []);
 
   // Auto-detect location on component mount
   useEffect(() => {
@@ -85,6 +126,19 @@ function RouteComponent() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleOffenceSelect = (offenceId: string) => {
+    const offence = offences.find((o) => o.id === offenceId);
+    if (offence) {
+      setSelectedOffence(offence);
+      setFormData((prev) => ({
+        ...prev,
+        offenceCode: offence.code,
+        fineAmount: offence.fixedPenalty.toString(),
+        description: offence.description || "",
+      }));
+    }
   };
 
   const handleLocationChange = (lat: number, lng: number) => {
@@ -381,22 +435,60 @@ function RouteComponent() {
             <div className="space-y-4">
               <h3 className="font-semibold text-sm">Offence Information</h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label
                     htmlFor="offenceCode"
                     className="required"
                   >
-                    Offence Code *
+                    Select Offence *
                   </Label>
-                  <Input
-                    id="offenceCode"
-                    name="offenceCode"
-                    value={formData.offenceCode}
-                    onChange={handleInputChange}
-                    placeholder="e.g., PKG-001"
-                    required
-                  />
+                  {isLoadingOffences ? (
+                    <div className="text-sm text-muted-foreground">
+                      Loading offences...
+                    </div>
+                  ) : (
+                    <Combobox
+                      value={selectedOffence?.id || ""}
+                      onValueChange={handleOffenceSelect}
+                    >
+                      <ComboboxInput
+                        placeholder="Search offences by code or name..."
+                        showTrigger
+                        showClear
+                      />
+                      <ComboboxContent>
+                        <ComboboxEmpty>No offence found</ComboboxEmpty>
+                        <ComboboxList>
+                          {offences.map((offence) => (
+                            <ComboboxItem key={offence.id} value={offence.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {offence.code} - {offence.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  FJD {offence.fixedPenalty} • {offence.severity}
+                                </span>
+                              </div>
+                            </ComboboxItem>
+                          ))}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  )}
+                  {selectedOffence && (
+                    <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md">
+                      <strong>Selected:</strong> {selectedOffence.code} - {selectedOffence.name}
+                      <br />
+                      <strong>Penalty:</strong> FJD {selectedOffence.fixedPenalty}
+                      {selectedOffence.description && (
+                        <>
+                          <br />
+                          <strong>Description:</strong> {selectedOffence.description}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -415,18 +507,24 @@ function RouteComponent() {
                     onChange={handleInputChange}
                     placeholder="100"
                     required
+                    disabled={!!selectedOffence}
                   />
+                  {selectedOffence && (
+                    <p className="text-xs text-muted-foreground">
+                      Auto-filled from selected offence
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Additional Notes</Label>
                 <Textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Describe the violation..."
+                  placeholder="Add any additional details about the violation..."
                   rows={3}
                 />
               </div>
