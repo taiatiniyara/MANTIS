@@ -49,10 +49,10 @@ function RouteComponent() {
     return <div>Error loading agencies: {agencies.error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-4xl">
-      <div className="mb-6 sm:mb-8">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-8 max-w-4xl">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
         <H2 className="text-xl sm:text-2xl">Create New Location</H2>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
           Add a new location to the system hierarchy
         </p>
       </div>
@@ -96,9 +96,9 @@ function RouteComponent() {
           }
         }}
         btnText="Create Location"
-        className="space-y-4 sm:space-y-6"
+        className="space-y-4 sm:space-y-5 lg:space-y-6"
       >
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-5 lg:gap-6 md:grid-cols-2">
           <div className="md:col-span-2">
             <InputWithLabel
               label="Location Name"
@@ -132,17 +132,19 @@ function RouteComponent() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 sm:space-y-3">
           <Label>Location on Map</Label>
-          <p className="text-sm text-muted-foreground mb-2">
-            Click on the map to set the location coordinates
+          <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+            Click or tap on the map to set the location coordinates
           </p>
-          <MapPicker
-            latitude={latitude}
-            longitude={longitude}
-            onLocationChange={handleLocationChange}
-          />
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="touch-manipulation">
+            <MapPicker
+              latitude={latitude}
+              longitude={longitude}
+              onLocationChange={handleLocationChange}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
             <InputWithLabel
               label="Latitude"
               name="latitude"

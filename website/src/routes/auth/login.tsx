@@ -5,6 +5,8 @@ import { H2 } from "@/components/ui/heading";
 import { supabase } from "@/lib/supabase/client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { tableNames } from "@/lib/supabase/schema";
+import { roleToLink } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth/login")({
   component: RouteComponent,
@@ -31,6 +33,13 @@ function RouteComponent() {
             toast.error(q.error.message);
           } else {
             toast.success("Logged in successfully!");
+            const user = await supabase.from(tableNames.users).select("*").eq("id", q.data.user.id).single();
+            if (user.error) {
+              toast.error("Failed to fetch user data.");
+            } else {
+              const userData = user.data;
+              window.location.href = `/${roleToLink(userData.role)}`;
+            }
           }
         }}
         btnText="Login"

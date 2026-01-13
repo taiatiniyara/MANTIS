@@ -9,7 +9,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MapPin, Plus } from "lucide-react";
+import { Loader2, MapPin, Plus, Menu, X } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin/locations/")({
   component: RouteComponent,
@@ -45,6 +45,7 @@ function RouteComponent() {
   const [selectedLocation, setSelectedLocation] =
     useState<LocationWithCoords | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [viewState, setViewState] = useState({
     latitude: -18.1416, // Default to Fiji
     longitude: 178.4419,
@@ -123,18 +124,18 @@ function RouteComponent() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b bg-background">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold">Locations</h1>
-            <p className="text-muted-foreground">
+    <div className="flex flex-col h-screen">
+      <div className="p-3 sm:p-4 border-b bg-background shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 max-w-7xl mx-auto">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Locations</h1>
+            <p className="text-sm text-muted-foreground">
               {locationsWithCoords.length} location
               {locationsWithCoords.length !== 1 ? "s" : ""} on map
             </p>
           </div>
-          <Link to="/super-admin/locations/create">
-            <Button>
+          <Link to="/super-admin/locations/create" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Location
             </Button>
@@ -143,13 +144,22 @@ function RouteComponent() {
       </div>
 
       {/* Map */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
+        {/* Mobile Menu Toggle Button */}
+        <button
+          onClick={() => setShowSidebar(!showSidebar)}
+          className="absolute top-4 left-4 z-10 lg:hidden bg-background/95 backdrop-blur rounded-lg shadow-lg p-2 hover:bg-accent transition-colors"
+          aria-label="Toggle locations list"
+        >
+          {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+
         <Map
           mapLib={maplibregl}
           {...viewState}
           onMove={(evt) => setViewState(evt.viewState)}
           mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           attributionControl={false}
         >
           <NavigationControl position="top-right" />
@@ -166,10 +176,10 @@ function RouteComponent() {
               }}
             >
               <button
-                className="transform hover:scale-110 transition-transform cursor-pointer"
+                className="transform hover:scale-110 transition-transform cursor-pointer touch-manipulation"
                 aria-label={`View ${location.name}`}
               >
-                <MapPin className="w-6 h-6 text-primary fill-primary/20" />
+                <MapPin className="w-7 h-7 sm:w-6 sm:h-6 text-primary fill-primary/20" />
               </button>
             </Marker>
           ))}
@@ -182,9 +192,10 @@ function RouteComponent() {
               onClose={() => setSelectedLocation(null)}
               closeButton={true}
               closeOnClick={false}
+              className="max-w-[90vw] sm:max-w-none"
             >
-              <div className="p-2 min-w-50">
-                <h3 className="font-bold text-lg mb-2">
+              <div className="p-2 sm:p-3 min-w-0 max-w-[75vw] sm:max-w-62.5">
+                <h3 className="font-bold text-base sm:text-lg mb-2 truncate">
                   {selectedLocation.name}
                 </h3>
                 <div className="space-y-1 text-sm">
@@ -212,9 +223,27 @@ function RouteComponent() {
         </Map>
 
         {/* Sidebar with location list */}
-        <div className="absolute top-4 left-4 bg-background/95 backdrop-blur rounded-lg shadow-lg max-h-[calc(100vh-8rem)] overflow-auto max-w-xs">
-          <div className="p-4">
-            <h2 className="font-semibold mb-3">All Locations</h2>
+        <div 
+          className={`
+            absolute top-4 left-4 bg-background/95 backdrop-blur rounded-lg shadow-lg 
+            max-h-[calc(100vh-8rem)] overflow-auto 
+            w-[calc(100vw-2rem)] max-w-xs sm:max-w-sm
+            transition-transform duration-200 ease-in-out
+            lg:translate-x-0
+            ${showSidebar ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)]'}
+          `}
+        >
+          <div className="p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-base sm:text-lg">All Locations</h2>
+              <button
+                onClick={() => setShowSidebar(false)}
+                className="lg:hidden p-1 hover:bg-accent rounded transition-colors"
+                aria-label="Close locations list"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
             <div className="space-y-2">
               {locations?.map((location) => (
                 <button
@@ -229,9 +258,10 @@ function RouteComponent() {
                         zoom: 12,
                       }));
                       setSelectedLocation(location);
+                      setShowSidebar(false); // Close sidebar on mobile after selection
                     }
                   }}
-                  className="w-full text-left p-2 rounded hover:bg-accent transition-colors"
+                  className="w-full text-left p-2.5 sm:p-2 rounded hover:bg-accent transition-colors touch-manipulation"
                 >
                   <div className="flex items-start gap-2">
                     <MapPin

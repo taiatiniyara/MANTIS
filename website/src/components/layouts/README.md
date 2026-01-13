@@ -92,7 +92,7 @@ The layout supports these roles defined in `@/lib/types`:
 
 The layout uses Tailwind CSS classes and follows the shadcn/ui design system. Key styling elements:
 
-- **Sidebar**: White background with gray border
+- **Sidebar**: White background with neutral border
 - **Active Menu Item**: Primary color background
 - **Hover States**: Gray background on hover
 - **Icon Size**: 5x5 (20px)

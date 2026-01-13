@@ -8,13 +8,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { roleToLink } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
 function Index() {
-  const { user } = useAuth();
+  const { userMetadata } = useAuth();
 
   return (
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-white">
@@ -31,12 +32,12 @@ function Index() {
           infringements efficiently.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
-          {user ? (
+          {userMetadata ? (
             <Button
               size="lg"
               asChild
             >
-              <a href="/dashboard">Go to Dashboard</a>
+              <a href={`/${roleToLink(userMetadata.role)}`}>Go to Dashboard</a>
             </Button>
           ) : (
             <>

@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { roleToLink } from "@/lib/utils";
 
 const navList: { name: string; href: string; openInNewTab?: boolean }[] = [
   { name: "Home", href: "/" },
@@ -57,7 +58,7 @@ export default function HomeNav() {
 
             {userMetadata ? (
               <Button asChild>
-                <a href="/dashboard">Dashboard</a>
+                <a href={`/${roleToLink(userMetadata.role)}`}>Dashboard</a>
               </Button>
             ) : (
               <Button
@@ -135,7 +136,7 @@ export default function HomeNav() {
                   className="w-full"
                 >
                   <a
-                    href={`${userMetadata.role.split(" ").join("-").toLowerCase()}`}
+                    href={`/${roleToLink(userMetadata.role)}`}
                     onClick={closeMenu}
                   >
                     Dashboard

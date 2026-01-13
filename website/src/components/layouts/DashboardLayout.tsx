@@ -131,15 +131,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleSignOut = async () => {
     await signOut();
+    window.location.href = "/";
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-neutral-50">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 flex items-center px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-neutral-200 h-16 flex items-center px-4">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -159,13 +160,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out",
+        "w-64 bg-white border-r border-neutral-200 flex flex-col transition-transform duration-300 ease-in-out",
         "md:translate-x-0 md:relative md:z-auto",
         "fixed inset-y-0 left-0 z-50",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Logo/Icon Section */}
-        <div className="p-6 border-b border-gray-200 mt-16 md:mt-0">
+        <div className="p-6 border-b border-neutral-200 mt-16 md:mt-0">
           <Link to="/" className="flex items-center justify-center">
             <img
               src="/icon.svg"
@@ -180,7 +181,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="space-y-1">
             {filteredMenuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentPath === item.path || currentPath.startsWith(item.path + "/");
+              const isActive = currentPath === item.path;
               
               return (
                 <Link
@@ -190,7 +191,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-primary text-primary-foreground"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -202,18 +203,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* User Section */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="mb-3 px-4 py-2 rounded-lg bg-gray-50">
-            <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
+        <div className="p-4 border-t border-neutral-200">
+          <div className="mb-3 px-4 py-2 rounded-lg bg-neutral-50">
+            <div className="flex items-center gap-2 text-xs text-neutral-600 mb-1">
               <Shield className="h-3 w-3" />
               <span className="font-semibold">Role</span>
             </div>
-            <div className="text-sm font-medium text-gray-900">{userMetadata?.role || "Guest"}</div>
+            <div className="text-sm font-medium text-neutral-900">{userMetadata?.role || "Guest"}</div>
           </div>
           
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             <span>Sign Out</span>

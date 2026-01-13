@@ -18,10 +18,13 @@ import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as SuperAdminUsersIndexRouteImport } from './routes/super-admin/users/index'
 import { Route as SuperAdminTeamsIndexRouteImport } from './routes/super-admin/teams/index'
 import { Route as SuperAdminLocationsIndexRouteImport } from './routes/super-admin/locations/index'
+import { Route as SuperAdminAgenciesIndexRouteImport } from './routes/super-admin/agencies/index'
 import { Route as SuperAdminTeamsCreateRouteImport } from './routes/super-admin/teams/create'
 import { Route as SuperAdminLocationsCreateRouteImport } from './routes/super-admin/locations/create'
+import { Route as SuperAdminAgenciesIdRouteImport } from './routes/super-admin/agencies/$id'
 
 const SuperAdminRoute = SuperAdminRouteImport.update({
   id: '/super-admin',
@@ -68,6 +71,11 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperAdminUsersIndexRoute = SuperAdminUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminTeamsIndexRoute = SuperAdminTeamsIndexRouteImport.update({
   id: '/teams/',
   path: '/teams/',
@@ -79,6 +87,11 @@ const SuperAdminLocationsIndexRoute =
     path: '/locations/',
     getParentRoute: () => SuperAdminRoute,
   } as any)
+const SuperAdminAgenciesIndexRoute = SuperAdminAgenciesIndexRouteImport.update({
+  id: '/agencies/',
+  path: '/agencies/',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminTeamsCreateRoute = SuperAdminTeamsCreateRouteImport.update({
   id: '/teams/create',
   path: '/teams/create',
@@ -90,6 +103,11 @@ const SuperAdminLocationsCreateRoute =
     path: '/locations/create',
     getParentRoute: () => SuperAdminRoute,
   } as any)
+const SuperAdminAgenciesIdRoute = SuperAdminAgenciesIdRouteImport.update({
+  id: '/agencies/$id',
+  path: '/agencies/$id',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,10 +119,13 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/docs': typeof DocsIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
+  '/super-admin/users': typeof SuperAdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -115,10 +136,13 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/docs': typeof DocsIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
+  '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
+  '/super-admin/users': typeof SuperAdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,10 +155,13 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/docs/': typeof DocsIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/agencies/': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations/': typeof SuperAdminLocationsIndexRoute
   '/super-admin/teams/': typeof SuperAdminTeamsIndexRoute
+  '/super-admin/users/': typeof SuperAdminUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,10 +175,13 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/docs'
     | '/super-admin/'
+    | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
     | '/super-admin/teams/create'
+    | '/super-admin/agencies'
     | '/super-admin/locations'
     | '/super-admin/teams'
+    | '/super-admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -162,10 +192,13 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/docs'
     | '/super-admin'
+    | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
     | '/super-admin/teams/create'
+    | '/super-admin/agencies'
     | '/super-admin/locations'
     | '/super-admin/teams'
+    | '/super-admin/users'
   id:
     | '__root__'
     | '/'
@@ -177,10 +210,13 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/docs/'
     | '/super-admin/'
+    | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
     | '/super-admin/teams/create'
+    | '/super-admin/agencies/'
     | '/super-admin/locations/'
     | '/super-admin/teams/'
+    | '/super-admin/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -259,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/super-admin/users/': {
+      id: '/super-admin/users/'
+      path: '/users'
+      fullPath: '/super-admin/users'
+      preLoaderRoute: typeof SuperAdminUsersIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/teams/': {
       id: '/super-admin/teams/'
       path: '/teams'
@@ -271,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/locations'
       fullPath: '/super-admin/locations'
       preLoaderRoute: typeof SuperAdminLocationsIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/agencies/': {
+      id: '/super-admin/agencies/'
+      path: '/agencies'
+      fullPath: '/super-admin/agencies'
+      preLoaderRoute: typeof SuperAdminAgenciesIndexRouteImport
       parentRoute: typeof SuperAdminRoute
     }
     '/super-admin/teams/create': {
@@ -287,23 +337,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminLocationsCreateRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/super-admin/agencies/$id': {
+      id: '/super-admin/agencies/$id'
+      path: '/agencies/$id'
+      fullPath: '/super-admin/agencies/$id'
+      preLoaderRoute: typeof SuperAdminAgenciesIdRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
   }
 }
 
 interface SuperAdminRouteChildren {
   SuperAdminIndexRoute: typeof SuperAdminIndexRoute
+  SuperAdminAgenciesIdRoute: typeof SuperAdminAgenciesIdRoute
   SuperAdminLocationsCreateRoute: typeof SuperAdminLocationsCreateRoute
   SuperAdminTeamsCreateRoute: typeof SuperAdminTeamsCreateRoute
+  SuperAdminAgenciesIndexRoute: typeof SuperAdminAgenciesIndexRoute
   SuperAdminLocationsIndexRoute: typeof SuperAdminLocationsIndexRoute
   SuperAdminTeamsIndexRoute: typeof SuperAdminTeamsIndexRoute
+  SuperAdminUsersIndexRoute: typeof SuperAdminUsersIndexRoute
 }
 
 const SuperAdminRouteChildren: SuperAdminRouteChildren = {
   SuperAdminIndexRoute: SuperAdminIndexRoute,
+  SuperAdminAgenciesIdRoute: SuperAdminAgenciesIdRoute,
   SuperAdminLocationsCreateRoute: SuperAdminLocationsCreateRoute,
   SuperAdminTeamsCreateRoute: SuperAdminTeamsCreateRoute,
+  SuperAdminAgenciesIndexRoute: SuperAdminAgenciesIndexRoute,
   SuperAdminLocationsIndexRoute: SuperAdminLocationsIndexRoute,
   SuperAdminTeamsIndexRoute: SuperAdminTeamsIndexRoute,
+  SuperAdminUsersIndexRoute: SuperAdminUsersIndexRoute,
 }
 
 const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(

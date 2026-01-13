@@ -1,6 +1,7 @@
-import { Archive } from "lucide-react";
+import { Archive, XCircle } from "lucide-react";
 import React from "react";
 import PuffLoader from "react-spinners/PuffLoader";
+import { H3 } from "./ui/heading";
 
 export default function SupabaseDataLoader<T>({
   children,
@@ -24,8 +25,11 @@ export default function SupabaseDataLoader<T>({
 
   if (error) {
     return (
-      <div className="w-full bg-red-100 border border-red-500 text-red-600 p-4 m-4 text-center">
-        Error: {error.message}
+      <div className="bg-red-100 border border-red-500 text-red-600 p-4 m-4">
+        <H3>
+          <XCircle className="inline-block" /> Error
+        </H3>
+        <p>{error.message}</p>
       </div>
     );
   }

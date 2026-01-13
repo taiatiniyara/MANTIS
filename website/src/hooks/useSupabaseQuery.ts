@@ -7,11 +7,11 @@ interface useSupabaseQueryProps<T> {
     queryKey: string[];
     tableName: keyof typeof tables
     columns?: (keyof T)[];
-    filters?: {
+    filter?: {
         column: keyof T;
         operator: "=" | "!=" | "<" | "<=" | ">" | ">=" | "like" | "ilike" | "in" | "is" | "fts" | "plfts" | "phfts";
         value: T[keyof T] | T[keyof T][];
-    }[];
+    };
     limit?: number;
     orderBy?: {
         column: keyof T;
@@ -20,17 +20,15 @@ interface useSupabaseQueryProps<T> {
 }
 
 export function useSupabaseQuery<T>({
-    queryKey, tableName, columns, filters, limit, orderBy
+    queryKey, tableName, columns, filter, limit, orderBy
 }: useSupabaseQueryProps<T>) {
     const { data, error, isLoading } = useQuery({
         queryKey,
         queryFn: async () => {
             let query = supabase.from(tableName).select(columns ? columns.join(", ") : "*");
 
-            if (filters) {
-                filters.forEach(({ column, operator, value }) => {
-                    query = query.filter(column as string, operator, value);
-                });
+            if (filter) {
+                query = query.filter(filter.column as string, filter.operator, filter.value);
             }
 
             if (limit) {
@@ -44,6 +42,7 @@ export function useSupabaseQuery<T>({
             }
 
             const { data, error } = await query;
+            
             if (error) {
                 throw error;
             }
