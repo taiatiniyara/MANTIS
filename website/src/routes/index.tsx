@@ -1,6 +1,4 @@
-import SupabaseDataLoader from "@/components/supabaseLoader";
-import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
-import { type Agency } from "@/lib/supabase/schema";
+import HomeNav from "@/components/homenav";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
@@ -8,18 +6,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { isLoading, data, error } = useSupabaseQuery<Agency>({
-    queryKey: ["agencies"],
-    tableName: "agencies",
-    limit: 10,
-  });
 
   return (
-    <SupabaseDataLoader
-      isLoading={isLoading}
-      error={error}
-    >
-      <div>{data?.length}</div>
-    </SupabaseDataLoader>
+    <div>
+      <HomeNav />
+    </div>
   );
 }
