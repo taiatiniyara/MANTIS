@@ -453,6 +453,58 @@ function RouteComponent() {
               </div>
             )}
 
+            
+            {/* Vehicle Information */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-semibold text-sm">
+                Vehicle Information (Optional)
+              </h3>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vehiclePlate">Vehicle Plate Number</Label>
+                  <Input
+                    id="vehiclePlate"
+                    name="vehiclePlate"
+                    value={formData.vehiclePlate}
+                    onChange={handleInputChange}
+                    placeholder="e.g., AB-1234"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Driver Information */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-semibold text-sm">
+                Driver Information (Optional)
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="driverName">Driver Name</Label>
+                  <Input
+                    id="driverName"
+                    name="driverName"
+                    value={formData.driverName}
+                    onChange={handleInputChange}
+                    placeholder="Full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="driverLicense">License Number</Label>
+                  <Input
+                    id="driverLicense"
+                    name="driverLicense"
+                    value={formData.driverLicense}
+                    onChange={handleInputChange}
+                    placeholder="License number"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Offence Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-sm">Offence Information</h3>
@@ -604,57 +656,6 @@ function RouteComponent() {
                 <div className="text-xs text-muted-foreground mt-2 break-all">
                   Coordinates: {formData.latitude.toFixed(6)},{" "}
                   {formData.longitude.toFixed(6)}
-                </div>
-              </div>
-            </div>
-
-            {/* Vehicle Information */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold text-sm">
-                Vehicle Information (Optional)
-              </h3>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="vehiclePlate">Vehicle Plate Number</Label>
-                  <Input
-                    id="vehiclePlate"
-                    name="vehiclePlate"
-                    value={formData.vehiclePlate}
-                    onChange={handleInputChange}
-                    placeholder="e.g., AB-1234"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Driver Information */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold text-sm">
-                Driver Information (Optional)
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="driverName">Driver Name</Label>
-                  <Input
-                    id="driverName"
-                    name="driverName"
-                    value={formData.driverName}
-                    onChange={handleInputChange}
-                    placeholder="Full name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="driverLicense">License Number</Label>
-                  <Input
-                    id="driverLicense"
-                    name="driverLicense"
-                    value={formData.driverLicense}
-                    onChange={handleInputChange}
-                    placeholder="License number"
-                  />
                 </div>
               </div>
             </div>
