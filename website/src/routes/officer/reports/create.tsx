@@ -290,11 +290,11 @@ function RouteComponent() {
       const photo = photos[i];
       const fileExt = photo.name.split(".").pop();
       const fileName = `${infringementId}_${Date.now()}_${i}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const file_path = `${fileName}`;
 
       const { data, error } = await supabase.storage
         .from("evidence")
-        .upload(filePath, photo, {
+        .upload(file_path, photo, {
           cacheControl: "3600",
           upsert: false,
         });

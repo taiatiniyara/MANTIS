@@ -81,12 +81,12 @@ function RouteComponent() {
         // Fetch photo URLs from storage - handle both camelCase and snake_case
         const urls = await Promise.all(
           evidenceData
-            .filter(file => file.file_path || file.filePath) // Filter out files without a path
+            .filter(file => file.file_path || file.file_path) // Filter out files without a path
             .map(async (file) => {
-              const filePath = file.file_path || file.filePath
+              const file_path = file.file_path || file.file_path
               const { data } = supabase.storage
                 .from('evidence')
-                .getPublicUrl(filePath)
+                .getPublicUrl(file_path)
               return data.publicUrl
             })
         )
@@ -243,10 +243,10 @@ function RouteComponent() {
                   </div>
                 )}
 
-                {offence.agencyType && (
+                {offence.agency_type && (
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-1">Agency Type</div>
-                    <Badge variant="secondary">{offence.agencyType}</Badge>
+                    <Badge variant="secondary">{offence.agency_type}</Badge>
                   </div>
                 )}
               </>
@@ -281,13 +281,13 @@ function RouteComponent() {
                 )}
 
                 <div className="flex flex-wrap gap-3 text-sm">
-                  {offence.requiresEvidence && (
+                  {offence.requires_evidence && (
                     <div className="flex items-center gap-1.5">
                       <Camera className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Evidence Required</span>
                     </div>
                   )}
-                  {offence.requiresLocation && (
+                  {offence.requires_location && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Location Required</span>

@@ -65,11 +65,11 @@ function RouteComponent() {
                       </Badge>
                     </div>
                   )}
-                  {team.createdAt && (
+                  {team.created_at && (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Created:</span>
                       <span className="text-xs">
-                        {new Date(team.createdAt).toLocaleDateString()}
+                        {new Date(team.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   )}

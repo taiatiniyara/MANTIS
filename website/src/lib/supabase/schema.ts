@@ -19,7 +19,7 @@ export const agencies = pgTable("agencies", {
   name: text("name").notNull(),          // e.g., "Suva City Council"
   code: text("code").notNull().unique(), // e.g., "SCC", "LTA", "FJPOL"
   type: text("type").notNull().$type<AgencyType>(),          // national, municipal, police
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Agency = typeof agencies.$inferSelect;
 export type NewAgency = typeof agencies.$inferInsert;
@@ -43,7 +43,7 @@ export const locations = pgTable("locations", {
   // GeoJSON string for boundaries (Polygon) or points (Point)
   geom: text("geom"),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Location = typeof locations.$inferSelect;
 export type NewLocation = typeof locations.$inferInsert;
@@ -62,7 +62,7 @@ export const teams = pgTable("teams", {
 
   name: text("name").notNull(), // e.g., "Suva Parking Enforcement", "Traffic West"
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Team = typeof teams.$inferSelect;
 export type NewTeam = typeof teams.$inferInsert;
@@ -85,7 +85,7 @@ export const users = pgTable("users", {
 
   display_name: text("display_name"),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -95,11 +95,11 @@ export type NewUser = typeof users.$inferInsert;
 // -----------------------------------------------------
 export const drivers = pgTable("drivers", {
   id: uuid("id").primaryKey().defaultRandom(),
-  licenseNumber: text("license_number").notNull().unique(),
-  fullName: text("full_name").notNull(),
+  license_number: text("license_number").notNull().unique(),
+  full_name: text("full_name").notNull(),
   address: text("address"),
-  dateOfBirth: timestamp("dob"),
-  createdAt: timestamp("created_at").defaultNow(),
+  dob: timestamp("dob"),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Driver = typeof drivers.$inferSelect;
 export type NewDriver = typeof drivers.$inferInsert;
@@ -109,12 +109,12 @@ export type NewDriver = typeof drivers.$inferInsert;
 // -----------------------------------------------------
 export const vehicles = pgTable("vehicles", {
   id: uuid("id").primaryKey().defaultRandom(),
-  plateNumber: text("plate_number").notNull().unique(),
+  plate_number: text("plate_number").notNull().unique(),
   make: text("make"),
   model: text("model"),
   color: text("color"),
   owner_id: uuid("owner_id").references(() => drivers.id),
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Vehicle = typeof vehicles.$inferSelect;
 export type NewVehicle = typeof vehicles.$inferInsert;
@@ -134,28 +134,28 @@ export const offences = pgTable("offences", {
 
   // Which agency owns this offence
   // e.g. "LTA", "POLICE", "MUNICIPAL"
-  agencyType: text("agency_type").notNull(),
+  agency_type: text("agency_type").notNull(),
 
   // Optional: specific agency (e.g., Suva City Council)
-  agencyId: uuid("agency_id").references(() => agencies.id),
+  agency_id: uuid("agency_id").references(() => agencies.id),
 
   // Fixed penalty amount (in FJD)
-  fixedPenalty: integer("fixed_penalty").notNull(),
+  fixed_penalty: integer("fixed_penalty").notNull(),
 
   // Severity classification
   // e.g. "minor", "serious", "critical"
   severity: text("severity").notNull().default("minor"),
 
   // Whether photographic evidence is required
-  requiresEvidence: boolean("requires_evidence").default(false),
+  requires_evidence: boolean("requires_evidence").default(false),
 
   // Whether GPS location is required (e.g., parking, speeding)
-  requiresLocation: boolean("requires_location").default(true),
+  requires_location: boolean("requires_location").default(true),
 
   // Whether this offence is active (for future law changes)
   active: boolean("active").default(true),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Offence = typeof offences.$inferSelect;
 export type NewOffence = typeof offences.$inferInsert;
@@ -186,7 +186,7 @@ export const infringements = pgTable("infringements", {
   location: text("location"),
 
   // Jurisdiction resolved via GIS
-  jurisdictionLocation_id: uuid("jurisdiction_location_id").references(
+  jurisdiction_location_id: uuid("jurisdiction_location_id").references(
     () => locations.id
   ),
 
@@ -204,9 +204,9 @@ export const evidenceFiles = pgTable("evidence_files", {
   infringement_id: uuid("infringement_id")
     .notNull()
     .references(() => infringements.id),
-  filePath: text("file_path").notNull(),
-  fileType: text("file_type").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  file_path: text("file_path").notNull(),
+  file_type: text("file_type").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type EvidenceFile = typeof evidenceFiles.$inferSelect;
 export type NewEvidenceFile = typeof evidenceFiles.$inferInsert;
@@ -222,7 +222,7 @@ export const payments = pgTable("payments", {
   amount: integer("amount").notNull(),
   method: text("method").notNull(), // mpaisa, mycash, card, postfiji
   reference: text("reference"),
-  paidAt: timestamp("paid_at").defaultNow(),
+  paid_at: timestamp("paid_at").defaultNow(),
 });
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
@@ -235,11 +235,11 @@ export const appeals = pgTable("appeals", {
   infringement_id: uuid("infringement_id")
     .notNull()
     .references(() => infringements.id),
-  submittedBy: uuid("submitted_by").references(() => drivers.id),
+  submitted_by: uuid("submitted_by").references(() => drivers.id),
   reason: text("reason").notNull(),
-  evidencePath: text("evidence_path"),
+  evidence_path: text("evidence_path"),
   status: text("status").default("pending"),
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type Appeal = typeof appeals.$inferSelect;
 export type NewAppeal = typeof appeals.$inferInsert;
@@ -252,7 +252,7 @@ export const auditLogs = pgTable("audit_logs", {
   user_id: uuid("user_id").references(() => users.id),
   action: text("action").notNull(),
   metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
