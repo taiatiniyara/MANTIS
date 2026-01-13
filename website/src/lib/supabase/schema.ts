@@ -41,6 +41,8 @@ export const locations = pgTable("locations", {
 
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
 
 // -----------------------------------------------------
 // Teams (inside agencies, optionally tied to a location)
@@ -64,6 +66,8 @@ export type NewTeam = typeof teams.$inferInsert;
 // -----------------------------------------------------
 // Users (officers, supervisors, admins)
 // -----------------------------------------------------
+
+export type Role = "Super Admin" | "Agency Admin" | "Team Leader" | "Officer" | "Citizen" | "Government Official";
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(), // Supabase auth.user.id
 
@@ -73,12 +77,14 @@ export const users = pgTable("users", {
 
   teamId: uuid("team_id").references(() => teams.id),
 
-  role: text("role").notNull(), // officer, supervisor, finance, admin, super_admin
+  role: text("role").notNull().$type<Role>(), // officer, supervisor, finance, admin, super_admin
 
   displayName: text("display_name"),
 
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 
 // -----------------------------------------------------
 // Drivers
@@ -91,6 +97,8 @@ export const drivers = pgTable("drivers", {
   dateOfBirth: timestamp("dob"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type Driver = typeof drivers.$inferSelect;
+export type NewDriver = typeof drivers.$inferInsert;
 
 // -----------------------------------------------------
 // Vehicles
@@ -104,6 +112,8 @@ export const vehicles = pgTable("vehicles", {
   ownerId: uuid("owner_id").references(() => drivers.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type Vehicle = typeof vehicles.$inferSelect;
+export type NewVehicle = typeof vehicles.$inferInsert;
 
 // -----------------------------------------------------
 // Infringements (core record)
@@ -139,6 +149,8 @@ export const infringements = pgTable("infringements", {
   issuedAt: timestamp("issued_at").defaultNow(),
   status: text("status").notNull().default("pending"),
 });
+export type Infringement = typeof infringements.$inferSelect;
+export type NewInfringement = typeof infringements.$inferInsert;
 
 // -----------------------------------------------------
 // Evidence Files
@@ -152,6 +164,8 @@ export const evidenceFiles = pgTable("evidence_files", {
   fileType: text("file_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type EvidenceFile = typeof evidenceFiles.$inferSelect;
+export type NewEvidenceFile = typeof evidenceFiles.$inferInsert;
 
 // -----------------------------------------------------
 // Payments
@@ -166,6 +180,8 @@ export const payments = pgTable("payments", {
   reference: text("reference"),
   paidAt: timestamp("paid_at").defaultNow(),
 });
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;
 
 // -----------------------------------------------------
 // Appeals
@@ -181,6 +197,8 @@ export const appeals = pgTable("appeals", {
   status: text("status").default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type Appeal = typeof appeals.$inferSelect;
+export type NewAppeal = typeof appeals.$inferInsert;
 
 // -----------------------------------------------------
 // Audit Logs
@@ -192,3 +210,19 @@ export const auditLogs = pgTable("audit_logs", {
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export const tables = {
+  agencies,
+  locations,
+  teams,
+  users,
+  drivers,
+  vehicles,
+  infringements,
+  evidenceFiles,
+  payments,
+  appeals,
+  auditLogs,
+}
