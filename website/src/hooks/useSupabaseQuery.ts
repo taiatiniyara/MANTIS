@@ -26,7 +26,7 @@ export function useSupabaseQuery<T>({
         queryFn: async () => {
             let query = supabase.from(tableName).select(columns ? columns.join(", ") : "*");
 
-            if (filter) {
+            if (filter && filter.value !== null && filter.value !== undefined && filter.value !== '') {
                 query = query.eq(filter.column as string, filter.value);
             }
 

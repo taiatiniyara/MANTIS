@@ -72,6 +72,7 @@ function RouteComponent() {
           console.error("Error fetching offences:", error);
           setError("Failed to load offences list");
         } else {
+          console.log("Offences loaded:", data);
           setOffences(data || []);
         }
       } catch (err) {
@@ -128,14 +129,17 @@ function RouteComponent() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleOffenceSelect = (offenceId: string) => {
-    const offence = offences.find((o) => o.id === offenceId);
+  const handleOffenceSelect = (offenceValue: string | null) => {
+    if (!offenceValue) return;
+    const offence = offences.find((o) => `${o.code} - ${o.name}` === offenceValue);
     if (offence) {
       setSelectedOffence(offence);
+      // Handle both camelCase and snake_case from Supabase
+      const penalty = (offence as any).fixed_penalty || (offence as any).fixedPenalty || 0;
       setFormData((prev) => ({
         ...prev,
-        offenceCode: offence.code,
-        fineAmount: offence.fixedPenalty.toString(),
+        offenceCode: offence.code || "",
+        fineAmount: penalty.toString(),
         description: offence.description || "",
       }));
     }
@@ -329,21 +333,28 @@ function RouteComponent() {
         return;
       }
 
+      // Create GeoJSON Point for location with coordinates
+      const locationGeoJSON = JSON.stringify({
+        type: "Point",
+        coordinates: [formData.longitude, formData.latitude],
+        properties: {
+          address: formData.location || `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`,
+        },
+      });
+
       // Create infringement record
       const { data: infringementData, error: insertError } = await supabase
         .from("infringements")
         .insert({
           agency_id: userMetadata?.agency_id || "",
-          team_id: userMetadata?.team_id,
+          team_id: userMetadata?.team_id || null,
           officer_id: user?.id || "",
-          offenceCode: formData.offenceCode,
+          offence_code: formData.offenceCode,
           description: formData.description || null,
-          fineAmount: fineAmount,
-          location: formData.location || null,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
+          fine_amount: fineAmount,
+          location: locationGeoJSON,
           status: "pending",
-          issuedAt: new Date().toISOString(),
+          issued_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -364,26 +375,37 @@ function RouteComponent() {
           );
 
           // Save evidence file records to database
-          const evidenceRecords = uploadedPaths.map((path) => ({
-            infringement_id: infringementData.id,
-            filePath: path,
-            fileType: "image",
-          }));
+          if (uploadedPaths.length > 0) {
+            const evidenceRecords = uploadedPaths.map((path) => ({
+              infringement_id: infringementData.id,
+              file_path: path,
+              file_type: "image",
+            }));
 
-          const { error: evidenceError } = await supabase
-            .from("evidence_files")
-            .insert(evidenceRecords);
+            const { error: evidenceError } = await supabase
+              .from("evidence_files")
+              .insert(evidenceRecords);
 
-          if (evidenceError) {
-            console.error("Error saving evidence records:", evidenceError);
-            // Don't fail the whole operation, but log the error
-            setError(
-              "Infringement created but failed to save some evidence photos",
-            );
+            if (evidenceError) {
+              console.error("Error saving evidence records:", evidenceError);
+              // Don't fail the whole operation, just show a warning
+              alert(
+                "Infringement created successfully, but some evidence photos could not be saved."
+              );
+            }
           }
         } catch (uploadError: any) {
           console.error("Error uploading photos:", uploadError);
-          setError("Infringement created but failed to upload evidence photos");
+          // Storage RLS policy issue - show helpful message
+          if (uploadError.message?.includes("row-level security")) {
+            alert(
+              "Infringement created successfully!\n\nNote: Photo upload failed due to storage permissions. Please contact your administrator to configure storage access policies."
+            );
+          } else {
+            alert(
+              "Infringement created successfully, but evidence photos could not be uploaded."
+            );
+          }
         } finally {
           setIsUploadingPhotos(false);
         }
@@ -449,7 +471,8 @@ function RouteComponent() {
                     </div>
                   ) : (
                     <Combobox
-                      value={selectedOffence?.id || ""}
+                      items={offences.map(o => `${o.code} - ${o.name}`)}
+                      value={selectedOffence ? `${selectedOffence.code} - ${selectedOffence.name}` : ""}
                       onValueChange={handleOffenceSelect}
                     >
                       <ComboboxInput
@@ -460,18 +483,21 @@ function RouteComponent() {
                       <ComboboxContent>
                         <ComboboxEmpty>No offence found</ComboboxEmpty>
                         <ComboboxList>
-                          {offences.map((offence) => (
-                            <ComboboxItem key={offence.id} value={offence.id}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {offence.code} - {offence.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  FJD {offence.fixedPenalty} • {offence.severity}
-                                </span>
-                              </div>
-                            </ComboboxItem>
-                          ))}
+                          {(label) => {
+                            const offence = offences.find(o => `${o.code} - ${o.name}` === label);
+                            return offence ? (
+                              <ComboboxItem key={offence.id} value={label}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {offence.code} - {offence.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    FJD {(offence as any).fixed_penalty || (offence as any).fixedPenalty || 0} • {offence.severity}
+                                  </span>
+                                </div>
+                              </ComboboxItem>
+                            ) : null;
+                          }}
                         </ComboboxList>
                       </ComboboxContent>
                     </Combobox>
@@ -480,7 +506,7 @@ function RouteComponent() {
                     <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md">
                       <strong>Selected:</strong> {selectedOffence.code} - {selectedOffence.name}
                       <br />
-                      <strong>Penalty:</strong> FJD {selectedOffence.fixedPenalty}
+                      <strong>Penalty:</strong> FJD {(selectedOffence as any).fixed_penalty || (selectedOffence as any).fixedPenalty || 0}
                       {selectedOffence.description && (
                         <>
                           <br />

@@ -133,11 +133,14 @@ function RouteComponent() {
           ) : sortedInfringements && sortedInfringements.length > 0 ? (
             <div className="divide-y">
               {sortedInfringements.map((inf) => (
-                <div
-                  key={inf.id}
-                  className="p-4 sm:p-6 hover:bg-muted/50 transition-colors cursor-pointer"
+                <Link 
+                  key={inf.id} 
+                  to="/officer/reports/$id" 
+                  params={{ id: inf.id }}
+                  className="block"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="p-4 sm:p-6 hover:bg-muted/50 transition-colors cursor-pointer">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -187,8 +190,9 @@ function RouteComponent() {
                     <div className="flex sm:flex-col items-start gap-2">
                       {getStatusBadge(inf.status)}
                     </div>
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (

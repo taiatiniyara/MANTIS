@@ -32,6 +32,7 @@ import { Route as SuperAdminTeamsCreateRouteImport } from './routes/super-admin/
 import { Route as SuperAdminLocationsCreateRouteImport } from './routes/super-admin/locations/create'
 import { Route as SuperAdminAgenciesIdRouteImport } from './routes/super-admin/agencies/$id'
 import { Route as OfficerReportsCreateRouteImport } from './routes/officer/reports/create'
+import { Route as OfficerReportsIdRouteImport } from './routes/officer/reports/$id'
 
 const SuperAdminRoute = SuperAdminRouteImport.update({
   id: '/super-admin',
@@ -151,6 +152,11 @@ const OfficerReportsCreateRoute = OfficerReportsCreateRouteImport.update({
   path: '/reports/create',
   getParentRoute: () => OfficerRoute,
 } as any)
+const OfficerReportsIdRoute = OfficerReportsIdRouteImport.update({
+  id: '/reports/$id',
+  path: '/reports/$id',
+  getParentRoute: () => OfficerRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsIndexRoute
   '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/officer': typeof OfficerIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
+  '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/officer/'
     | '/super-admin/'
+    | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/officer'
     | '/super-admin'
+    | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/officer/'
     | '/super-admin/'
+    | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
     | '/super-admin/locations/create'
@@ -474,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OfficerReportsCreateRouteImport
       parentRoute: typeof OfficerRoute
     }
+    '/officer/reports/$id': {
+      id: '/officer/reports/$id'
+      path: '/reports/$id'
+      fullPath: '/officer/reports/$id'
+      preLoaderRoute: typeof OfficerReportsIdRouteImport
+      parentRoute: typeof OfficerRoute
+    }
   }
 }
 
@@ -496,6 +515,7 @@ const AgencyAdminRouteWithChildren = AgencyAdminRoute._addFileChildren(
 interface OfficerRouteChildren {
   OfficerProfileRoute: typeof OfficerProfileRoute
   OfficerIndexRoute: typeof OfficerIndexRoute
+  OfficerReportsIdRoute: typeof OfficerReportsIdRoute
   OfficerReportsCreateRoute: typeof OfficerReportsCreateRoute
   OfficerReportsIndexRoute: typeof OfficerReportsIndexRoute
 }
@@ -503,6 +523,7 @@ interface OfficerRouteChildren {
 const OfficerRouteChildren: OfficerRouteChildren = {
   OfficerProfileRoute: OfficerProfileRoute,
   OfficerIndexRoute: OfficerIndexRoute,
+  OfficerReportsIdRoute: OfficerReportsIdRoute,
   OfficerReportsCreateRoute: OfficerReportsCreateRoute,
   OfficerReportsIndexRoute: OfficerReportsIndexRoute,
 }
