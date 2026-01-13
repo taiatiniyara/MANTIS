@@ -22,10 +22,10 @@ function RouteComponent() {
   const infringements = useSupabaseQuery<Infringement>({
     tableName: 'infringements',
     queryKey: ['officer-infringements', user?.id || "uid"],
-    filter: {
+    filter: user?.id ? {
       column: 'officer_id',
-      value: user?.id || "",
-    },
+      value: user.id,
+    } : undefined,
     enabled: Boolean(user?.id),
   })
 

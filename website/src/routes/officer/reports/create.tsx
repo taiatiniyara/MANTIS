@@ -371,6 +371,19 @@ function RouteComponent() {
     setError(null);
     setIsSubmitting(true);
 
+    // Basic readiness checks before calling Supabase
+    if (!navigator.onLine) {
+      toast.error("You're offline. Reconnect and try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!user || !userMetadata?.agency_id) {
+      toast.error("Account info is still loading. Please try again in a moment.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // Validate required fields
       if (!formData.offence_code || !formData.fine_amount) {
@@ -412,9 +425,9 @@ function RouteComponent() {
       console.log("Location GeoJSON created:", locationGeoJSON);
       
       const infringementPayload = {
-        agency_id: userMetadata?.agency_id || "",
-        team_id: userMetadata?.team_id || null,
-        officer_id: user?.id || "",
+        agency_id: userMetadata.agency_id,
+        team_id: userMetadata.team_id || null,
+        officer_id: user.id,
         offence_code: formData.offence_code,
         description: formData.description || null,
         fine_amount: fine_amount,
@@ -495,6 +508,7 @@ function RouteComponent() {
       console.error("Unexpected error:", err);
       toast.error("An unexpected error occurred");
       setError("An unexpected error occurred");
+    } finally {
       setIsSubmitting(false);
     }
   };
