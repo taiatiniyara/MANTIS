@@ -371,14 +371,23 @@ function RouteComponent() {
     setError(null);
     setIsSubmitting(true);
 
+    // Set a timeout to re-enable the button if something hangs
+    const timeoutId = setTimeout(() => {
+      console.error("Submit timeout - re-enabling button");
+      setIsSubmitting(false);
+      toast.error("Request timed out. Please try again.");
+    }, 30000); // 30 second timeout
+
     // Basic readiness checks before calling Supabase
     if (!navigator.onLine) {
+      clearTimeout(timeoutId);
       toast.error("You're offline. Reconnect and try again.");
       setIsSubmitting(false);
       return;
     }
 
     if (!user || !userMetadata?.agency_id) {
+      clearTimeout(timeoutId);
       toast.error(
         "Account info is still loading. Please try again in a moment.",
       );
@@ -389,6 +398,7 @@ function RouteComponent() {
     try {
       // Validate required fields
       if (!formData.offence_code || !formData.fine_amount) {
+        clearTimeout(timeoutId);
         console.error("Validation failed: Missing offence_code or fine_amount");
         toast.error("Offence code and fine amount are required");
         setError("Offence code and fine amount are required");
@@ -403,6 +413,7 @@ function RouteComponent() {
       // Parse fine amount
       const fine_amount = parseInt(formData.fine_amount);
       if (isNaN(fine_amount) || fine_amount <= 0) {
+        clearTimeout(timeoutId);
         console.error(
           "Validation failed: Invalid fine amount",
           formData.fine_amount,
@@ -450,6 +461,7 @@ function RouteComponent() {
         .single();
 
       if (insertError || !infringementData) {
+        clearTimeout(timeoutId);
         console.error("Error creating infringement:", insertError);
         toast.error(insertError?.message || "Failed to create infringement");
         setError(insertError?.message || "Failed to create infringement");
@@ -462,10 +474,13 @@ function RouteComponent() {
       // Upload photos if any
       if (photos.length > 0) {
         try {
+          console.log("Starting photo upload for", photos.length, "photos");
           setIsUploadingPhotos(true);
           const uploadedPaths = await uploadPhotosToSupabase(
             infringementData.id,
           );
+
+          console.log("Photos uploaded successfully:", uploadedPaths.length);
 
           // Save evidence file records to database
           if (uploadedPaths.length > 0) {
@@ -481,37 +496,40 @@ function RouteComponent() {
 
             if (evidenceError) {
               console.error("Error saving evidence records:", evidenceError);
-              // Don't fail the whole operation, just show a warning
-              alert(
-                "Infringement created successfully, but some evidence photos could not be saved.",
-              );
+              toast.warning("Evidence photos could not be saved");
+            } else {
+              console.log("Evidence records saved successfully");
             }
           }
         } catch (uploadError: any) {
           console.error("Error uploading photos:", uploadError);
-          // Storage RLS policy issue - show helpful message
-          if (uploadError.message?.includes("row-level security")) {
-            alert(
-              "Infringement created successfully!\n\nNote: Photo upload failed due to storage permissions. Please contact your administrator to configure storage access policies.",
-            );
-          } else {
-            alert(
-              "Infringement created successfully, but evidence photos could not be uploaded.",
-            );
-          }
+          console.error("Upload error details:", uploadError?.message);
+          // Don't fail the whole operation, just show a warning
+          toast.warning("Infringement created but photos could not be uploaded");
         } finally {
           setIsUploadingPhotos(false);
         }
       }
 
       // Success - navigate back to reports list
+      clearTimeout(timeoutId);
       console.log("Navigating to reports list");
       toast.success("Infringement created successfully!");
-      navigate({ to: "/officer/reports" });
-    } catch (err) {
+      
+      // Use both navigation methods for PWA compatibility
+      try {
+        await navigate({ to: "/officer/reports" });
+      } catch (navError) {
+        console.error("Navigation error:", navError);
+        // Fallback to window navigation for PWA
+        window.location.href = "/officer/reports";
+      }
+    } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error("Unexpected error:", err);
-      toast.error("An unexpected error occurred");
-      setError("An unexpected error occurred");
+      console.error("Error stack:", err?.stack);
+      toast.error(err?.message || "An unexpected error occurred");
+      setError(err?.message || "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
