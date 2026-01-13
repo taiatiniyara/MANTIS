@@ -363,24 +363,40 @@ function RouteComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted - handleSubmit called");
+    console.log("Form data:", formData);
+    console.log("User metadata:", userMetadata);
+    console.log("User:", user);
+    
     setError(null);
     setIsSubmitting(true);
 
     try {
       // Validate required fields
       if (!formData.offence_code || !formData.fine_amount) {
+        console.error("Validation failed: Missing offence_code or fine_amount");
+        toast.error("Offence code and fine amount are required");
         setError("Offence code and fine amount are required");
         setIsSubmitting(false);
         return;
       }
+      
+      console.log("Validation passed");
+
+      
+      console.log("Validation passed");
 
       // Parse fine amount
       const fine_amount = parseInt(formData.fine_amount);
       if (isNaN(fine_amount) || fine_amount <= 0) {
+        console.error("Validation failed: Invalid fine amount", formData.fine_amount);
+        toast.error("Fine amount must be a positive number");
         setError("Fine amount must be a positive number");
         setIsSubmitting(false);
         return;
       }
+      
+      console.log("Fine amount parsed:", fine_amount);
 
       // Create GeoJSON Point for location with coordinates
       const locationGeoJSON = JSON.stringify({
@@ -392,30 +408,39 @@ function RouteComponent() {
             `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`,
         },
       });
+      
+      console.log("Location GeoJSON created:", locationGeoJSON);
+      
+      const infringementPayload = {
+        agency_id: userMetadata?.agency_id || "",
+        team_id: userMetadata?.team_id || null,
+        officer_id: user?.id || "",
+        offence_code: formData.offence_code,
+        description: formData.description || null,
+        fine_amount: fine_amount,
+        location: locationGeoJSON,
+        status: "pending",
+        issued_at: new Date().toISOString(),
+      };
+      
+      console.log("Creating infringement with payload:", infringementPayload);
 
       // Create infringement record
       const { data: infringementData, error: insertError } = await supabase
         .from("infringements")
-        .insert({
-          agency_id: userMetadata?.agency_id || "",
-          team_id: userMetadata?.team_id || null,
-          officer_id: user?.id || "",
-          offence_code: formData.offence_code,
-          description: formData.description || null,
-          fine_amount: fine_amount,
-          location: locationGeoJSON,
-          status: "pending",
-          issued_at: new Date().toISOString(),
-        })
+        .insert(infringementPayload)
         .select()
         .single();
 
       if (insertError || !infringementData) {
         console.error("Error creating infringement:", insertError);
+        toast.error(insertError?.message || "Failed to create infringement");
         setError(insertError?.message || "Failed to create infringement");
         setIsSubmitting(false);
         return;
       }
+      
+      console.log("Infringement created successfully:", infringementData);
 
       // Upload photos if any
       if (photos.length > 0) {
@@ -463,9 +488,12 @@ function RouteComponent() {
       }
 
       // Success - navigate back to reports list
+      console.log("Navigating to reports list");
+      toast.success("Infringement created successfully!");
       navigate({ to: "/officer/reports" });
     } catch (err) {
       console.error("Unexpected error:", err);
+      toast.error("An unexpected error occurred");
       setError("An unexpected error occurred");
       setIsSubmitting(false);
     }
