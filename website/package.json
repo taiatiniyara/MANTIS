@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db-push": "drizzle-kit push --config ./src/lib/supabase/drizzle.config.ts"
+    "db-push": "drizzle-kit push --config ./src/lib/supabase/drizzle.config.ts",
+    "deploy": "tsc -b && vite build && firebase deploy && git add . && git commit -m 'deploy' && git push && rm -rf dist"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
