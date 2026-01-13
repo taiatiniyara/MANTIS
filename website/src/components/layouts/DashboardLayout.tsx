@@ -67,7 +67,7 @@ const menuItems: MenuItem[] = [
     roles: ["Agency Admin"],
   },
   {
-    label: "Reports",
+    label: "Infringements",
     path: "/agency-admin/reports",
     icon: FileText,
     roles: ["Agency Admin"],
@@ -85,7 +85,7 @@ const menuItems: MenuItem[] = [
     roles: ["Team Leader"],
   },
   {
-    label: "Reports",
+    label: "Infringements",
     path: "/team-leader/reports",
     icon: FileText,
     roles: ["Team Leader"],
@@ -97,7 +97,7 @@ const menuItems: MenuItem[] = [
     roles: ["Officer"],
   },
   {
-    label: "My Reports",
+    label: "Infringements",
     path: "/officer/reports",
     icon: FileText,
     roles: ["Officer"],

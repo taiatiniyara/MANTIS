@@ -32,8 +32,8 @@ function RouteComponent() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const todaysInfringements = infringements.data?.filter(inf => {
-    if (!inf.issuedAt) return false
-    const issueDate = new Date(inf.issuedAt)
+    if (!inf.issued_at) return false
+    const issueDate = new Date(inf.issued_at)
     issueDate.setHours(0, 0, 0, 0)
     return issueDate.getTime() === today.getTime()
   }).length || 0
@@ -41,8 +41,8 @@ function RouteComponent() {
   // Recent infringements for activity feed
   const recentInfringements = infringements.data
     ?.sort((a, b) => {
-      const dateA = a.issuedAt ? new Date(a.issuedAt).getTime() : 0
-      const dateB = b.issuedAt ? new Date(b.issuedAt).getTime() : 0
+      const dateA = a.issued_at ? new Date(a.issued_at).getTime() : 0
+      const dateB = b.issued_at ? new Date(b.issued_at).getTime() : 0
       return dateB - dateA
     })
     .slice(0, 5)
@@ -71,7 +71,7 @@ function RouteComponent() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Reports</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Infringements</CardTitle>
             <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
@@ -144,21 +144,21 @@ function RouteComponent() {
           ) : recentInfringements && recentInfringements.length > 0 ? (
             <div className="space-y-3">
               {recentInfringements.map((inf) => (
-                <div
+                <a href={`/officer/reports/${inf.id}`}
                   key={inf.id}
                   className="flex items-start justify-between gap-3 border-b pb-3 last:border-0 last:pb-0"
                 >
                   <div className="space-y-1 min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{inf.offenceCode}</p>
+                    <p className="text-sm font-medium truncate">{inf.offence_code}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2">
                       {inf.description || 'No description'}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Fine: ${inf.fineAmount}</span>
+                      <span>Fine: ${inf.fine_amount}</span>
                       <span>•</span>
                       <span>
-                        {inf.issuedAt
-                          ? new Date(inf.issuedAt).toLocaleDateString()
+                        {inf.issued_at
+                          ? new Date(inf.issued_at).toLocaleDateString()
                           : 'No date'}
                       </span>
                     </div>
@@ -166,7 +166,7 @@ function RouteComponent() {
                   <div className="shrink-0">
                     {getStatusBadge(inf.status)}
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           ) : (
@@ -196,7 +196,7 @@ function RouteComponent() {
             <Link to="/officer/reports" className="block">
               <Button className="w-full h-auto py-4 flex-col gap-2" variant="outline">
                 <FileText className="h-6 w-6" />
-                <span className="font-semibold">View All Reports</span>
+                <span className="font-semibold">View All Infringements</span>
                 <span className="text-xs opacity-70">See all your tickets</span>
               </Button>
             </Link>

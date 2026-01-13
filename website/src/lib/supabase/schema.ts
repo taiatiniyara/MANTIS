@@ -178,9 +178,9 @@ export const infringements = pgTable("infringements", {
   driver_id: uuid("driver_id").references(() => drivers.id),
   vehicle_id: uuid("vehicle_id").references(() => vehicles.id),
 
-  offenceCode: text("offence_code").notNull().references(() => offences.code),
+  offence_code: text("offence_code").notNull().references(() => offences.code),
   description: text("description"),
-  fineAmount: integer("fine_amount").notNull(),
+  fine_amount: integer("fine_amount").notNull(),
 
   // Where the offence occurred (GeoJSON Point)
   location: text("location"),
@@ -190,7 +190,7 @@ export const infringements = pgTable("infringements", {
     () => locations.id
   ),
 
-  issuedAt: timestamp("issued_at").defaultNow(),
+  issued_at: timestamp("issued_at").defaultNow(),
   status: text("status").notNull().default("pending"),
 });
 export type Infringement = typeof infringements.$inferSelect;

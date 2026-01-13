@@ -42,7 +42,7 @@ function RouteComponent() {
   // Filter infringements based on search and status
   const filteredInfringements = infringements.data?.filter(inf => {
     const matchesSearch = searchQuery === '' || 
-      inf.offenceCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inf.offence_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inf.description?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || inf.status === statusFilter
@@ -52,8 +52,8 @@ function RouteComponent() {
 
   // Sort by most recent
   const sortedInfringements = filteredInfringements?.sort((a, b) => {
-    const dateA = a.issuedAt ? new Date(a.issuedAt).getTime() : 0
-    const dateB = b.issuedAt ? new Date(b.issuedAt).getTime() : 0
+    const dateA = a.issued_at ? new Date(a.issued_at).getTime() : 0
+    const dateB = b.issued_at ? new Date(b.issued_at).getTime() : 0
     return dateB - dateA
   })
 
@@ -61,7 +61,7 @@ function RouteComponent() {
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold">My Reports</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">My Infringements</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
             Manage and track your issued infringements
           </p>
@@ -145,7 +145,7 @@ function RouteComponent() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h3 className="font-semibold text-sm sm:text-base">
-                            {inf.offenceCode}
+                            {inf.offence_code}
                           </h3>
                           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                             {inf.description || 'No description provided'}
@@ -157,15 +157,15 @@ function RouteComponent() {
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Fine:</span>
                           <span className="font-semibold text-foreground">
-                            ${inf.fineAmount}
+                            ${inf.fine_amount}
                           </span>
                         </div>
                         <span>•</span>
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Issued:</span>
                           <span>
-                            {inf.issuedAt
-                              ? new Date(inf.issuedAt).toLocaleDateString('en-US', {
+                            {inf.issued_at
+                              ? new Date(inf.issued_at).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'short',
                                   day: 'numeric',
@@ -173,11 +173,11 @@ function RouteComponent() {
                               : 'No date'}
                           </span>
                         </div>
-                        {inf.issuedAt && (
+                        {inf.issued_at && (
                           <>
                             <span>•</span>
                             <span>
-                              {new Date(inf.issuedAt).toLocaleTimeString('en-US', {
+                              {new Date(inf.issued_at).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })}

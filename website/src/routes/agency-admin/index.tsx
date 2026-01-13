@@ -49,8 +49,8 @@ function RouteComponent() {
 
   const recentInfringements = infringements.data
     ?.sort((a, b) => {
-      const dateA = a.issuedAt ? new Date(a.issuedAt).getTime() : 0
-      const dateB = b.issuedAt ? new Date(b.issuedAt).getTime() : 0
+      const dateA = a.issued_at ? new Date(a.issued_at).getTime() : 0
+      const dateB = b.issued_at ? new Date(b.issued_at).getTime() : 0
       return dateB - dateA
     })
     .slice(0, 5)
@@ -145,13 +145,13 @@ function RouteComponent() {
                     className="flex items-start justify-between gap-3 border-b pb-3 last:border-0 last:pb-0"
                   >
                     <div className="space-y-1 min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{inf.offenceCode}</p>
+                      <p className="text-sm font-medium truncate">{inf.offence_code}</p>
                       <p className="text-xs text-muted-foreground line-clamp-2">
                         {inf.description || 'No description'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {inf.issuedAt
-                          ? new Date(inf.issuedAt).toLocaleDateString('en-US', {
+                        {inf.issued_at
+                          ? new Date(inf.issued_at).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',

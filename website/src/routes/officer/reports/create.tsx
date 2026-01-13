@@ -46,9 +46,9 @@ function RouteComponent() {
   const [selectedOffence, setSelectedOffence] = useState<any | null>(null);
 
   const [formData, setFormData] = useState({
-    offenceCode: "",
+    offence_code: "",
     description: "",
-    fineAmount: "",
+    fine_amount: "",
     vehiclePlate: "",
     driverName: "",
     driverLicense: "",
@@ -138,8 +138,8 @@ function RouteComponent() {
       const penalty = (offence as any).fixed_penalty || (offence as any).fixedPenalty || 0;
       setFormData((prev) => ({
         ...prev,
-        offenceCode: offence.code || "",
-        fineAmount: penalty.toString(),
+        offence_code: offence.code || "",
+        fine_amount: penalty.toString(),
         description: offence.description || "",
       }));
     }
@@ -319,15 +319,15 @@ function RouteComponent() {
 
     try {
       // Validate required fields
-      if (!formData.offenceCode || !formData.fineAmount) {
+      if (!formData.offence_code || !formData.fine_amount) {
         setError("Offence code and fine amount are required");
         setIsSubmitting(false);
         return;
       }
 
       // Parse fine amount
-      const fineAmount = parseInt(formData.fineAmount);
-      if (isNaN(fineAmount) || fineAmount <= 0) {
+      const fine_amount = parseInt(formData.fine_amount);
+      if (isNaN(fine_amount) || fine_amount <= 0) {
         setError("Fine amount must be a positive number");
         setIsSubmitting(false);
         return;
@@ -349,9 +349,9 @@ function RouteComponent() {
           agency_id: userMetadata?.agency_id || "",
           team_id: userMetadata?.team_id || null,
           officer_id: user?.id || "",
-          offence_code: formData.offenceCode,
+          offence_code: formData.offence_code,
           description: formData.description || null,
-          fine_amount: fineAmount,
+          fine_amount: fine_amount,
           location: locationGeoJSON,
           status: "pending",
           issued_at: new Date().toISOString(),
@@ -512,7 +512,7 @@ function RouteComponent() {
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label
-                    htmlFor="offenceCode"
+                    htmlFor="offence_code"
                     className="required"
                   >
                     Select Offence *
@@ -571,17 +571,17 @@ function RouteComponent() {
 
                 <div className="space-y-2">
                   <Label
-                    htmlFor="fineAmount"
+                    htmlFor="fine_amount"
                     className="required"
                   >
                     Fine Amount (FJD) *
                   </Label>
                   <Input
-                    id="fineAmount"
-                    name="fineAmount"
+                    id="fine_amount"
+                    name="fine_amount"
                     type="number"
                     min="1"
-                    value={formData.fineAmount}
+                    value={formData.fine_amount}
                     onChange={handleInputChange}
                     placeholder="100"
                     required
@@ -736,8 +736,8 @@ function RouteComponent() {
                 {isSubmitting
                   ? isUploadingPhotos
                     ? "Uploading photos..."
-                    : "Creating..."
-                  : "Create Infringement"}
+                    : "Submitting..."
+                  : "Submit"}
               </Button>
               <Button
                 type="button"

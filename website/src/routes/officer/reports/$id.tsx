@@ -56,11 +56,12 @@ function RouteComponent() {
       setInfringement(infData as Infringement)
 
       // Fetch offence details
-      if (infData.offenceCode) {
+      const offence_code = (infData as any).offence_code || infData.offence_code
+      if (offence_code) {
         const { data: offData, error: offError } = await supabase
           .from('offences')
           .select('*')
-          .eq('code', infData.offenceCode)
+          .eq('code', offence_code)
           .single()
 
         if (!offError && offData) {
@@ -170,7 +171,7 @@ function RouteComponent() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Reports
+          Back to Infringements
         </Button>
         <Card>
           <CardContent className="p-12 text-center">
@@ -200,7 +201,7 @@ function RouteComponent() {
             className="-ml-3 mb-2"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Reports
+            Back to Infringements
           </Button>
           <h1 className="text-2xl sm:text-3xl font-bold">Infringement Details</h1>
           <p className="text-sm text-muted-foreground">
@@ -225,7 +226,7 @@ function RouteComponent() {
           <CardContent className="space-y-4">
             <div>
               <div className="text-sm font-medium text-muted-foreground mb-1">Offence Code</div>
-              <div className="text-lg font-semibold">{infringement.offenceCode}</div>
+              <div className="text-lg font-semibold">{(infringement as any).offence_code || infringement.offence_code}</div>
             </div>
             
             {offence && (
@@ -264,7 +265,7 @@ function RouteComponent() {
               <DollarSign className="h-5 w-5 text-muted-foreground" />
               <div>
                 <div className="text-sm font-medium text-muted-foreground">Fine Amount</div>
-                <div className="text-2xl font-bold">${infringement.fineAmount}</div>
+                <div className="text-2xl font-bold">${(infringement as any).fine_amount || infringement.fine_amount}</div>
               </div>
             </div>
 
@@ -312,8 +313,8 @@ function RouteComponent() {
               <div>
                 <div className="text-sm font-medium text-muted-foreground">Issued At</div>
                 <div className="text-base font-medium">
-                  {infringement.issuedAt
-                    ? new Date(infringement.issuedAt).toLocaleDateString('en-US', {
+                  {((infringement as any).issued_at || infringement.issued_at)
+                    ? new Date((infringement as any).issued_at || infringement.issued_at).toLocaleDateString('en-US', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -322,8 +323,8 @@ function RouteComponent() {
                     : 'Unknown'}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {infringement.issuedAt
-                    ? new Date(infringement.issuedAt).toLocaleTimeString('en-US', {
+                  {((infringement as any).issued_at || infringement.issued_at)
+                    ? new Date((infringement as any).issued_at || infringement.issued_at).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                         second: '2-digit',
