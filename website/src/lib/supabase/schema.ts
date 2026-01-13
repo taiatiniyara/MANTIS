@@ -1,0 +1,194 @@
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  integer,
+  jsonb,
+} from "drizzle-orm/pg-core";
+
+// -----------------------------------------------------
+// Agencies (LTA, Police, Municipal Councils, etc.)
+// -----------------------------------------------------
+export const agencies = pgTable("agencies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),          // e.g., "Suva City Council"
+  code: text("code").notNull().unique(), // e.g., "SCC", "LTA", "FJPOL"
+  type: text("type").notNull(),          // national, municipal, police
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type Agency = typeof agencies.$inferSelect;
+export type NewAgency = typeof agencies.$inferInsert;
+
+// -----------------------------------------------------
+// Hierarchical GIS Locations
+// Supports unlimited depth: country → division → province → municipal → ward → office
+// -----------------------------------------------------
+export const locations = pgTable("locations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  type: text("type").notNull(), // country, division, province, municipal, ward, station, office
+
+  name: text("name").notNull(),
+
+  parentId: uuid("parent_id"),
+
+  // Optional: which agency this location belongs to
+  agencyId: uuid("agency_id").references(() => agencies.id),
+
+  // GeoJSON string for boundaries (Polygon) or points (Point)
+  geom: text("geom"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Teams (inside agencies, optionally tied to a location)
+// -----------------------------------------------------
+export const teams = pgTable("teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  agencyId: uuid("agency_id")
+    .notNull()
+    .references(() => agencies.id),
+
+  locationId: uuid("location_id").references(() => locations.id),
+
+  name: text("name").notNull(), // e.g., "Suva Parking Enforcement", "Traffic West"
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type Team = typeof teams.$inferSelect;
+export type NewTeam = typeof teams.$inferInsert;
+
+// -----------------------------------------------------
+// Users (officers, supervisors, admins)
+// -----------------------------------------------------
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey(), // Supabase auth.user.id
+
+  agencyId: uuid("agency_id")
+    .notNull()
+    .references(() => agencies.id),
+
+  teamId: uuid("team_id").references(() => teams.id),
+
+  role: text("role").notNull(), // officer, supervisor, finance, admin, super_admin
+
+  displayName: text("display_name"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Drivers
+// -----------------------------------------------------
+export const drivers = pgTable("drivers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  licenseNumber: text("license_number").notNull().unique(),
+  fullName: text("full_name").notNull(),
+  address: text("address"),
+  dateOfBirth: timestamp("dob"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Vehicles
+// -----------------------------------------------------
+export const vehicles = pgTable("vehicles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  plateNumber: text("plate_number").notNull().unique(),
+  make: text("make"),
+  model: text("model"),
+  color: text("color"),
+  ownerId: uuid("owner_id").references(() => drivers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Infringements (core record)
+// -----------------------------------------------------
+export const infringements = pgTable("infringements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  agencyId: uuid("agency_id")
+    .notNull()
+    .references(() => agencies.id),
+
+  teamId: uuid("team_id").references(() => teams.id),
+
+  officerId: uuid("officer_id")
+    .notNull()
+    .references(() => users.id),
+
+  driverId: uuid("driver_id").references(() => drivers.id),
+  vehicleId: uuid("vehicle_id").references(() => vehicles.id),
+
+  offenceCode: text("offence_code").notNull(),
+  description: text("description"),
+  fineAmount: integer("fine_amount").notNull(),
+
+  // Where the offence occurred (GeoJSON Point)
+  location: text("location"),
+
+  // Jurisdiction resolved via GIS
+  jurisdictionLocationId: uuid("jurisdiction_location_id").references(
+    () => locations.id
+  ),
+
+  issuedAt: timestamp("issued_at").defaultNow(),
+  status: text("status").notNull().default("pending"),
+});
+
+// -----------------------------------------------------
+// Evidence Files
+// -----------------------------------------------------
+export const evidenceFiles = pgTable("evidence_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  infringementId: uuid("infringement_id")
+    .notNull()
+    .references(() => infringements.id),
+  filePath: text("file_path").notNull(),
+  fileType: text("file_type").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Payments
+// -----------------------------------------------------
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  infringementId: uuid("infringement_id")
+    .notNull()
+    .references(() => infringements.id),
+  amount: integer("amount").notNull(),
+  method: text("method").notNull(), // mpaisa, mycash, card, postfiji
+  reference: text("reference"),
+  paidAt: timestamp("paid_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Appeals
+// -----------------------------------------------------
+export const appeals = pgTable("appeals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  infringementId: uuid("infringement_id")
+    .notNull()
+    .references(() => infringements.id),
+  submittedBy: uuid("submitted_by").references(() => drivers.id),
+  reason: text("reason").notNull(),
+  evidencePath: text("evidence_path"),
+  status: text("status").default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// -----------------------------------------------------
+// Audit Logs
+// -----------------------------------------------------
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id),
+  action: text("action").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
