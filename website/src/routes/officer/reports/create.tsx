@@ -367,7 +367,7 @@ function RouteComponent() {
     console.log("Form data:", formData);
     console.log("User metadata:", userMetadata);
     console.log("User:", user);
-    
+
     setError(null);
     setIsSubmitting(true);
 
@@ -379,7 +379,9 @@ function RouteComponent() {
     }
 
     if (!user || !userMetadata?.agency_id) {
-      toast.error("Account info is still loading. Please try again in a moment.");
+      toast.error(
+        "Account info is still loading. Please try again in a moment.",
+      );
       setIsSubmitting(false);
       return;
     }
@@ -393,22 +395,24 @@ function RouteComponent() {
         setIsSubmitting(false);
         return;
       }
-      
+
       console.log("Validation passed");
 
-      
       console.log("Validation passed");
 
       // Parse fine amount
       const fine_amount = parseInt(formData.fine_amount);
       if (isNaN(fine_amount) || fine_amount <= 0) {
-        console.error("Validation failed: Invalid fine amount", formData.fine_amount);
+        console.error(
+          "Validation failed: Invalid fine amount",
+          formData.fine_amount,
+        );
         toast.error("Fine amount must be a positive number");
         setError("Fine amount must be a positive number");
         setIsSubmitting(false);
         return;
       }
-      
+
       console.log("Fine amount parsed:", fine_amount);
 
       // Create GeoJSON Point for location with coordinates
@@ -421,9 +425,9 @@ function RouteComponent() {
             `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`,
         },
       });
-      
+
       console.log("Location GeoJSON created:", locationGeoJSON);
-      
+
       const infringementPayload = {
         agency_id: userMetadata.agency_id,
         team_id: userMetadata.team_id || null,
@@ -435,7 +439,7 @@ function RouteComponent() {
         status: "pending",
         issued_at: new Date().toISOString(),
       };
-      
+
       console.log("Creating infringement with payload:", infringementPayload);
 
       // Create infringement record
@@ -452,7 +456,7 @@ function RouteComponent() {
         setIsSubmitting(false);
         return;
       }
-      
+
       console.log("Infringement created successfully:", infringementData);
 
       // Upload photos if any
