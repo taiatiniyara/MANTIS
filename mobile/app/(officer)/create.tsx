@@ -1,0 +1,1065 @@
+/**
+ * MANTIS Mobile - Create Infringement Screen
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDraft } from '@/lib/offline';
+import { addToSyncQueue, isOfflineMode } from '@/lib/offline';
+import * as Network from 'expo-network';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { createInfringement, getOffences, searchDriver, searchVehicle, upsertDriver, upsertVehicle, uploadEvidenceFile } from '@/lib/database';
+import { NewInfringement, Offence, GeoJSONPoint, NewDriver, NewVehicle } from '@/lib/types';
+import { formatCurrency } from '@/lib/formatting';
+import OSMMap from '@/components/OSMMap';
+
+interface PhotoItem {
+  uri: string;
+  type: string;
+  name: string;
+}
+
+export default function CreateInfringementScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const { user } = useAuth();
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const draftId = params.draftId as string | undefined;
+
+  // Form state
+  const [step, setStep] = useState<'offence' | 'driver' | 'vehicle' | 'location' | 'evidence' | 'review'>('offence');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    checkNetworkStatus();
+  }, []);
+
+  const checkNetworkStatus = async () => {
+    try {
+      const networkState = await Network.getNetworkStateAsync();
+      const offline = await isOfflineMode();
+      setIsOnline(networkState.isConnected ?? false && !offline);
+    } catch (error) {
+      console.error('Error checking network:', error);
+    }
+  };
+
+  // Offence
+  const [offences, setOffences] = useState<Offence[]>([]);
+  const [selectedOffence, setSelectedOffence] = useState<Offence | null>(null);
+  const [description, setDescription] = useState('');
+
+  // Driver
+  const [driverLicense, setDriverLicense] = useState('');
+
+  // Vehicle
+  const [vehiclePlate, setVehiclePlate] = useState('');
+
+  // Location
+  const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
+  const [locationDescription, setLocationDescription] = useState('');
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [loadingAddress, setLoadingAddress] = useState(false);
+
+  // Evidence
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+
+  useEffect(() => {
+    loadOffences();
+    requestLocationPermission();
+    if (draftId) {
+      loadDraftData();
+    }
+  }, []);
+
+  const loadDraftData = async () => {
+    if (!draftId) return;
+    
+    try {
+      const draft = await getDraft(draftId);
+      if (draft) {
+        // Pre-fill form with draft data
+        if (draft.data.offence_code) {
+          // Will need to find and set the offence after offences are loaded
+          setTimeout(() => {
+            const offence = offences.find(o => o.code === draft.data.offence_code);
+            if (offence) setSelectedOffence(offence);
+          }, 500);
+        }
+        
+        if (draft.data.description) setDescription(draft.data.description);
+        
+        // Parse location if exists
+        if (draft.data.location) {
+          try {
+            const geoJSON = JSON.parse(draft.data.location);
+            if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+              setCurrentLocation({
+                coords: {
+                  latitude: geoJSON.coordinates[1],
+                  longitude: geoJSON.coordinates[0],
+                  altitude: null,
+                  accuracy: null,
+                  altitudeAccuracy: null,
+                  heading: null,
+                  speed: null,
+                },
+                timestamp: Date.now(),
+              } as Location.LocationObject);
+            }
+          } catch (e) {
+            console.error('Error parsing location:', e);
+          }
+        }
+        
+        // Load photos
+        if (draft.photos && draft.photos.length > 0) {
+          setPhotos(draft.photos.map(p => ({
+            uri: p.uri,
+            type: p.file_type,
+            name: `photo_${Date.now()}.jpg`,
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      Alert.alert('Error', 'Failed to load draft data');
+    }
+  };
+
+  const loadOffences = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await getOffences({ active: true });
+      if (data) {
+        setOffences(data);
+      } else if (error) {
+        Alert.alert('Error', 'Failed to load offences');
+      }
+    } catch (err) {
+      console.error('Error loading offences:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestLocationPermission = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      getCurrentLocation();
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    setLoadingLocation(true);
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setCurrentLocation(location);
+      
+      // Fetch address for the current location
+      await fetchAddressFromCoordinates(location.coords.latitude, location.coords.longitude);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Location Error', 'Failed to get current location');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
+  const fetchAddressFromCoordinates = async (lat: number, lng: number) => {
+    setLoadingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'MANTIS Mobile App'
+          }
+        }
+      );
+      const data = await response.json();
+      
+      if (data.display_name) {
+        setLocationDescription(data.display_name);
+      } else if (data.address) {
+        // Build address from components
+        const parts = [
+          data.address.road,
+          data.address.suburb,
+          data.address.city || data.address.town,
+          data.address.country
+        ].filter(Boolean);
+        setLocationDescription(parts.join(', '));
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+    } finally {
+      setLoadingAddress(false);
+    }
+  };
+
+  const handleMapLocationSelect = async (lat: number, lng: number) => {
+    setCurrentLocation({
+      coords: {
+        latitude: lat,
+        longitude: lng,
+        altitude: null,
+        accuracy: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    } as Location.LocationObject);
+    
+    // Fetch address for the selected location
+    await fetchAddressFromCoordinates(lat, lng);
+  };
+
+  const takePicture = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera permission is required to take photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setPhotos([...photos, {
+        uri: asset.uri,
+        type: 'image/jpeg',
+        name: `evidence_${Date.now()}.jpg`,
+      }]);
+    }
+  };
+
+  const pickFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Gallery permission is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const newPhotos = result.assets.map((asset, index) => ({
+        uri: asset.uri,
+        type: 'image/jpeg',
+        name: `evidence_${Date.now()}_${index}.jpg`,
+      }));
+      setPhotos([...photos, ...newPhotos]);
+    }
+  };
+
+  const handleSubmit = async (isDraft: boolean = false) => {
+    if (!user || !selectedOffence) {
+      Alert.alert('Error', 'Missing required information');
+      return;
+    }
+
+    if (!isDraft && (!driverLicense || !vehiclePlate)) {
+      Alert.alert('Error', 'Driver license and vehicle plate are required');
+      return;
+    }
+
+    setSubmitting(true);
+    
+    // Check if we should queue for later sync
+    const shouldQueue = !isOnline && !isDraft;
+    
+    try {
+      let driverId: string | null = null;
+      let vehicleId: string | null = null;
+
+      // Create or lookup driver if license provided
+      if (driverLicense) {
+        const newDriver: NewDriver = {
+          license_number: driverLicense,
+          full_name: 'Unknown', // Will be updated later when more info is available
+          address: null,
+          dob: null,
+        };
+        
+        const { data: driver, error: driverError } = await upsertDriver(newDriver);
+        if (driver) {
+          driverId = driver.id;
+        } else if (driverError) {
+          console.error('Error creating/updating driver:', driverError);
+        }
+      }
+
+      // Create or lookup vehicle if plate provided
+      if (vehiclePlate) {
+        const newVehicle: NewVehicle = {
+          plate_number: vehiclePlate,
+          make: null,
+          model: null,
+          color: null,
+          owner_id: driverId,
+        };
+        
+        const { data: vehicle, error: vehicleError } = await upsertVehicle(newVehicle);
+        if (vehicle) {
+          vehicleId = vehicle.id;
+        } else if (vehicleError) {
+          console.error('Error creating/updating vehicle:', vehicleError);
+        }
+      }
+
+      const geoLocation: GeoJSONPoint | null = currentLocation ? {
+        type: 'Point',
+        coordinates: [currentLocation.coords.longitude, currentLocation.coords.latitude],
+      } : null;
+
+      const newInfringement: NewInfringement = {
+        agency_id: user.agency_id,
+        team_id: user.team_id,
+        officer_id: user.id,
+        driver_id: driverId,
+        vehicle_id: vehicleId,
+        offence_code: selectedOffence.code,
+        description: description || locationDescription || null,
+        fine_amount: selectedOffence.fixed_penalty,
+        location: geoLocation ? JSON.stringify(geoLocation) : null,
+        jurisdiction_location_id: null,
+        status: isDraft ? 'draft' : 'pending',
+      };
+
+      if (shouldQueue) {
+        // Queue for later sync when offline
+        await addToSyncQueue('infringement', newInfringement);
+        
+        // Queue photos for upload
+        if (photos.length > 0) {
+          for (const photo of photos) {
+            await addToSyncQueue('evidence', {
+              infringementId: 'pending', // Will be resolved during sync
+              fileUri: photo.uri,
+              fileType: photo.type,
+            });
+          }
+        }
+        
+        Alert.alert(
+          'Queued for Sync',
+          'Infringement saved and will be synced when you\'re back online.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+        return;
+      }
+
+      const { data, error } = await createInfringement(newInfringement);
+      
+      if (error) {
+        Alert.alert('Error', error.message || 'Failed to create infringement');
+        return;
+      }
+
+      // Upload photos to Supabase storage if infringement was created successfully
+      if (data && photos.length > 0 && !isDraft) {
+        try {
+          const uploadPromises = photos.map(photo =>
+            uploadEvidenceFile(data.id, photo.uri, photo.type)
+          );
+          
+          await Promise.all(uploadPromises);
+          console.log('Photos uploaded successfully');
+        } catch (photoError) {
+          console.error('Error uploading photos:', photoError);
+          // Don't fail the whole operation if photo upload fails
+          Alert.alert(
+            'Warning',
+            'Infringement created but some photos failed to upload. You can try uploading them again later.'
+          );
+        }
+      }
+
+      Alert.alert(
+        'Success',
+        isDraft ? 'Draft saved successfully' : 'Infringement created successfully',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } catch (error) {
+      console.error('Error submitting:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const renderOffenceStep = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="subtitle" style={styles.stepTitle}>Select Offence</ThemedText>
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : (
+        <>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+            placeholder="Search offences..."
+            placeholderTextColor={colors.icon}
+          />
+          <ScrollView style={styles.offenceList}>
+            {offences.slice(0, 10).map((offence) => (
+              <TouchableOpacity
+                key={offence.id}
+                style={[
+                  styles.offenceItem,
+                  selectedOffence?.id === offence.id && { backgroundColor: colors.tint + '20' }
+                ]}
+                onPress={() => setSelectedOffence(offence)}
+              >
+                <ThemedText style={styles.offenceCode}>{offence.code}</ThemedText>
+                <ThemedText style={styles.offenceName}>{offence.name}</ThemedText>
+                <ThemedText style={styles.offenceFine}>{formatCurrency(offence.fixed_penalty)}</ThemedText>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          {selectedOffence && (
+            <TouchableOpacity
+              style={[styles.nextButton, { backgroundColor: colors.tint }]}
+              onPress={() => setStep('driver')}
+            >
+              <ThemedText style={styles.buttonText}>Next: Driver Details</ThemedText>
+            </TouchableOpacity>
+          )}
+        </>
+      )}
+    </View>
+  );
+
+  const renderDriverStep = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="subtitle" style={styles.stepTitle}>Driver Information</ThemedText>
+      
+      <View style={styles.inputGroup}>
+        <ThemedText style={styles.label}>License Number *</ThemedText>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+          placeholder="Enter license number"
+          placeholderTextColor={colors.icon}
+          value={driverLicense}
+          onChangeText={setDriverLicense}
+          autoCapitalize="characters"
+        />
+      </View>
+
+      <View style={styles.stepButtons}>
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.tint }]}
+          onPress={() => setStep('offence')}
+        >
+          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.nextButton, { backgroundColor: colors.tint }]}
+          onPress={() => setStep('vehicle')}
+        >
+          <ThemedText style={styles.buttonText}>Next: Vehicle</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderVehicleStep = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="subtitle" style={styles.stepTitle}>Vehicle Information</ThemedText>
+      
+      <View style={styles.inputGroup}>
+        <ThemedText style={styles.label}>Plate Number *</ThemedText>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+          placeholder="Enter plate number"
+          placeholderTextColor={colors.icon}
+          value={vehiclePlate}
+          onChangeText={setVehiclePlate}
+          autoCapitalize="characters"
+        />
+      </View>
+
+      <View style={styles.stepButtons}>
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.tint }]}
+          onPress={() => setStep('driver')}
+        >
+          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.nextButton, { backgroundColor: colors.tint }]}
+          onPress={() => setStep('location')}
+        >
+          <ThemedText style={styles.buttonText}>Next: Location</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderLocationStep = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="subtitle" style={styles.stepTitle}>Location & Description</ThemedText>
+      
+      {/* Interactive Map */}
+      <View style={styles.mapPreview}>
+        <OSMMap
+          initialLat={currentLocation?.coords.latitude ?? 37.7749}
+          initialLng={currentLocation?.coords.longitude ?? -122.4194}
+          onLocationSelect={handleMapLocationSelect}
+        />
+      </View>
+
+      <ThemedText style={styles.mapHint}>📍 Tap on the map to select location</ThemedText>
+      
+      <View style={styles.locationBox}>
+        {loadingLocation ? (
+          <ActivityIndicator size="small" />
+        ) : currentLocation ? (
+          <>
+            <ThemedText style={styles.locationText}>
+              📍 Lat: {currentLocation.coords.latitude.toFixed(6)}
+            </ThemedText>
+            <ThemedText style={styles.locationText}>
+              📍 Lon: {currentLocation.coords.longitude.toFixed(6)}
+            </ThemedText>
+            {locationDescription && (
+              <View style={styles.addressBox}>
+                <ThemedText style={styles.addressLabel}>Address:</ThemedText>
+                <ThemedText style={styles.addressText}>{locationDescription}</ThemedText>
+              </View>
+            )}
+          </>
+        ) : (
+          <ThemedText style={styles.locationText}>No location captured</ThemedText>
+        )}
+        <TouchableOpacity
+          style={[styles.smallButton, { backgroundColor: colors.tint }]}
+          onPress={getCurrentLocation}
+        >
+          <ThemedText style={styles.buttonText}>
+            {currentLocation ? 'Use My Location' : 'Get My Location'}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <ThemedText style={styles.label}>
+          Location Description {loadingAddress && '(Loading address...)'}
+        </ThemedText>
+        <TextInput
+          style={[styles.textArea, { color: colors.text, borderColor: colors.icon }]}
+          placeholder="e.g., Queens Road near Victoria Parade intersection"
+          placeholderTextColor={colors.icon}
+          value={locationDescription}
+          onChangeText={setLocationDescription}
+          multiline
+          numberOfLines={3}
+          editable={!loadingAddress}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <ThemedText style={styles.label}>Additional Description</ThemedText>
+        <TextInput
+          style={[styles.textArea, { color: colors.text, borderColor: colors.icon }]}
+          placeholder="Add any additional notes about the infringement..."
+          placeholderTextColor={colors.icon}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+        />
+      </View>
+
+      <View style={styles.stepButtons}>
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.tint }]}
+          onPress={() => setStep('vehicle')}
+        >
+          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.nextButton, { backgroundColor: colors.tint }]}
+          onPress={() => setStep('evidence')}
+        >
+          <ThemedText style={styles.buttonText}>Next: Evidence</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderEvidenceStep = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="subtitle" style={styles.stepTitle}>Photo Evidence</ThemedText>
+      
+      <ThemedText style={styles.infoText}>
+        ℹ️ Photos will be uploaded to secure cloud storage when you submit the infringement.
+      </ThemedText>
+      
+      <View style={styles.photoButtons}>
+        <TouchableOpacity
+          style={[styles.photoButton, { backgroundColor: colors.tint }]}
+          onPress={takePicture}
+        >
+          <ThemedText style={styles.buttonText}>📷 Take Photo</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.photoButton, { backgroundColor: colors.tint }]}
+          onPress={pickFromGallery}
+        >
+          <ThemedText style={styles.buttonText}>🖼️ From Gallery</ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.photoGrid}>
+        {photos.map((photo, index) => (
+          <View key={index} style={styles.photoThumb}>
+            <ThemedText style={styles.photoIndex}>📷 Photo {index + 1}</ThemedText>
+            <TouchableOpacity
+              style={styles.removePhoto}
+              onPress={() => setPhotos(photos.filter((_, i) => i !== index))}
+            >
+              <ThemedText style={styles.removePhotoText}>✕</ThemedText>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      <ThemedText style={styles.hint}>
+        {photos.length} photo(s) attached
+      </ThemedText>
+
+      <View style={styles.stepButtons}>
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.tint }]}
+          onPress={() => setStep('location')}
+        >
+          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.nextButton, { backgroundColor: colors.tint }]}
+          onPress={() => setStep('review')}
+        >
+          <ThemedText style={styles.buttonText}>Review</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderReviewStep = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="subtitle" style={styles.stepTitle}>Review & Submit</ThemedText>
+      
+      <View style={styles.reviewSection}>
+        <ThemedText style={styles.reviewLabel}>Offence:</ThemedText>
+        <ThemedText style={styles.reviewValue}>
+          {selectedOffence?.code} - {selectedOffence?.name}
+        </ThemedText>
+        <ThemedText style={styles.reviewValue}>
+          Fine: {selectedOffence && formatCurrency(selectedOffence.fixed_penalty)}
+        </ThemedText>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <ThemedText style={styles.reviewLabel}>Driver:</ThemedText>
+        <ThemedText style={styles.reviewValue}>License: {driverLicense || 'Not provided'}</ThemedText>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <ThemedText style={styles.reviewLabel}>Vehicle:</ThemedText>
+        <ThemedText style={styles.reviewValue}>Plate: {vehiclePlate || 'Not provided'}</ThemedText>
+      </View>
+
+      <View style={styles.reviewSection}>
+        <ThemedText style={styles.reviewLabel}>Evidence:</ThemedText>
+        <ThemedText style={styles.reviewValue}>
+          {photos.length} photo(s) {photos.length > 0 ? '(will be uploaded to cloud storage)' : ''}
+        </ThemedText>
+        <ThemedText style={styles.reviewValue}>
+          Location: {currentLocation ? 'Captured' : 'Not captured'}
+        </ThemedText>
+      </View>
+
+      {!isOnline && (
+        <View style={styles.offlineWarning}>
+          <ThemedText style={styles.offlineText}>
+            🔴 Offline Mode - Infringement will be queued for sync
+          </ThemedText>
+        </View>
+      )}
+
+      <View style={styles.submitButtons}>
+        <TouchableOpacity
+          style={[styles.draftButton, { borderColor: colors.tint }]}
+          onPress={() => handleSubmit(true)}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color={colors.tint} />
+          ) : (
+            <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>
+              Save Draft
+            </ThemedText>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.submitButton, { backgroundColor: colors.tint }]}
+          onPress={() => handleSubmit(false)}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <ThemedText style={styles.buttonText}>Submit</ThemedText>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        style={styles.backLink}
+        onPress={() => setStep('evidence')}
+      >
+        <ThemedText style={[styles.link, { color: colors.tint }]}>← Back to edit</ThemedText>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView style={styles.scrollView}>
+        <ThemedView style={styles.content}>
+          {/* Progress Indicator */}
+          <View style={styles.progressContainer}>
+            {['offence', 'driver', 'vehicle', 'location', 'evidence', 'review'].map((s, i) => (
+              <View
+                key={s}
+                style={[
+                  styles.progressDot,
+                  step === s && { backgroundColor: colors.tint },
+                  { borderColor: colors.icon },
+                ]}
+              />
+            ))}
+          </View>
+
+          {step === 'offence' && renderOffenceStep()}
+          {step === 'driver' && renderDriverStep()}
+          {step === 'vehicle' && renderVehicleStep()}
+          {step === 'location' && renderLocationStep()}
+          {step === 'evidence' && renderEvidenceStep()}
+          {step === 'review' && renderReviewStep()}
+        </ThemedView>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 24,
+  },
+  progressDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+  },
+  stepContainer: {
+    gap: 16,
+  },
+  stepTitle: {
+    marginBottom: 8,
+  },
+  offenceList: {
+    maxHeight: 400,
+  },
+  offenceItem: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  offenceCode: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  offenceName: {
+    marginBottom: 4,
+  },
+  offenceFine: {
+    fontWeight: '600',
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontWeight: '600',
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  mapPreview: {
+    height: 300,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  mapHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    opacity: 0.7,
+  },
+  locationBox: {
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    gap: 8,
+  },
+  locationText: {
+    fontSize: 14,
+  },
+  addressBox: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 8,
+    width: '100%',
+  },
+  addressLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    opacity: 0.7,
+  },
+  addressText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  infoText: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  photoButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  photoButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  photoThumb: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoIndex: {
+    fontSize: 12,
+  },
+  removePhoto: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removePhotoText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  hint: {
+    opacity: 0.7,
+    fontSize: 14,
+  },
+  reviewSection: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    gap: 4,
+  },
+  reviewLabel: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  reviewValue: {
+    opacity: 0.8,
+  },
+  offlineWarning: {
+    backgroundColor: '#fff3cd',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  offlineText: {
+    color: '#856404',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  stepButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  backButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontWeight: '600',
+  },
+  nextButton: {
+    flex: 2,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  smallButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  submitButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  draftButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  submitButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backLink: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  link: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  featureList: {
+    gap: 8,
+  },
+  feature: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
+  },
+  button: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  helpBox: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  helpText: {
+    fontSize: 12,
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+});
