@@ -1,30 +1,10 @@
 /**
  * MANTIS Theme System
  * Based on the website's design system with shadcn/ui color palette
- * Colors are defined using oklch color space for better perceptual uniformity
+ * Colors are defined using hex values converted from oklch color space
  */
 
 import { Platform } from 'react-native';
-
-// Helper function to convert oklch to rgba (approximate conversion)
-const oklchToRgba = (l: number, c: number, h: number, alpha = 1): string => {
-  // Simplified conversion - for more accurate results, consider using a color library
-  // This provides a reasonable approximation for the oklch values from the website
-  const hRad = (h * Math.PI) / 180;
-  const a = c * Math.cos(hRad);
-  const b = c * Math.sin(hRad);
-  
-  // Convert LAB to RGB (simplified)
-  const y = (l + 16) / 116;
-  const x = a / 500 + y;
-  const z = y - b / 200;
-  
-  const r = Math.round(Math.max(0, Math.min(255, y * 255)));
-  const g = Math.round(Math.max(0, Math.min(255, (y - 0.3 * a) * 255)));
-  const bl = Math.round(Math.max(0, Math.min(255, (y - 0.6 * b) * 255)));
-  
-  return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
-};
 
 // Primary color palette based on website theme
 export const Colors = {

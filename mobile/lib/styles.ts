@@ -3,44 +3,39 @@
  * Helper functions for consistent styling across the app
  */
 
-import { StyleSheet } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { ViewStyle, TextStyle, ImageStyle } from 'react-native';
+
+type Style = ViewStyle | TextStyle | ImageStyle;
 
 /**
  * Combine multiple style objects, filtering out falsy values
+ * Simplified alternative to clsx for React Native
  */
-export function cn(...styles: any[]) {
-  return styles.filter(Boolean);
+export function cn(...styles: (Style | false | null | undefined)[]): Style[] {
+  return styles.filter(Boolean) as Style[];
 }
 
 /**
- * Add opacity to a color
+ * Add opacity to a hex color
+ * @param color - Hex color string (e.g., '#6366F1')
+ * @param opacity - Opacity value between 0 and 1
  */
 export function withOpacity(color: string, opacity: number): string {
-  // Handle hex colors
-  if (color.startsWith('#')) {
-    const hex = color.slice(1);
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  }
+  if (!color.startsWith('#')) return color;
   
-  // Handle rgb/rgba colors
-  if (color.startsWith('rgb')) {
-    const match = color.match(/\d+/g);
-    if (match && match.length >= 3) {
-      return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${opacity})`;
-    }
-  }
+  const hex = color.slice(1);
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
   
-  return color;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
 /**
  * Create a shadow style based on elevation level
+ * Provides platform-appropriate shadows
  */
-export function createShadow(elevation: number = 1) {
+export function createShadow(elevation: number = 1): ViewStyle {
   return {
     shadowColor: '#000',
     shadowOffset: {
@@ -49,35 +44,9 @@ export function createShadow(elevation: number = 1) {
     },
     shadowOpacity: 0.1 + (elevation * 0.02),
     shadowRadius: elevation * 2,
-    elevation: elevation,
+    elevation,
   };
 }
-
-/**
- * Get themed color based on color scheme
- */
-export function getThemedColor(
-  colorScheme: 'light' | 'dark',
-  colorKey: keyof typeof Colors.light
-): string {
-  return Colors[colorScheme][colorKey];
-}
-
-/**
- * Create a responsive style based on screen size
- */
-export function createResponsiveStyle<T extends object>(
-  baseStyle: T,
-  smStyle?: Partial<T>,
-  mdStyle?: Partial<T>,
-  lgStyle?: Partial<T>
-) {
-  // This is a simplified version. In a real app, you might use
-  // libraries like react-native-responsive-screen or react-native-size-matters
-  return {
-    base: baseStyle,
-    sm: { ...baseStyle, ...smStyle },
-    md: { ...baseStyle, ...mdStyle },
     lg: { ...baseStyle, ...lgStyle },
   };
 }

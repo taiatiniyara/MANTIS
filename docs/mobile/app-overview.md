@@ -30,38 +30,63 @@ The mobile app provides a streamlined, offline-first experience optimized for fi
 - ✅ **Push notifications**: Alerts for case updates and assignments
 
 ### Officer Features
-- Create new infringements with full details
-- Capture driver and vehicle information
-- Take photos of violations and evidence
-- View and edit draft infringements
-- Submit completed infringements
-- Search and filter assigned cases
-- View case history and status
+- ✅ **Create infringements** - Multi-step form with validation
+  - Offence selection (searchable)
+  - Driver information capture
+  - Vehicle details
+  - GPS location tracking
+  - Multiple photo evidence
+  - Save as draft or submit
+- ✅ **GPS location capture** - Real-time positioning
+- ✅ **Camera integration** - Take photos or pick from gallery
+- ✅ **OpenStreetMap integration** - Interactive map view
+- ✅ **Cases management** - View assigned cases
+- ✅ **Offline functionality** - Work without internet
+  - Create infringements offline
+  - Automatic sync when online
+  - Sync queue management
+- ✅ **Draft management** - Save and edit unsent infringements
+- ✅ **Session tracking** - View current sync and offline status
+- ✅ **Profile access** - View user info and sign out
 
 ### Team Leader Features
-- All officer features plus:
-- Review and approve team infringements
-- View team performance metrics
-- Assign cases to team members
-- Monitor team location and activity (with consent)
-- Generate basic reports
+- ✅ All officer features plus:
+- **Team dashboard** (structure in place)
+- **Case review** (foundation ready)
+- **Team management** (framework ready)
+
+### Planned Features
+- [ ] **Driver/Vehicle lookup** - Search existing records
+- [ ] **Approvals queue** - Review pending cases
+- [ ] **Push notifications** - Case updates
+- [ ] **Reports generation** - PDF export
+- [ ] **Settings screen** - App configuration
+- [ ] **Advanced analytics** - Team performance metrics
 
 ---
 
 ## Tech Stack
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Framework | Expo ~54.0 | React Native development platform |
-| Language | TypeScript | Type-safe development |
-| Routing | Expo Router 6.x | File-based navigation |
-| Backend | Supabase | Auth, database, storage, realtime |
-| State Management | TanStack Query | Data fetching and caching |
-| Maps | React Native Maps + OSM | OpenStreetMap integration |
-| Storage | AsyncStorage | Local data persistence |
-| Camera | Expo Image Picker | Photo capture |
-| Location | Expo Location | GPS tracking |
-| Animations | React Native Reanimated | Smooth UI transitions |
+| Component | Technology | Version | Purpose |
+|-----------|-----------|---------|---------|
+| Framework | Expo | 54.0.31 | React Native development platform |
+| Runtime | React Native | 0.81.5 | Native mobile app runtime |
+| Language | TypeScript | 5.9.2 | Type-safe development |
+| Routing | Expo Router | 6.0.21 | File-based navigation |
+| Backend | Supabase | 2.90.1 | Auth, database, storage, realtime |
+| State Management | React Context | Built-in | App-level state |
+| Local Storage | AsyncStorage | 2.2.0 | Persistent local data |
+| Maps | React Native Maps | Custom | OpenStreetMap integration |
+| Images | Expo Image Picker | 17.0.10 | Photo capture & gallery |
+| Location | Expo Location | 19.0.8 | GPS tracking |
+| Animations | React Native Reanimated | 4.1.1 | Smooth UI transitions |
+| Gestures | React Native Gesture Handler | 2.28.0 | Touch gesture handling |
+| Icons | Expo Vector Icons | 15.0.3 | Icon library |
+| File System | Expo File System | 19.0.21 | File operations |
+| Image Manipulation | Expo Image Manipulator | 14.0.8 | Photo processing |
+| Biometrics | Expo Local Authentication | 17.0.8 | Fingerprint/Face ID |
+| Network Status | Expo Network | 8.0.8 | Connectivity detection |
+| Haptics | Expo Haptics | 15.0.8 | Vibration feedback |
 
 ---
 
@@ -97,57 +122,103 @@ The mobile app provides a streamlined, offline-first experience optimized for fi
 
 ```
 mobile/
-├── app/                          # Expo Router pages
-│   ├── _layout.tsx              # Root layout with auth context
-│   ├── index.tsx                # Auth gate / splash
-│   ├── (auth)/                  # Auth flow
-│   │   ├── _layout.tsx
-│   │   ├── login.tsx
-│   │   └── register.tsx
-│   ├── (officer)/               # Officer screens (protected)
-│   │   ├── _layout.tsx          # Tab navigation
-│   │   ├── index.tsx            # Dashboard/home
-│   │   ├── map.tsx              # Map view
-│   │   ├── cases.tsx            # Case list
-│   │   ├── create.tsx           # Create infringement
-│   │   └── profile.tsx          # User profile
-│   └── (leader)/                # Team leader screens
-│       ├── _layout.tsx
-│       ├── team.tsx             # Team overview
-│       ├── analytics.tsx        # Performance metrics
-│       └── approvals.tsx        # Review queue
+├── app/                              # Expo Router pages
+│   ├── _layout.tsx                  # Root layout with auth context
+│   ├── index.tsx                    # Auth gate / splash
+│   ├── modal.tsx                    # Modal for routes
+│   ├── (auth)/                      # Authentication flow
+│   │   ├── _layout.tsx              # Auth layout
+│   │   └── login.tsx                # Login screen
+│   ├── (officer)/                   # Officer screens (protected)
+│   │   ├── _layout.tsx              # Tab navigation (Dashboard, Map, Cases, Drafts, Profile)
+│   │   ├── index.tsx                # Dashboard home
+│   │   ├── map.tsx                  # OpenStreetMap view
+│   │   ├── cases.tsx                # Cases list
+│   │   ├── create.tsx               # Multi-step infringement form
+│   │   ├── drafts.tsx               # Draft management
+│   │   └── profile.tsx              # User profile
+│   ├── (leader)/                    # Team leader screens
+│   │   ├── _layout.tsx              # Leader layout
+│   │   ├── index.tsx                # Team dashboard
+│   │   ├── team.tsx                 # Team management
+│   │   ├── cases.tsx                # Cases list
+│   │   ├── create.tsx               # Create infringement
+│   │   └── profile.tsx              # User profile
+│   └── (tabs)/                      # Tab-based screens
+│       ├── _layout.tsx              # Tab layout
+│       ├── explore.tsx              # Explore/discover
+│       └── index.tsx                # Home tab
 │
-├── components/                   # Reusable UI components
-│   ├── ui/                      # Base UI components
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── input.tsx
-│   │   └── map.tsx
-│   ├── infringement-card.tsx    # Infringement list item
-│   ├── photo-capture.tsx        # Camera component
-│   ├── location-picker.tsx      # Map-based picker
-│   └── offline-banner.tsx       # Network status
+├── components/                       # Reusable UI components
+│   ├── ComponentShowcase.tsx        # Component gallery
+│   ├── OSMMap.tsx                   # OpenStreetMap wrapper
+│   ├── SyncStatus.tsx               # Sync status indicator
+│   ├── SessionStatus.tsx            # Session info component
+│   ├── WatermarkedImage.tsx         # Image with watermark
+│   ├── parallax-scroll-view.tsx     # Parallax scroll container
+│   ├── haptic-tab.tsx               # Tab with haptic feedback
+│   ├── themed-text.tsx              # Themed text component
+│   ├── themed-view.tsx              # Themed view component
+│   ├── hello-wave.tsx               # Greeting component
+│   ├── external-link.tsx            # External link handler
+│   └── ui/                          # Base UI components
+│       ├── Alert.tsx                # Alert component
+│       ├── Badge.tsx                # Badge component
+│       ├── Button.tsx               # Button component
+│       ├── Card.tsx                 # Card component
+│       ├── Input.tsx                # Input field
+│       ├── Select.tsx               # Select dropdown
+│       ├── Separator.tsx            # Divider
+│       ├── Text.tsx                 # Text component
+│       ├── collapsible.tsx          # Collapsible section
+│       ├── icon-symbol.tsx          # Icon symbols
+│       ├── icon-symbol.ios.tsx      # iOS-specific icons
+│       ├── index.ts                 # UI exports
+│       └── README.md                # UI component docs
 │
-├── hooks/                        # Custom React hooks
-│   ├── useSupabase.ts           # Supabase operations
-│   ├── useLocation.ts           # GPS tracking
-│   ├── useOfflineSync.ts        # Sync queue
-│   └── useAuth.ts               # Authentication
+├── hooks/                            # Custom React hooks
+│   ├── use-color-scheme.ts          # Color scheme detection
+│   ├── use-color-scheme.web.ts      # Web color scheme fallback
+│   └── use-theme-color.ts           # Theme color hook
 │
-├── lib/                          # Utilities and helpers
-│   ├── index.ts                 # Central export
-│   ├── types.ts                 # TypeScript types & Database schema
-│   ├── database.ts              # Supabase query helpers
-│   ├── storage.ts               # AsyncStorage wrapper
-│   ├── validation.ts            # Form validation
-│   └── formatting.ts            # Date, currency formatting
+├── contexts/                         # React contexts
+│   └── AuthContext.tsx              # Authentication state
 │
-├── constants/                    # App constants
-│   ├── theme.ts                 # Colors, fonts, spacing
-│   └── config.ts                # App configuration
+├── lib/                              # Core utilities
+│   ├── index.ts                     # Central export barrel
+│   ├── types.ts                     # TypeScript types & database schema
+│   ├── database.ts                  # Supabase query helpers
+│   ├── offline.ts                   # Offline storage & sync queue
+│   ├── storage.ts                   # AsyncStorage wrapper
+│   ├── validation.ts                # Form validation rules
+│   ├── formatting.ts                # Date, currency, GPS formatting
+│   ├── styles.ts                    # Style utilities
+│   └── watermark.ts                 # Watermark utilities
 │
-└── utils/                        # Helper functions
-    ├── validation.ts            # Form validation
+├── constants/                        # App constants
+│   └── theme.ts                     # Colors, fonts, spacing
+│
+├── utils/                            # Helper functions
+│   └── supabase.ts                  # Supabase client config
+│
+├── assets/                           # Static assets
+│   └── images/                      # Image files
+│
+├── scripts/                          # Build scripts
+│   └── reset-project.js             # Project reset utility
+│
+├── .env.example                     # Environment template
+├── package.json                     # Dependencies
+├── tsconfig.json                    # TypeScript config
+├── expo-env.d.ts                    # Expo type definitions
+├── app.json                         # Expo app configuration
+├── eslint.config.js                 # ESLint rules
+├── BUILD_SUMMARY.md                 # Latest build status
+├── QUICKSTART.md                    # Quick start guide
+├── TESTING.md                       # Testing documentation
+├── THEME_IMPLEMENTATION.md          # Theme details
+└── README.md                        # App documentation
+```
     ├── formatting.ts            # Date, currency formatting
     └── permissions.ts           # Permission checks
 ```

@@ -18,7 +18,22 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone https://github.com/your-org/mantis.git
-cd mantis/website
+cd mantis
+```
+
+### 2. Choose Your App
+
+MANTIS consists of two applications:
+
+- **Website** - React + Vite PWA for desktop/browser-based operations
+- **Mobile** - Expo + React Native for field officers on iOS/Android
+
+## Website Setup
+
+### 1. Navigate to Website Directory
+
+```bash
+cd website
 ```
 
 ### 2. Install Dependencies
@@ -64,7 +79,57 @@ This will:
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The website will be available at `http://localhost:5173`
+
+## Mobile App Setup
+
+### 1. Navigate to Mobile Directory
+
+```bash
+cd mobile
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment Configuration
+
+Create a `.env.local` file in the `mobile` directory:
+
+```bash
+cp .env.example .env.local
+```
+
+Add your Supabase credentials:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=your-anon-key
+```
+
+**⚠️ Important:** These are public keys (safe to expose). Never add service role keys to the mobile app.
+
+### 4. Install Expo CLI
+
+```bash
+npm install -g expo-cli
+```
+
+### 5. Start Development Server
+
+```bash
+npm start
+```
+
+Then choose your target:
+- Press `i` for iOS Simulator (Mac only)
+- Press `a` for Android Emulator
+- Scan the QR code with **Expo Go** app on your physical device
+
+For detailed mobile setup, see [10-mobile-app.md](./10-mobile-app.md).
 
 ## First-Time Setup
 
