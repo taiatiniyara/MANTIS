@@ -18,6 +18,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error?: string }>;
+  checkSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -105,6 +107,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadUser();
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'mantis://reset-password',
+      });
+      if (error) {
+        return { error: error.message };
+      }
+      return {};
+    } catch (error) {
+      return { error: 'Failed to send reset email' };
+    }
+  };
+
+  const checkSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return !!session;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const value = {
     session,
     user,
@@ -112,6 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     refreshUser,
+    resetPassword,
+    checkSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

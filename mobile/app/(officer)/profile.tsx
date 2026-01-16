@@ -13,6 +13,7 @@ import { Infringement } from '@/lib/types';
 import { getSyncStats, syncPendingData, clearSyncQueue, clearAllDrafts, setOfflineMode as setOfflineModeStorage, isOfflineMode } from '@/lib/offline';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -32,12 +33,25 @@ export default function ProfileScreen() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [syncStats, setSyncStats] = useState({ draftCount: 0, queueCount: 0, lastSync: null as Date | null });
   const [syncing, setSyncing] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState(15);
 
   useEffect(() => {
     loadStats();
     loadSyncStats();
     loadOfflineMode();
+    checkBiometric();
   }, [user]);
+
+  const checkBiometric = async () => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      setBiometricAvailable(compatible);
+    } catch (error) {
+      console.error('Error checking biometric:', error);
+    }
+  };
 
   const loadSyncStats = async () => {
     const stats = await getSyncStats();
@@ -151,6 +165,24 @@ export default function ProfileScreen() {
   const handleOfflineModeToggle = async (value: boolean) => {
     setOfflineMode(value);
     await setOfflineModeStorage(value);
+  };
+
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value) {
+      try {
+        const compatible = await LocalAuthentication.isAvailableAsync();
+        if (!compatible) {
+          Alert.alert('Not Available', 'Biometric authentication is not available on this device');
+          return;
+        }
+        setBiometricEnabled(true);
+        Alert.alert('Biometric Enabled', 'You can now use biometric authentication to sign in');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to enable biometric authentication');
+      }
+    } else {
+      setBiometricEnabled(false);
+    }
   };
 
   return (
@@ -335,6 +367,26 @@ export default function ProfileScreen() {
                 trackColor={{ false: '#767577', true: colors.tint }}
                 thumbColor={offlineMode ? '#fff' : '#f4f3f4'}
               />
+            </View>
+            {biometricAvailable && (
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <ThemedText style={styles.settingLabel}>👆 Biometric Login</ThemedText>
+                  <ThemedText style={styles.settingDescription}>Use fingerprint or face ID</ThemedText>
+                </View>
+                <Switch
+                  value={biometricEnabled}
+                  onValueChange={handleBiometricToggle}
+                  trackColor={{ false: '#767577', true: colors.tint }}
+                  thumbColor={biometricEnabled ? '#fff' : '#f4f3f4'}
+                />
+              </View>
+            )}
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <ThemedText style={styles.settingLabel}>⏱️ Session Timeout</ThemedText>
+                <ThemedText style={styles.settingDescription}>{sessionTimeout} minutes of inactivity</ThemedText>
+              </View>
             </View>
           </View>
         </View>

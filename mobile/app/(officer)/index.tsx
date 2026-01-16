@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SyncStatus } from '@/components/SyncStatus';
+import { SessionStatus } from '@/components/SessionStatus';
 import { useAuth } from '@/contexts/AuthContext';
 import { getInfringements } from '@/lib/database';
 import { Infringement } from '@/lib/types';
@@ -88,6 +89,9 @@ export default function OfficerDashboard() {
       }
     >
       <ThemedView style={styles.content}>
+        {/* Session Status */}
+        <SessionStatus />
+
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <ThemedText type="title">Welcome back,</ThemedText>

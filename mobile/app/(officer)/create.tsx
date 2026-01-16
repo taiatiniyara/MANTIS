@@ -58,7 +58,7 @@ export default function CreateInfringementScreen() {
     try {
       const networkState = await Network.getNetworkStateAsync();
       const offline = await isOfflineMode();
-      setIsOnline(networkState.isConnected ?? false && !offline);
+      setIsOnline((networkState.isConnected ?? false) && !offline);
     } catch (error) {
       console.error('Error checking network:', error);
     }
@@ -429,7 +429,7 @@ export default function CreateInfringementScreen() {
       ) : (
         <>
           <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+            style={[styles.input, { color: colors.foreground, borderColor: colors.icon }]}
             placeholder="Search offences..."
             placeholderTextColor={colors.icon}
           />
@@ -469,7 +469,7 @@ export default function CreateInfringementScreen() {
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>License Number *</ThemedText>
         <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+          style={[styles.input, { color: colors.foreground, borderColor: colors.icon }]}
           placeholder="Enter license number"
           placeholderTextColor={colors.icon}
           value={driverLicense}
@@ -502,7 +502,7 @@ export default function CreateInfringementScreen() {
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>Plate Number *</ThemedText>
         <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+          style={[styles.input, { color: colors.foreground, borderColor: colors.icon }]}
           placeholder="Enter plate number"
           placeholderTextColor={colors.icon}
           value={vehiclePlate}
@@ -579,7 +579,7 @@ export default function CreateInfringementScreen() {
           Location Description {loadingAddress && '(Loading address...)'}
         </ThemedText>
         <TextInput
-          style={[styles.textArea, { color: colors.text, borderColor: colors.icon }]}
+          style={[styles.textArea, { color: colors.foreground, borderColor: colors.icon }]}
           placeholder="e.g., Queens Road near Victoria Parade intersection"
           placeholderTextColor={colors.icon}
           value={locationDescription}
@@ -593,7 +593,7 @@ export default function CreateInfringementScreen() {
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>Additional Description</ThemedText>
         <TextInput
-          style={[styles.textArea, { color: colors.text, borderColor: colors.icon }]}
+          style={[styles.textArea, { color: colors.foreground, borderColor: colors.icon }]}
           placeholder="Add any additional notes about the infringement..."
           placeholderTextColor={colors.icon}
           value={description}
@@ -1045,11 +1045,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   helpBox: {
     marginTop: 24,

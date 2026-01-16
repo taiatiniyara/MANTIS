@@ -23,13 +23,31 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const { signIn, resetPassword } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password');
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
@@ -38,7 +56,45 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Login Failed', error);
+      if (error.includes('Invalid login credentials')) {
+        Alert.alert('Login Failed', 'Email or password is incorrect');
+      } else if (error.includes('Email not confirmed')) {
+        Alert.alert('Email Not Verified', 'Please verify your email before logging in');
+      } else {
+        Alert.alert('Login Failed', error);
+      }
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    if (!validateEmail(resetEmail)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await resetPassword(resetEmail);
+    setResetLoading(false);
+
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      Alert.alert(
+        'Password Reset',
+        'Check your email for password reset instructions',
+        [{
+          text: 'OK',
+          onPress: () => {
+            setShowPasswordReset(false);
+            setResetEmail('');
+          },
+        }]
+      );
     }
   };
 
@@ -66,42 +122,95 @@ export default function LoginScreen() {
               Officer Login
             </ThemedText>
 
-            <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Email</ThemedText>
-              <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
-                placeholder="officer@example.com"
-                placeholderTextColor={colors.icon}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!loading}
-              />
-            </View>
+            {!showPasswordReset ? (
+              <>
+                <View style={styles.inputContainer}>
+                  <ThemedText style={styles.label}>Email</ThemedText>
+                  <TextInput
+                    style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+                    placeholder="officer@example.com"
+                    placeholderTextColor={colors.icon}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    editable={!loading}
+                  />
+                </View>
 
-            <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Password</ThemedText>
-              <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
-                placeholder="Enter your password"
-                placeholderTextColor={colors.icon}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!loading}
-              />
-            </View>
+                <View style={styles.inputContainer}>
+                  <ThemedText style={styles.label}>Password</ThemedText>
+                  <TextInput
+                    style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.icon}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    editable={!loading}
+                  />
+                </View>
 
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.tint }]}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              <ThemedText style={styles.buttonText}>
-                {loading ? 'Signing in...' : 'Sign In'}
-              </ThemedText>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, { backgroundColor: colors.tint }]}
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  <ThemedText style={styles.buttonText}>
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => setShowPasswordReset(true)}
+                  disabled={loading}
+                >
+                  <ThemedText style={[styles.forgotPasswordText, { color: colors.tint }]}>
+                    Forgot Password?
+                  </ThemedText>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <View style={styles.inputContainer}>
+                  <ThemedText style={styles.label}>Email Address</ThemedText>
+                  <TextInput
+                    style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+                    placeholder="officer@example.com"
+                    placeholderTextColor={colors.icon}
+                    value={resetEmail}
+                    onChangeText={setResetEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    editable={!resetLoading}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.button, { backgroundColor: colors.tint }]}
+                  onPress={handlePasswordReset}
+                  disabled={resetLoading}
+                >
+                  <ThemedText style={styles.buttonText}>
+                    {resetLoading ? 'Sending...' : 'Send Reset Link'}
+                  </ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => {
+                    setShowPasswordReset(false);
+                    setResetEmail('');
+                  }}
+                  disabled={resetLoading}
+                >
+                  <ThemedText style={[styles.forgotPasswordText, { color: colors.tint }]}>
+                    ← Back to Login
+                  </ThemedText>
+                </TouchableOpacity>
+              </>
+            )}
 
             <View style={styles.infoBox}>
               <ThemedText style={styles.infoText}>
@@ -109,6 +218,9 @@ export default function LoginScreen() {
               </ThemedText>
               <ThemedText style={styles.infoText}>
                 📱 Contact your team leader if you need access
+              </ThemedText>
+              <ThemedText style={styles.infoText}>
+                🆘 Check your email for password reset instructions
               </ThemedText>
             </View>
           </View>
@@ -178,6 +290,14 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  forgotPassword: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    fontSize: 14,
     fontWeight: '600',
   },
   infoBox: {
