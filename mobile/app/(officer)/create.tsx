@@ -29,11 +29,14 @@ import { createInfringement, getOffences, searchDriver, searchVehicle, upsertDri
 import { NewInfringement, Offence, GeoJSONPoint, NewDriver, NewVehicle } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatting';
 import OSMMap from '@/components/OSMMap';
+import { addWatermarkToImage, WatermarkData } from '@/lib/watermark';
+import { WatermarkedImage } from '@/components/WatermarkedImage';
 
 interface PhotoItem {
   uri: string;
   type: string;
   name: string;
+  watermarkData?: WatermarkData;
 }
 
 export default function CreateInfringementScreen() {
@@ -247,18 +250,40 @@ export default function CreateInfringementScreen() {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+      
+      // Prepare watermark data
+      const watermarkData: WatermarkData = {
+        vehiclePlate: vehiclePlate || undefined,
+        driverLicense: driverLicense || undefined,
+        officerName: user?.display_name || 'Unknown Officer',
+        agencyName: user?.agency?.name || 'Unknown Agency',
+        address: locationDescription || undefined,
+        latitude: currentLocation?.coords.latitude,
+        longitude: currentLocation?.coords.longitude,
+        timestamp: new Date(),
+      };
+
+      // Process image with watermark metadata
+      const watermarkedUri = await addWatermarkToImage(asset.uri, watermarkData);
+      
       setPhotos([...photos, {
-        uri: asset.uri,
+        uri: watermarkedUri,
         type: 'image/jpeg',
         name: `evidence_${Date.now()}.jpg`,
+        watermarkData,
       }]);
+      
+      Alert.alert(
+        'Photo Captured',
+        'Photo has been watermarked with infringement details.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -625,7 +650,7 @@ export default function CreateInfringementScreen() {
       <ThemedText type="subtitle" style={styles.stepTitle}>Photo Evidence</ThemedText>
       
       <ThemedText style={styles.infoText}>
-        ℹ️ Photos will be uploaded to secure cloud storage when you submit the infringement.
+        ℹ️ Photos are automatically watermarked with vehicle, driver, officer, agency, location, and GPS coordinates.
       </ThemedText>
       
       <View style={styles.photoButtons}>
@@ -643,22 +668,33 @@ export default function CreateInfringementScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.photoGrid}>
+      <ScrollView style={styles.photoScrollView} showsVerticalScrollIndicator={true}>
         {photos.map((photo, index) => (
-          <View key={index} style={styles.photoThumb}>
-            <ThemedText style={styles.photoIndex}>📷 Photo {index + 1}</ThemedText>
+          <View key={index} style={styles.photoPreviewContainer}>
+            <ThemedText style={styles.photoLabel}>📷 Photo {index + 1}</ThemedText>
+            {photo.watermarkData ? (
+              <WatermarkedImage
+                imageUri={photo.uri}
+                watermarkData={photo.watermarkData}
+                style={styles.watermarkedPreview}
+              />
+            ) : (
+              <View style={styles.photoThumb}>
+                <ThemedText style={styles.photoIndex}>Photo {index + 1}</ThemedText>
+              </View>
+            )}
             <TouchableOpacity
-              style={styles.removePhoto}
+              style={[styles.removePhotoButton, { backgroundColor: '#FF5252' }]}
               onPress={() => setPhotos(photos.filter((_, i) => i !== index))}
             >
-              <ThemedText style={styles.removePhotoText}>✕</ThemedText>
+              <ThemedText style={styles.removePhotoText}>✕ Remove</ThemedText>
             </TouchableOpacity>
           </View>
         ))}
-      </View>
+      </ScrollView>
 
       <ThemedText style={styles.hint}>
-        {photos.length} photo(s) attached
+        {photos.length} photo(s) attached with watermarks
       </ThemedText>
 
       <View style={styles.stepButtons}>
@@ -705,11 +741,21 @@ export default function CreateInfringementScreen() {
       <View style={styles.reviewSection}>
         <ThemedText style={styles.reviewLabel}>Evidence:</ThemedText>
         <ThemedText style={styles.reviewValue}>
-          {photos.length} photo(s) {photos.length > 0 ? '(will be uploaded to cloud storage)' : ''}
+          {photos.length} watermarked photo(s) {photos.length > 0 ? '(with infringement details)' : ''}
         </ThemedText>
+        {photos.length > 0 && (
+          <ThemedText style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}>
+            ✓ Each photo includes: Vehicle plate, driver license, officer name, agency, location & GPS
+          </ThemedText>
+        )}
         <ThemedText style={styles.reviewValue}>
-          Location: {currentLocation ? 'Captured' : 'Not captured'}
+          Location: {currentLocation ? `${currentLocation.coords.latitude.toFixed(6)}, ${currentLocation.coords.longitude.toFixed(6)}` : 'Not captured'}
         </ThemedText>
+        {locationDescription && (
+          <ThemedText style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}>
+            📍 {locationDescription}
+          </ThemedText>
+        )}
       </View>
 
       {!isOnline && (
@@ -919,6 +965,27 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  photoScrollView: {
+    maxHeight: 400,
+    marginVertical: 12,
+  },
+  photoPreviewContainer: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  photoLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+    opacity: 0.8,
+  },
+  watermarkedPreview: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
   photoThumb: {
     width: 100,
     height: 100,
@@ -941,9 +1008,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  removePhotoButton: {
+    padding: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
   removePhotoText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   hint: {

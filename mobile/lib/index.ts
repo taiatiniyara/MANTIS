@@ -21,3 +21,6 @@ export * from './validation';
 
 // Formatting utilities
 export * from './formatting';
+
+// Watermarking utilities
+export * from './watermark';
