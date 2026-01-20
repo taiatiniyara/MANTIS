@@ -394,9 +394,8 @@ export async function uploadPhoto(
 ): Promise<string | null> {
   try {
     // Read the file as base64
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    const file = new FileSystem.File(uri);
+    const base64 = await file.base64();
 
     // Convert base64 to ArrayBuffer
     const arrayBuffer = decode(base64);

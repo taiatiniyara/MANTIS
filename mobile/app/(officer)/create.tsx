@@ -2,7 +2,7 @@
  * MANTIS Mobile - Create Infringement Screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -17,20 +17,21 @@ import {
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDraft } from '@/lib/offline';
-import { addToSyncQueue, isOfflineMode } from '@/lib/offline';
+import { addToSyncQueue, getDraft, isOfflineMode } from '@/lib/offline';
 import * as Network from 'expo-network';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { createInfringement, getOffences, searchDriver, searchVehicle, upsertDriver, upsertVehicle, uploadEvidenceFile } from '@/lib/database';
+import { createInfringement, getOffences, upsertDriver, upsertVehicle, uploadEvidenceFile } from '@/lib/database';
 import { NewInfringement, Offence, GeoJSONPoint, NewDriver, NewVehicle } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatting';
 import OSMMap from '@/components/OSMMap';
 import { addWatermarkToImage, WatermarkData } from '@/lib/watermark';
 import { WatermarkedImage } from '@/components/WatermarkedImage';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface PhotoItem {
   uri: string;
@@ -49,15 +50,132 @@ export default function CreateInfringementScreen() {
 
   // Form state
   const [step, setStep] = useState<'offence' | 'driver' | 'vehicle' | 'location' | 'evidence' | 'review'>('offence');
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const offencesQuery = useQuery({
+    queryKey: queryKeys.offencesActive,
+    queryFn: async () => {
+      const { data, error } = await getOffences({ active: true });
+      if (error) {
+        throw new Error(error.message || 'Failed to load offences');
+      }
+      return data ?? [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const loading = offencesQuery.isPending;
+  const queryClient = useQueryClient();
+  const submittingMutation = useMutation({
+    mutationFn: async (isDraft: boolean) => {
+      if (!user || !selectedOffence) {
+        throw new Error('Missing required information');
+      }
+
+      if (!isDraft && (!driverLicense || !vehiclePlate)) {
+        throw new Error('Driver license and vehicle plate are required');
+      }
+
+      // Check if we should queue for later sync
+      const shouldQueue = !isOnline && !isDraft;
+
+      let driver_id: string | null = null;
+      let vehicle_id: string | null = null;
+
+      // Create or lookup driver if license provided
+      if (driverLicense) {
+        const newDriver: NewDriver = {
+          license_number: driverLicense,
+          full_name: 'Unknown', // Will be updated later when more info is available
+          address: null,
+          dob: null,
+        };
+        const { data: driver, error: driverError } = await upsertDriver(newDriver);
+        if (driver) {
+          driver_id = driver.id;
+        } else if (driverError) {
+          throw new Error(driverError.message || 'Failed to create/update driver');
+        }
+      }
+
+      // Create or lookup vehicle if plate provided
+      if (vehiclePlate) {
+        const newVehicle: NewVehicle = {
+          plate_number: vehiclePlate,
+          make: null,
+          model: null,
+          color: null,
+          owner_id: driver_id,
+        };
+        const { data: vehicle, error: vehicleError } = await upsertVehicle(newVehicle);
+        if (vehicle) {
+          vehicle_id = vehicle.id;
+        } else if (vehicleError) {
+          throw new Error(vehicleError.message || 'Failed to create/update vehicle');
+        }
+      }
+
+      const geoLocation: GeoJSONPoint | null = currentLocation ? {
+        type: 'Point',
+        coordinates: [currentLocation.coords.longitude, currentLocation.coords.latitude],
+      } : null;
+
+      const newInfringement: NewInfringement = {
+        agency_id: user.agency_id,
+        team_id: user.team_id,
+        officer_id: user.id,
+        driver_id: driver_id,
+        vehicle_id: vehicle_id,
+        offence_code: selectedOffence.code,
+        description: description || locationDescription || null,
+        fine_amount: selectedOffence.fixed_penalty,
+        location: geoLocation ? JSON.stringify(geoLocation) : null,
+        jurisdiction_location_id: null,
+        status: isDraft ? 'draft' : 'pending',
+      };
+
+      if (shouldQueue) {
+        await addToSyncQueue('infringement', newInfringement);
+        if (photos.length > 0) {
+          for (const photo of photos) {
+            await addToSyncQueue('evidence', {
+              infringementId: 'pending',
+              fileUri: photo.uri,
+              fileType: photo.type,
+            });
+          }
+        }
+        return { queued: true, isDraft } as const;
+      }
+
+      const { data, error } = await createInfringement(newInfringement);
+      if (error || !data) {
+        throw new Error(error?.message || 'Failed to create infringement');
+      }
+
+      let photoWarning = false;
+      if (photos.length > 0 && !isDraft) {
+        try {
+          const uploadPromises = photos.map(photo =>
+            uploadEvidenceFile(data.id, photo.uri, photo.type)
+          );
+          await Promise.all(uploadPromises);
+        } catch (photoError) {
+          console.error('Error uploading photos:', photoError);
+          photoWarning = true;
+        }
+      }
+
+      return { queued: false, isDraft, photoWarning } as const;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.infringementsByOfficer(user?.id, 100) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
+    },
+  });
+
+  const submitting = submittingMutation.isPending;
   const [isOnline, setIsOnline] = useState(true);
 
-  useEffect(() => {
-    checkNetworkStatus();
-  }, []);
-
-  const checkNetworkStatus = async () => {
+  const checkNetworkStatus = useCallback(async () => {
     try {
       const networkState = await Network.getNetworkStateAsync();
       const offline = await isOfflineMode();
@@ -65,10 +183,14 @@ export default function CreateInfringementScreen() {
     } catch (error) {
       console.error('Error checking network:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkNetworkStatus();
+  }, [checkNetworkStatus]);
 
   // Offence
-  const [offences, setOffences] = useState<Offence[]>([]);
+  const offences = useMemo(() => offencesQuery.data ?? [], [offencesQuery.data]);
   const [selectedOffence, setSelectedOffence] = useState<Offence | null>(null);
   const [description, setDescription] = useState('');
 
@@ -82,20 +204,11 @@ export default function CreateInfringementScreen() {
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
   const [locationDescription, setLocationDescription] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
-  const [loadingAddress, setLoadingAddress] = useState(false);
 
   // Evidence
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
-  useEffect(() => {
-    loadOffences();
-    requestLocationPermission();
-    if (draftId) {
-      loadDraftData();
-    }
-  }, []);
-
-  const loadDraftData = async () => {
+  const loadDraftData = useCallback(async () => {
     if (!draftId) return;
     
     try {
@@ -148,32 +261,54 @@ export default function CreateInfringementScreen() {
       console.error('Error loading draft:', error);
       Alert.alert('Error', 'Failed to load draft data');
     }
-  };
+  }, [draftId, offences]);
 
-  const loadOffences = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await getOffences({ active: true });
-      if (data) {
-        setOffences(data);
-      } else if (error) {
-        Alert.alert('Error', 'Failed to load offences');
+  const reverseGeocodeMutation = useMutation({
+    mutationFn: async ({ lat, lng }: { lat: number; lng: number }) => {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'MANTIS Mobile App',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch address');
       }
-    } catch (err) {
-      console.error('Error loading offences:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const requestLocationPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      getCurrentLocation();
-    }
-  };
+      const data = await response.json();
+      if (data.display_name) {
+        return data.display_name as string;
+      }
 
-  const getCurrentLocation = async () => {
+      if (data.address) {
+        const parts = [
+          data.address.road,
+          data.address.suburb,
+          data.address.city || data.address.town,
+          data.address.country,
+        ].filter(Boolean);
+        return parts.join(', ');
+      }
+
+      return '';
+    },
+  });
+
+  const updateLocationDescription = useCallback(async (lat: number, lng: number) => {
+    try {
+      const address = await reverseGeocodeMutation.mutateAsync({ lat, lng });
+      if (address !== undefined) {
+        setLocationDescription(address);
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+    }
+  }, [reverseGeocodeMutation]);
+
+  const getCurrentLocation = useCallback(async () => {
     setLoadingLocation(true);
     try {
       const location = await Location.getCurrentPositionAsync({
@@ -181,47 +316,28 @@ export default function CreateInfringementScreen() {
       });
       setCurrentLocation(location);
       
-      // Fetch address for the current location
-      await fetchAddressFromCoordinates(location.coords.latitude, location.coords.longitude);
+      await updateLocationDescription(location.coords.latitude, location.coords.longitude);
     } catch (error) {
       console.error('Error getting location:', error);
       Alert.alert('Location Error', 'Failed to get current location');
     } finally {
       setLoadingLocation(false);
     }
-  };
+  }, [updateLocationDescription]);
 
-  const fetchAddressFromCoordinates = async (lat: number, lng: number) => {
-    setLoadingAddress(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'MANTIS Mobile App'
-          }
-        }
-      );
-      const data = await response.json();
-      
-      if (data.display_name) {
-        setLocationDescription(data.display_name);
-      } else if (data.address) {
-        // Build address from components
-        const parts = [
-          data.address.road,
-          data.address.suburb,
-          data.address.city || data.address.town,
-          data.address.country
-        ].filter(Boolean);
-        setLocationDescription(parts.join(', '));
-      }
-    } catch (error) {
-      console.error('Error fetching address:', error);
-    } finally {
-      setLoadingAddress(false);
+  const requestLocationPermission = useCallback(async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      getCurrentLocation();
     }
-  };
+  }, [getCurrentLocation]);
+
+  useEffect(() => {
+    requestLocationPermission();
+    if (draftId) {
+      loadDraftData();
+    }
+  }, [draftId, loadDraftData, requestLocationPermission]);
 
   const handleMapLocationSelect = async (lat: number, lng: number) => {
     setCurrentLocation({
@@ -238,7 +354,7 @@ export default function CreateInfringementScreen() {
     } as Location.LocationObject);
     
     // Fetch address for the selected location
-    await fetchAddressFromCoordinates(lat, lng);
+    await updateLocationDescription(lat, lng);
   };
 
   const takePicture = async () => {
@@ -311,94 +427,9 @@ export default function CreateInfringementScreen() {
   };
 
   const handleSubmit = async (isDraft: boolean = false) => {
-    if (!user || !selectedOffence) {
-      Alert.alert('Error', 'Missing required information');
-      return;
-    }
-
-    if (!isDraft && (!driverLicense || !vehiclePlate)) {
-      Alert.alert('Error', 'Driver license and vehicle plate are required');
-      return;
-    }
-
-    setSubmitting(true);
-    
-    // Check if we should queue for later sync
-    const shouldQueue = !isOnline && !isDraft;
-    
     try {
-      let driverId: string | null = null;
-      let vehicleId: string | null = null;
-
-      // Create or lookup driver if license provided
-      if (driverLicense) {
-        const newDriver: NewDriver = {
-          license_number: driverLicense,
-          full_name: 'Unknown', // Will be updated later when more info is available
-          address: null,
-          dob: null,
-        };
-        
-        const { data: driver, error: driverError } = await upsertDriver(newDriver);
-        if (driver) {
-          driverId = driver.id;
-        } else if (driverError) {
-          console.error('Error creating/updating driver:', driverError);
-        }
-      }
-
-      // Create or lookup vehicle if plate provided
-      if (vehiclePlate) {
-        const newVehicle: NewVehicle = {
-          plate_number: vehiclePlate,
-          make: null,
-          model: null,
-          color: null,
-          owner_id: driverId,
-        };
-        
-        const { data: vehicle, error: vehicleError } = await upsertVehicle(newVehicle);
-        if (vehicle) {
-          vehicleId = vehicle.id;
-        } else if (vehicleError) {
-          console.error('Error creating/updating vehicle:', vehicleError);
-        }
-      }
-
-      const geoLocation: GeoJSONPoint | null = currentLocation ? {
-        type: 'Point',
-        coordinates: [currentLocation.coords.longitude, currentLocation.coords.latitude],
-      } : null;
-
-      const newInfringement: NewInfringement = {
-        agency_id: user.agency_id,
-        team_id: user.team_id,
-        officer_id: user.id,
-        driver_id: driverId,
-        vehicle_id: vehicleId,
-        offence_code: selectedOffence.code,
-        description: description || locationDescription || null,
-        fine_amount: selectedOffence.fixed_penalty,
-        location: geoLocation ? JSON.stringify(geoLocation) : null,
-        jurisdiction_location_id: null,
-        status: isDraft ? 'draft' : 'pending',
-      };
-
-      if (shouldQueue) {
-        // Queue for later sync when offline
-        await addToSyncQueue('infringement', newInfringement);
-        
-        // Queue photos for upload
-        if (photos.length > 0) {
-          for (const photo of photos) {
-            await addToSyncQueue('evidence', {
-              infringementId: 'pending', // Will be resolved during sync
-              fileUri: photo.uri,
-              fileType: photo.type,
-            });
-          }
-        }
-        
+      const result = await submittingMutation.mutateAsync(isDraft);
+      if (result.queued) {
         Alert.alert(
           'Queued for Sync',
           'Infringement saved and will be synced when you\'re back online.',
@@ -407,42 +438,21 @@ export default function CreateInfringementScreen() {
         return;
       }
 
-      const { data, error } = await createInfringement(newInfringement);
-      
-      if (error) {
-        Alert.alert('Error', error.message || 'Failed to create infringement');
-        return;
-      }
-
-      // Upload photos to Supabase storage if infringement was created successfully
-      if (data && photos.length > 0 && !isDraft) {
-        try {
-          const uploadPromises = photos.map(photo =>
-            uploadEvidenceFile(data.id, photo.uri, photo.type)
-          );
-          
-          await Promise.all(uploadPromises);
-          console.log('Photos uploaded successfully');
-        } catch (photoError) {
-          console.error('Error uploading photos:', photoError);
-          // Don't fail the whole operation if photo upload fails
-          Alert.alert(
-            'Warning',
-            'Infringement created but some photos failed to upload. You can try uploading them again later.'
-          );
-        }
+      if (result.photoWarning) {
+        Alert.alert(
+          'Warning',
+          'Infringement created but some photos failed to upload. You can try uploading them again later.'
+        );
       }
 
       Alert.alert(
         'Success',
-        isDraft ? 'Draft saved successfully' : 'Infringement created successfully',
+        result.isDraft ? 'Draft saved successfully' : 'Infringement created successfully',
         [{ text: 'OK', onPress: () => router.back() }]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
-    } finally {
-      setSubmitting(false);
+      Alert.alert('Error', error?.message || 'An unexpected error occurred');
     }
   };
 
@@ -601,7 +611,7 @@ export default function CreateInfringementScreen() {
 
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>
-          Location Description {loadingAddress && '(Loading address...)'}
+          Location Description {reverseGeocodeMutation.isPending && '(Loading address...)'}
         </ThemedText>
         <TextInput
           style={[styles.textArea, { color: colors.foreground, borderColor: colors.icon }]}
@@ -611,7 +621,7 @@ export default function CreateInfringementScreen() {
           onChangeText={setLocationDescription}
           multiline
           numberOfLines={3}
-          editable={!loadingAddress}
+          editable={!reverseGeocodeMutation.isPending}
         />
       </View>
 

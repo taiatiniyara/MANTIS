@@ -14,6 +14,8 @@ export {
 
 // Layout components
 export { RoleBasedTabLayout, type TabConfig } from './RoleBasedTabLayout';
+export { SafeAreaLayout } from './SafeAreaLayout';
+export { ScreenWrapper } from './ScreenWrapper';
 
 // UI components
 export * from './ui';
@@ -29,3 +31,6 @@ export { SessionStatus } from './SessionStatus';
 export { SyncStatus } from './SyncStatus';
 export { WatermarkedImage } from './WatermarkedImage';
 export { default as OSMMap } from './OSMMap';
+export { CaseCard } from './CaseCard';
+export { EmptyState } from './EmptyState';
+export { StatusBadge } from './StatusBadge';

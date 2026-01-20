@@ -28,7 +28,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 export function ComponentShowcase() {
   const [email, setEmail] = useState('');
   const [selectedValue, setSelectedValue] = useState('');
-  const [showAlert, setShowAlert] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 

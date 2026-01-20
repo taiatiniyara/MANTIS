@@ -68,7 +68,7 @@ export default function CreateInfringementScreen() {
 
         <View style={styles.helpBox}>
           <ThemedText style={styles.helpText}>
-            💡 Tip: You can save drafts if you're offline or need to gather more information
+              💡 Tip: You can save drafts if you are offline or need to gather more information
           </ThemedText>
         </View>
       </ThemedView>

@@ -2,7 +2,7 @@
  * MANTIS Mobile - Cases List Screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -11,79 +11,66 @@ import {
   RefreshControl,
   TextInput,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { CaseCard } from '@/components/CaseCard';
+import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/contexts/AuthContext';
 import { getInfringements } from '@/lib/database';
 import { Infringement } from '@/lib/types';
-import { formatDate, formatCurrency, formatInfringementStatus } from '@/lib/formatting';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { queryKeys } from '@/lib/queryKeys';
 
 export default function CasesListScreen() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [cases, setCases] = useState<Infringement[]>([]);
-  const [filteredCases, setFilteredCases] = useState<Infringement[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
 
-  useEffect(() => {
-    loadCases();
-  }, []);
-
-  useEffect(() => {
-    filterCases();
-  }, [cases, searchQuery, filter]);
-
-  const loadCases = async () => {
-    if (!user) return;
-
-    try {
-      const { data } = await getInfringements({
+  const {
+    data: cases = [],
+    isPending,
+    isFetching,
+    refetch,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.infringementsByOfficer(user?.id, 100),
+    queryFn: async () => {
+      if (!user?.id) return [] as Infringement[];
+      const { data, error } = await getInfringements({
         officer_id: user.id,
         limit: 100,
       });
+      if (error) throw new Error(error.message || 'Failed to load cases');
+      return data ?? [];
+    },
+    enabled: Boolean(user?.id),
+  });
 
-      if (data) {
-        setCases(data);
-      }
-    } catch (error) {
-      console.error('Error loading cases:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const filteredCases = useMemo(() => {
+    let filteredList = cases;
 
-  const filterCases = () => {
-    let filtered = cases;
-
-    // Apply status filter
     if (filter !== 'all') {
-      filtered = filtered.filter(c => c.status === filter);
+      filteredList = filteredList.filter(c => c.status === filter);
     }
 
-    // Apply search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
+      filteredList = filteredList.filter(
         c =>
           c.offence_code.toLowerCase().includes(query) ||
           c.description?.toLowerCase().includes(query)
       );
     }
-
-    setFilteredCases(filtered);
-  };
+    return filteredList;
+  }, [cases, filter, searchQuery]);
 
   const onRefresh = () => {
-    setRefreshing(true);
-    loadCases();
+    refetch();
   };
 
   return (
@@ -100,7 +87,12 @@ export default function CasesListScreen() {
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterContainer}
+        contentContainerStyle={styles.filterContent}
+      >
         <TouchableOpacity
           style={[
             styles.filterButton,
@@ -146,67 +138,35 @@ export default function CasesListScreen() {
             Approved ({cases.filter(c => c.status === 'approved').length})
           </ThemedText>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       {/* Cases List */}
       <ScrollView
         style={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
         }
       >
-        {loading ? (
+        {isPending ? (
           <ThemedText style={styles.emptyText}>Loading...</ThemedText>
+        ) : error ? (
+          <ThemedText style={styles.emptyText}>Couldn&apos;t load cases.</ThemedText>
         ) : filteredCases.length === 0 ? (
-          <View style={styles.emptyState}>
-            <ThemedText style={styles.emptyText}>No cases found</ThemedText>
-            {searchQuery && (
-              <ThemedText style={styles.emptySubtext}>
-                Try adjusting your search
-              </ThemedText>
-            )}
-          </View>
+          <EmptyState
+            title="No cases found"
+            message={searchQuery ? 'Try adjusting your search' : undefined}
+          />
         ) : (
           <View style={styles.casesList}>
-            {filteredCases.map((infringement) => (
-              <TouchableOpacity
+            {filteredCases.map(infringement => (
+              <CaseCard
                 key={infringement.id}
-                style={[styles.caseCard, { borderColor: colors.icon }]}
-              >
-                <View style={styles.caseHeader}>
-                  <ThemedText style={styles.caseCode}>
-                    {infringement.offence_code}
-                  </ThemedText>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor:
-                          infringement.status === 'approved'
-                            ? '#4CAF50'
-                            : infringement.status === 'pending'
-                            ? '#FF9800'
-                            : '#9E9E9E',
-                      },
-                    ]}
-                  >
-                    <ThemedText style={styles.statusText}>
-                      {formatInfringementStatus(infringement.status)}
-                    </ThemedText>
-                  </View>
-                </View>
-                <ThemedText style={styles.caseAmount}>
-                  {formatCurrency(infringement.fine_amount)}
-                </ThemedText>
-                {infringement.description && (
-                  <ThemedText style={styles.caseDescription} numberOfLines={2}>
-                    {infringement.description}
-                  </ThemedText>
-                )}
-                <ThemedText style={styles.caseDate}>
-                  {formatDate(infringement.issued_at, 'long')}
-                </ThemedText>
-              </TouchableOpacity>
+                code={infringement.offence_code}
+                amount={infringement.fine_amount}
+                status={infringement.status}
+                issuedAt={infringement.issued_at}
+                description={infringement.description}
+              />
             ))}
           </View>
         )}
@@ -231,17 +191,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   filterContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    maxHeight: 44,
+  },
+  filterContent: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
+    alignItems: 'center',
+    columnGap: 8,
+    height: 36,
   },
   filterButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    height: 32,
+    paddingHorizontal: 10,
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   filterText: {
     textAlign: 'center',
@@ -258,57 +224,9 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  caseCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  caseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  caseCode: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  caseAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  caseDescription: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 4,
-  },
-  caseDate: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  emptyState: {
-    padding: 32,
-    alignItems: 'center',
-  },
   emptyText: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.7,
   },
 });

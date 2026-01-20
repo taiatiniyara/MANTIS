@@ -2,7 +2,7 @@
  * MANTIS Mobile - Cases List Screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -11,117 +11,91 @@ import {
   RefreshControl,
   TextInput,
   Modal,
-  Pressable,
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SyncStatus } from '@/components/SyncStatus';
 import { useAuth } from '@/contexts/AuthContext';
 import { getInfringements, getEvidenceFiles, getEvidenceFileUrl } from '@/lib/database';
-import { Infringement, EvidenceFile } from '@/lib/types';
+import { Infringement } from '@/lib/types';
 import { formatDate, formatCurrency, formatInfringementStatus } from '@/lib/formatting';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { queryKeys } from '@/lib/queryKeys';
 
 export default function CasesListScreen() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [cases, setCases] = useState<Infringement[]>([]);
-  const [filteredCases, setFilteredCases] = useState<Infringement[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'draft' | 'submitted'>('all');
   const [selectedCase, setSelectedCase] = useState<Infringement | null>(null);
-  const [evidencePhotos, setEvidencePhotos] = useState<string[]>([]);
-  const [loadingEvidence, setLoadingEvidence] = useState(false);
-
-  useEffect(() => {
-    if (selectedCase) {
-      loadEvidence(selectedCase.id);
-    }
-  }, [selectedCase]);
-
-  useEffect(() => {
-    loadCases();
-  }, []);
-
-  useEffect(() => {
-    filterCases();
-  }, [cases, searchQuery, filter]);
-
-  const loadCases = async () => {
-    if (!user) return;
-
-    try {
-      const { data } = await getInfringements({
+  const {
+    data: cases = [],
+    isPending: isLoadingCases,
+    isFetching: isRefetchingCases,
+    refetch: refetchCases,
+    error: casesError,
+  } = useQuery({
+    queryKey: queryKeys.infringementsByOfficer(user?.id, 100),
+    queryFn: async () => {
+      if (!user?.id) return [] as Infringement[];
+      const { data, error } = await getInfringements({
         officer_id: user.id,
         limit: 100,
       });
+      if (error) throw new Error(error.message || 'Failed to load cases');
+      return data ?? [];
+    },
+    enabled: Boolean(user?.id),
+  });
+  const filteredCases = useMemo(() => {
+    let result = cases;
 
-      if (data) {
-        setCases(data);
-      }
-    } catch (error) {
-      console.error('Error loading cases:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const filterCases = () => {
-    let filtered = cases;
-
-    // Apply status filter
     if (filter !== 'all') {
-      filtered = filtered.filter(c => c.status === filter);
+      result = result.filter(c => c.status === filter);
     }
 
-    // Apply search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
+      result = result.filter(
         c =>
           c.offence_code.toLowerCase().includes(query) ||
           c.description?.toLowerCase().includes(query)
       );
     }
 
-    setFilteredCases(filtered);
-  };
+    return result;
+  }, [cases, filter, searchQuery]);
 
-  const loadEvidence = async (infringementId: string) => {
-    setLoadingEvidence(true);
-    try {
-      const { data } = await getEvidenceFiles(infringementId);
-      if (data) {
-        const photoUrls = await Promise.all(
-          data.map(async (file) => await getEvidenceFileUrl(file.file_path))
-        );
-        setEvidencePhotos(photoUrls);
-      }
-    } catch (error) {
-      console.error('Error loading evidence:', error);
-    } finally {
-      setLoadingEvidence(false);
-    }
-  };
+  const {
+    data: evidencePhotos = [],
+    isFetching: loadingEvidence,
+  } = useQuery({
+    queryKey: queryKeys.evidenceByInfringement(selectedCase?.id),
+    queryFn: async () => {
+      if (!selectedCase?.id) return [] as string[];
+      const { data, error } = await getEvidenceFiles(selectedCase.id);
+      if (error) throw new Error(error.message || 'Failed to load evidence');
+      const photoUrls = await Promise.all(
+        (data ?? []).map(async (file) => await getEvidenceFileUrl(file.file_path))
+      );
+      return photoUrls;
+    },
+    enabled: Boolean(selectedCase?.id),
+  });
 
   const onRefresh = () => {
-    setRefreshing(true);
-    loadCases();
+    refetchCases();
   };
 
   const handleCloseModal = () => {
     setSelectedCase(null);
-    setEvidencePhotos([]);
   };
-
   return (
     <ThemedView style={styles.container}>
       {/* Search Bar */}
@@ -141,7 +115,12 @@ export default function CasesListScreen() {
       </View>
 
       {/* Filter Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterContainer}
+        contentContainerStyle={styles.filterContent}
+      >
         <TouchableOpacity
           style={[
             styles.filterButton,
@@ -225,11 +204,13 @@ export default function CasesListScreen() {
       <ScrollView
         style={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isRefetchingCases} onRefresh={onRefresh} />
         }
       >
-        {loading ? (
+        {isLoadingCases ? (
           <ThemedText style={styles.emptyText}>Loading...</ThemedText>
+        ) : casesError ? (
+          <ThemedText style={styles.emptyText}>Couldn&apos;t load cases.</ThemedText>
         ) : filteredCases.length === 0 ? (
           <View style={styles.emptyState}>
             <ThemedText style={styles.emptyText}>No cases found</ThemedText>
@@ -467,17 +448,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   filterContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    maxHeight: 44,
+  },
+  filterContent: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
+    alignItems: 'center',
+    columnGap: 8,
+    height: 36,
   },
   filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    height: 32,
+    paddingHorizontal: 10,
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginRight: 8,
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   filterText: {
     textAlign: 'center',

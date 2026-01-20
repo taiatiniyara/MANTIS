@@ -5,11 +5,13 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/utils/supabase';
 import { User, UserWithRelations } from '@/lib/types';
-import { getCurrentUser } from '@/lib/database';
 import { saveUserProfile, getUserProfile, removeUserProfile } from '@/lib/storage';
+import { useSessionUser } from '@/hooks/useSessionUser';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface AuthContextType {
   session: Session | null;
@@ -27,58 +29,95 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<UserWithRelations | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+  const queryClient = useQueryClient();
+
+  const sessionUserQuery = useSessionUser(!!session);
 
   useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        loadUser();
-      } else {
-        setLoading(false);
+    let isMounted = true;
+
+    const initialize = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('Error checking auth session:', error);
+          setSession(null);
+          return;
+        }
+
+        setSession(data.session);
+      } catch (error) {
+        console.error('Unexpected error initializing auth session:', error);
+        if (isMounted) {
+          setSession(null);
+        }
+      } finally {
+        if (isMounted) {
+          setAuthChecking(false);
+        }
       }
-    });
+    };
+
+    initialize();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!isMounted) return;
+
         setSession(session);
-        if (session) {
-          await loadUser();
-        } else {
-          setUser(null);
-          await removeUserProfile();
-          setLoading(false);
+        try {
+          if (session) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
+          } else {
+            setUser(null);
+            await removeUserProfile();
+            queryClient.removeQueries({ queryKey: queryKeys.currentUser });
+          }
+        } catch (error) {
+          console.error('Error handling auth state change:', error);
         }
       }
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
-  const loadUser = async () => {
-    try {
-      // Try to load from cache first
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateFromCache = async () => {
+      if (!session) {
+        await removeUserProfile();
+        setUser(null);
+        return;
+      }
+
       const cachedUser = await getUserProfile();
-      if (cachedUser) {
+      if (cachedUser && isMounted) {
         setUser(cachedUser as UserWithRelations);
       }
+    };
 
-      // Then fetch fresh data
-      const { data, error } = await getCurrentUser();
-      if (data && !error) {
-        setUser(data);
-        await saveUserProfile(data as User);
-      }
-    } catch (error) {
-      console.error('Error loading user:', error);
-    } finally {
-      setLoading(false);
+    hydrateFromCache();
+    return () => {
+      isMounted = false;
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (sessionUserQuery.data) {
+      setUser(sessionUserQuery.data);
+      saveUserProfile(sessionUserQuery.data as User);
     }
-  };
+  }, [sessionUserQuery.data]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -101,10 +140,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     await removeUserProfile();
     setUser(null);
+    queryClient.removeQueries({ queryKey: queryKeys.currentUser });
   };
 
   const refreshUser = async () => {
-    await loadUser();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
   };
 
   const resetPassword = async (email: string) => {
@@ -133,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     session,
     user,
-    loading,
+    loading: authChecking || (session ? sessionUserQuery.isLoading : false),
     signIn,
     signOut,
     refreshUser,

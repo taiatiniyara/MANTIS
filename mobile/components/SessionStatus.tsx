@@ -23,7 +23,7 @@ export function SessionStatus() {
     } else if (session?.user?.email) {
       setShowWarning(true);
     }
-  }, [session?.user?.email_confirmed_at]);
+  }, [session?.user?.email, session?.user?.email_confirmed_at]);
 
   const handleResendVerification = async () => {
     try {

@@ -2,98 +2,102 @@
  * MANTIS Mobile - Profile Screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, Switch, ActivityIndicator } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatRole, formatCurrency, formatDate } from '@/lib/formatting';
 import { getInfringements } from '@/lib/database';
-import { Infringement } from '@/lib/types';
 import { getSyncStats, syncPendingData, clearSyncQueue, clearAllDrafts, setOfflineMode as setOfflineModeStorage, isOfflineMode } from '@/lib/offline';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { queryKeys } from '@/lib/queryKeys';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const queryClient = useQueryClient();
   
-  const [stats, setStats] = useState<{
-    total: number;
-    draft: number;
-    submitted: number;
-    pending: number;
-    approved: number;
-    totalFines: number;
-  }>({ total: 0, draft: 0, submitted: 0, pending: 0, approved: 0, totalFines: 0 });
-  const [loadingStats, setLoadingStats] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
-  const [syncStats, setSyncStats] = useState({ draftCount: 0, queueCount: 0, lastSync: null as Date | null });
   const [syncing, setSyncing] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [sessionTimeout, setSessionTimeout] = useState(15);
+  const [sessionTimeout] = useState(15);
 
-  useEffect(() => {
-    loadStats();
-    loadSyncStats();
-    loadOfflineMode();
-    checkBiometric();
-  }, [user]);
+  const statsQuery = useQuery({
+    queryKey: queryKeys.officerStats(user?.id),
+    queryFn: async () => {
+      if (!user?.id) return {
+        total: 0,
+        draft: 0,
+        submitted: 0,
+        pending: 0,
+        approved: 0,
+        totalFines: 0,
+      };
+      const { data, error } = await getInfringements({ officer_id: user.id, limit: 1000 });
+      if (error) throw new Error(error.message || 'Failed to load stats');
+      const list = data ?? [];
+      const draft = list.filter(i => i.status === 'draft').length;
+      const submitted = list.filter(i => i.status === 'submitted').length;
+      const pending = list.filter(i => i.status === 'pending').length;
+      const approved = list.filter(i => i.status === 'approved').length;
+      const totalFines = list.reduce((sum, i) => sum + (i.fine_amount || 0), 0);
+      return {
+        total: list.length,
+        draft,
+        submitted,
+        pending,
+        approved,
+        totalFines,
+      };
+    },
+    enabled: Boolean(user?.id),
+    staleTime: 1000 * 60 * 2,
+  });
 
-  const checkBiometric = async () => {
+  const syncStatsQuery = useQuery({
+    queryKey: queryKeys.syncStats,
+    queryFn: getSyncStats,
+    refetchInterval: 30000,
+  });
+
+  const stats = statsQuery.data ?? {
+    total: 0,
+    draft: 0,
+    submitted: 0,
+    pending: 0,
+    approved: 0,
+    totalFines: 0,
+  };
+
+  const loadingStats = statsQuery.isPending;
+
+  const syncStats = syncStatsQuery.data ?? { draftCount: 0, queueCount: 0, lastSync: null };
+
+  const checkBiometric = useCallback(async () => {
     try {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       setBiometricAvailable(compatible);
     } catch (error) {
       console.error('Error checking biometric:', error);
     }
-  };
+  }, []);
 
-  const loadSyncStats = async () => {
-    const stats = await getSyncStats();
-    setSyncStats(stats);
-  };
-
-  const loadOfflineMode = async () => {
+  const loadOfflineMode = useCallback(async () => {
     const offline = await isOfflineMode();
     setOfflineMode(offline);
-  };
+  }, []);
 
-  const loadStats = async () => {
-    if (!user) return;
-    
-    try {
-      const { data } = await getInfringements({
-        officer_id: user.id,
-        limit: 1000,
-      });
-
-      if (data) {
-        const draft = data.filter(i => i.status === 'draft').length;
-        const submitted = data.filter(i => i.status === 'submitted').length;
-        const pending = data.filter(i => i.status === 'pending').length;
-        const approved = data.filter(i => i.status === 'approved').length;
-        const totalFines = data.reduce((sum, i) => sum + (i.fine_amount || 0), 0);
-
-        setStats({
-          total: data.length,
-          draft,
-          submitted,
-          pending,
-          approved,
-          totalFines,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
+  useEffect(() => {
+    loadOfflineMode();
+    checkBiometric();
+  }, [checkBiometric, loadOfflineMode]);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -115,9 +119,10 @@ export default function ProfileScreen() {
       Alert.alert(
         'Sync Complete',
         `Successfully synced: ${result.success}\nFailed: ${result.failed}`,
-        [{ text: 'OK', onPress: loadSyncStats }]
+        [{ text: 'OK', onPress: () => queryClient.invalidateQueries({ queryKey: queryKeys.syncStats }) }]
       );
     } catch (error) {
+      console.error('Sync error:', error);
       Alert.alert('Sync Error', 'Failed to sync pending data');
     } finally {
       setSyncing(false);
@@ -135,7 +140,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await clearSyncQueue();
-            await loadSyncStats();
+            await queryClient.invalidateQueries({ queryKey: queryKeys.syncStats });
             Alert.alert('Success', 'Sync queue cleared');
           },
         },
@@ -154,7 +159,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await clearAllDrafts();
-            await loadSyncStats();
+            await queryClient.invalidateQueries({ queryKey: queryKeys.syncStats });
             Alert.alert('Success', 'All drafts cleared');
           },
         },
@@ -170,14 +175,16 @@ export default function ProfileScreen() {
   const handleBiometricToggle = async (value: boolean) => {
     if (value) {
       try {
-        const compatible = await LocalAuthentication.isAvailableAsync();
-        if (!compatible) {
-          Alert.alert('Not Available', 'Biometric authentication is not available on this device');
+        const hardwareAvailable = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!hardwareAvailable || !enrolled) {
+          Alert.alert('Not Available', 'Biometric authentication is not available or not enrolled on this device');
           return;
         }
         setBiometricEnabled(true);
         Alert.alert('Biometric Enabled', 'You can now use biometric authentication to sign in');
       } catch (error) {
+        console.error('Error enabling biometrics:', error);
         Alert.alert('Error', 'Failed to enable biometric authentication');
       }
     } else {

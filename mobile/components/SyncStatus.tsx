@@ -4,7 +4,7 @@
  * Displays sync status and allows manual sync trigger
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -17,12 +17,13 @@ import {
   syncPendingData,
   getSyncStats,
   shouldAutoSync,
-  getLastSyncTime,
 } from '@/lib/offline';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { formatDate } from '@/lib/formatting';
 import * as Network from 'expo-network';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface SyncStatusProps {
   autoSync?: boolean;
@@ -31,38 +32,22 @@ interface SyncStatusProps {
 export function SyncStatus({ autoSync = false }: SyncStatusProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-
-  const [syncing, setSyncing] = useState(false);
+  const queryClient = useQueryClient();
   const [isOnline, setIsOnline] = useState(true);
-  const [stats, setStats] = useState({
+
+  const statsQuery = useQuery({
+    queryKey: queryKeys.syncStats,
+    queryFn: getSyncStats,
+    refetchInterval: 30000,
+  });
+
+  const stats = statsQuery.data ?? {
     draftCount: 0,
     queueCount: 0,
     lastSync: null as Date | null,
-  });
-
-  useEffect(() => {
-    loadStats();
-    checkNetworkStatus();
-    
-    // Auto-sync check
-    if (autoSync) {
-      checkAutoSync();
-    }
-
-    // Refresh stats and network every 30 seconds
-    const interval = setInterval(() => {
-      loadStats();
-      checkNetworkStatus();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [autoSync]);
-
-  const loadStats = async () => {
-    const syncStats = await getSyncStats();
-    setStats(syncStats);
   };
 
-  const checkNetworkStatus = async () => {
+  const checkNetworkStatus = useCallback(async () => {
     try {
       const networkState = await Network.getNetworkStateAsync();
       setIsOnline(networkState.isConnected ?? false);
@@ -70,40 +55,62 @@ export function SyncStatus({ autoSync = false }: SyncStatusProps) {
       console.error('Error checking network:', error);
       setIsOnline(false);
     }
-  };
+  }, []);
 
-  const checkAutoSync = async () => {
-    const should = await shouldAutoSync();
-    if (should) {
-      handleSync();
-    }
-  };
+  const syncMutation = useMutation({
+    mutationFn: syncPendingData,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.syncStats });
+    },
+  });
 
-  const handleSync = async () => {
+  const handleSync = useCallback(async () => {
     if (!isOnline) {
       Alert.alert('No Connection', 'Please check your internet connection and try again.');
       return;
     }
 
-    setSyncing(true);
     try {
-      const result = await syncPendingData();
-      
+      const result = await syncMutation.mutateAsync();
       if (result.success > 0 || result.failed > 0) {
         Alert.alert(
           'Sync Complete',
           `Synced: ${result.success}\nFailed: ${result.failed}`,
-          [{ text: 'OK', onPress: loadStats }]
+          [{ text: 'OK', onPress: () => statsQuery.refetch() }]
         );
       }
     } catch (error) {
       console.error('Sync error:', error);
       Alert.alert('Sync Error', 'Failed to sync pending data');
-    } finally {
-      setSyncing(false);
-      loadStats();
     }
-  };
+  }, [isOnline, syncMutation, statsQuery]);
+
+  useEffect(() => {
+    if (!autoSync || !isOnline || syncMutation.isPending || stats.queueCount === 0) {
+      return;
+    }
+
+    let active = true;
+    const maybeAutoSync = async () => {
+      const should = await shouldAutoSync();
+      if (active && should) {
+        syncMutation.mutate();
+      }
+    };
+
+    maybeAutoSync();
+    return () => {
+      active = false;
+    };
+  }, [autoSync, isOnline, stats.queueCount, syncMutation]);
+
+  useEffect(() => {
+    checkNetworkStatus();
+    const interval = setInterval(() => {
+      checkNetworkStatus();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [checkNetworkStatus]);
 
   if (stats.queueCount === 0 && stats.draftCount === 0) {
     return null; // Don't show if nothing to sync
@@ -139,9 +146,9 @@ export function SyncStatus({ autoSync = false }: SyncStatusProps) {
             { backgroundColor: isOnline ? colors.tint : '#9E9E9E' },
           ]}
           onPress={handleSync}
-          disabled={syncing || !isOnline}
+          disabled={syncMutation.isPending || !isOnline}
         >
-          {syncing ? (
+          {syncMutation.isPending ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <ThemedText style={styles.syncButtonText}>Sync</ThemedText>

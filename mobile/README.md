@@ -85,7 +85,7 @@ mobile/
 - **Create Infringement Form** - Multi-step form with validation
 - **GPS Location Capture** - Live location tracking with expo-location
 - **Photo Evidence** - Camera and gallery integration with expo-image-picker
-- **OpenStreetMap Integration** - Interactive maps with react-native-maps
+- **OpenStreetMap Integration** - Interactive maps with Leaflet
 - **Offline Sync Queue** - Background synchronization with retry logic
 - **Sync Status Display** - Visual feedback for pending syncs
 

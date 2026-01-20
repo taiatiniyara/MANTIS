@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemedText } from '@/components/themed-text';
@@ -28,16 +28,16 @@ export default function IndexScreen() {
         router.replace('/(auth)/login');
       }
     }
-  }, [session, user, loading]);
+  }, [loading, router, session, user]);
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>MANTIS</ThemedText>
-      <ThemedText style={styles.subtitle}>
-        Multi-Agency National Traffic{'\n'}Infringement System
-      </ThemedText>
-      <ActivityIndicator size="large" style={styles.loader} />
-    </ThemedView>
+        <ThemedText type="title" style={styles.title}>MANTIS</ThemedText>
+        <ThemedText style={styles.subtitle}>
+          Multi-Agency National Traffic{'\n'}Infringement System
+        </ThemedText>
+        <ActivityIndicator size="large" style={styles.loader} />
+      </ThemedView>
   );
 }
 

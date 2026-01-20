@@ -32,8 +32,8 @@ export async function addWatermarkToImage(
 ): Promise<string> {
   try {
     // Get image info to determine size
-    const imageInfo = await FileSystem.getInfoAsync(imageUri);
-    if (!imageInfo.exists) {
+    const imageFile = new FileSystem.File(imageUri);
+    if (!imageFile.exists) {
       throw new Error('Image file does not exist');
     }
 
@@ -57,21 +57,24 @@ export async function addWatermarkToImage(
     const baseDir = manipulatedImage.uri.substring(0, manipulatedImage.uri.lastIndexOf('/') + 1);
     const watermarkedUri = `${baseDir}watermarked_${timestamp}.jpg`;
     
-    // Copy manipulated image to watermarked location
-    await FileSystem.copyAsync({
-      from: manipulatedImage.uri,
-      to: watermarkedUri,
-    });
+    // Copy manipulated image to watermarked location using new File API
+    const sourceFile = new FileSystem.File(manipulatedImage.uri);
+    const destinationFile = new FileSystem.File(watermarkedUri);
+    sourceFile.copy(destinationFile);
 
     // Save watermark data as a JSON sidecar file for reference
     const metadataUri = watermarkedUri.replace('.jpg', '_metadata.json');
-    await FileSystem.writeAsStringAsync(
-      metadataUri,
-      JSON.stringify({
-        ...watermarkData,
-        originalUri: imageUri,
-        processedAt: new Date().toISOString(),
-      }, null, 2)
+    const metadataFile = new FileSystem.File(metadataUri);
+    metadataFile.write(
+      JSON.stringify(
+        {
+          ...watermarkData,
+          originalUri: imageUri,
+          processedAt: new Date().toISOString(),
+        },
+        null,
+        2
+      )
     );
 
     console.log('Image processed with watermark metadata:', watermarkedUri);
@@ -175,10 +178,10 @@ export async function createWatermarkedImageCanvas(
 export async function getWatermarkMetadata(imageUri: string): Promise<WatermarkData | null> {
   try {
     const metadataUri = imageUri.replace('.jpg', '_metadata.json');
-    const metadataInfo = await FileSystem.getInfoAsync(metadataUri);
+    const metadataFile = new FileSystem.File(metadataUri);
     
-    if (metadataInfo.exists) {
-      const content = await FileSystem.readAsStringAsync(metadataUri);
+    if (metadataFile.exists) {
+      const content = await metadataFile.text();
       return JSON.parse(content);
     }
     

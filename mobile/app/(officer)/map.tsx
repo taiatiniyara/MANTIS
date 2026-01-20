@@ -4,16 +4,15 @@
  * Location-based view of infringements with interactive OpenStreetMap
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   ScrollView,
-  Linking,
 } from "react-native";
+import { useQuery } from '@tanstack/react-query';
 import * as Location from "expo-location";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -24,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Infringement } from "@/lib/types";
 import { formatDate, formatCurrency } from "@/lib/formatting";
 import OSMMap from "@/components/OSMMap";
+import { queryKeys } from '@/lib/queryKeys';
 
 export default function MapScreen() {
   const colorScheme = useColorScheme();
@@ -34,14 +34,21 @@ export default function MapScreen() {
     null,
   );
   const [loading, setLoading] = useState(true);
-  const [infringements, setInfringements] = useState<Infringement[]>([]);
+  const { data: infringements = [], isFetching: isFetchingCases } = useQuery({
+    queryKey: queryKeys.infringementsByOfficer(user?.id, 50),
+    queryFn: async () => {
+      if (!user?.id) return [] as Infringement[];
+      const { data, error } = await getInfringements({
+        officer_id: user.id,
+        limit: 50,
+      });
+      if (error) throw new Error(error.message || 'Failed to load infringements');
+      return (data ?? []).filter((inf) => inf.location);
+    },
+    enabled: Boolean(user?.id),
+  });
 
-  useEffect(() => {
-    requestLocationPermission();
-    loadInfringements();
-  }, []);
-
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
@@ -60,25 +67,11 @@ export default function MapScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadInfringements = async () => {
-    if (!user) return;
-
-    try {
-      const { data } = await getInfringements({
-        officer_id: user.id,
-        limit: 50,
-      });
-
-      if (data) {
-        const withLocations = data.filter((inf) => inf.location);
-        setInfringements(withLocations);
-      }
-    } catch (error) {
-      console.error("Error loading infringements:", error);
-    }
-  };
+  useEffect(() => {
+    requestLocationPermission();
+  }, [requestLocationPermission]);
 
   const parseGeoJSON = (
     location: string | null,
@@ -128,11 +121,6 @@ export default function MapScreen() {
     return null;
   };
 
-  const openInGoogleMaps = (latitude: number, longitude: number) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-    Linking.openURL(url);
-  };
-
   if (loading) {
     return (
       <ThemedView style={styles.container}>
@@ -179,21 +167,6 @@ export default function MapScreen() {
               <ThemedText style={styles.coordinates}>
                 Lon: {location.coords.longitude.toFixed(6)}
               </ThemedText>
-              <View style={styles.mapButtons}>
-                <TouchableOpacity
-                  style={[styles.mapButton, { backgroundColor: colors.tint }]}
-                  onPress={() =>
-                    openInGoogleMaps(
-                      location.coords.latitude,
-                      location.coords.longitude,
-                    )
-                  }
-                >
-                  <ThemedText style={styles.mapButtonText}>
-                    Open in Google Maps
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
             </View>
           )}
 
@@ -207,7 +180,12 @@ export default function MapScreen() {
               </ThemedText>
             </View>
 
-            {infringements.length === 0 ? (
+            {isFetchingCases && infringements.length === 0 ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator />
+                <ThemedText style={styles.emptyText}>Loading infringements...</ThemedText>
+              </View>
+            ) : infringements.length === 0 ? (
               <View style={styles.emptyState}>
                 <ThemedText style={styles.emptyText}>
                   No infringements with location data found
@@ -295,22 +273,6 @@ export default function MapScreen() {
                         {formatDate(inf.issued_at, "short")}
                       </ThemedText>
                     </View>
-
-                    <View style={styles.mapButtons}>
-                      <TouchableOpacity
-                        style={[
-                          styles.mapButton,
-                          { backgroundColor: colors.tint },
-                        ]}
-                        onPress={() =>
-                          openInGoogleMaps(coords.latitude, coords.longitude)
-                        }
-                      >
-                        <ThemedText style={styles.mapButtonText}>
-                          View on Map
-                        </ThemedText>
-                      </TouchableOpacity>
-                    </View>
                   </View>
                 );
               })
@@ -321,13 +283,13 @@ export default function MapScreen() {
           <View style={styles.infoBox}>
             <ThemedText style={styles.infoTitle}>💡 About Map View</ThemedText>
             <ThemedText style={styles.infoText}>
-              • Use the interactive map above to view and navigate to locations
+              • Use the interactive OpenStreetMap above to view and navigate to locations
             </ThemedText>
             <ThemedText style={styles.infoText}>
-              • Enter coordinates manually or click on the map
+              • Infringement locations are displayed as markers on the map
             </ThemedText>
             <ThemedText style={styles.infoText}>
-              • Tap "View on Map" to open specific locations in Google Maps
+              • Your current location is shown with a marker when location permission is granted
             </ThemedText>
           </View>
         </ThemedView>
@@ -438,19 +400,6 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 14,
     fontWeight: "500",
-  },
-  mapButtons: {
-    marginTop: 12,
-  },
-  mapButton: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  mapButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
   },
   emptyState: {
     padding: 32,

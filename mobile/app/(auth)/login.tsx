@@ -103,10 +103,10 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
         <ThemedView style={styles.content}>
           <View style={styles.header}>
             <ThemedText type="title" style={styles.title}>
@@ -127,7 +127,7 @@ export default function LoginScreen() {
                 <View style={styles.inputContainer}>
                   <ThemedText style={styles.label}>Email</ThemedText>
                   <TextInput
-                    style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+                    style={[styles.input, { color: colors.primaryForeground, borderColor: colors.icon }]}
                     placeholder="officer@example.com"
                     placeholderTextColor={colors.icon}
                     value={email}
@@ -141,7 +141,7 @@ export default function LoginScreen() {
                 <View style={styles.inputContainer}>
                   <ThemedText style={styles.label}>Password</ThemedText>
                   <TextInput
-                    style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+                    style={[styles.input, { color: colors.primaryForeground, borderColor: colors.icon }]}
                     placeholder="Enter your password"
                     placeholderTextColor={colors.icon}
                     value={password}
@@ -176,7 +176,7 @@ export default function LoginScreen() {
                 <View style={styles.inputContainer}>
                   <ThemedText style={styles.label}>Email Address</ThemedText>
                   <TextInput
-                    style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
+                    style={[styles.input, { color: colors.primaryForeground, borderColor: colors.icon }]}
                     placeholder="officer@example.com"
                     placeholderTextColor={colors.icon}
                     value={resetEmail}

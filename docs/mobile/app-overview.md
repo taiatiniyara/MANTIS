@@ -282,60 +282,35 @@ The mobile app uses **OpenStreetMap (OSM)** for all mapping functionality, provi
 - High-quality map tiles for Fiji
 - No usage limits or API keys required
 
-### Map Library Options
+### Map Library
 
-We recommend **React Native Maps** with **OpenStreetMap tiles**:
+We use **Leaflet** via **WebView** with **OpenStreetMap tiles**:
 
-#### Option 1: React Native Maps (Recommended)
+#### Implementation: Leaflet via WebView
 ```bash
-npx expo install react-native-maps
+# Already included in dependencies
+npx expo install react-native-webview
 ```
 
 **Pros:**
-- Native performance
-- Well-maintained Expo integration
-- Supports both iOS MapKit and Android Google Maps
-- Can use custom OSM tile providers
+- Cross-platform consistency
+- Full Leaflet feature set
+- Easy OpenStreetMap integration
+- No native dependencies
+- Works identically on iOS and Android
 
 **Implementation:**
 ```tsx
-import MapView, { Marker } from 'react-native-maps';
+import OSMMap from '@/components/OSMMap';
 
-const customMapStyle = [
-  // OSM tile server configuration
-];
-
-<MapView
-  customMapStyle={customMapStyle}
-  provider="osm" // Use OpenStreetMap
-  region={{
-    latitude: -18.1416,
-    longitude: 178.4419,
-    latitudeDelta: 0.1,
-    longitudeDelta: 0.1,
-  }}
->
-  <Marker coordinate={{ latitude: -18.1416, longitude: 178.4419 }} />
-</MapView>
+<OSMMap
+  initialLat={-18.1416}
+  initialLng={178.4419}
+  onLocationSelect={(lat, lng) => console.log(lat, lng)}
+/>
 ```
 
-#### Option 2: React Native MapLibre GL
-```bash
-npm install @maplibre/maplibre-react-native
-```
-
-**Pros:**
-- Full MapLibre GL support
-- Vector tiles for better performance
-- Advanced styling capabilities
-- Excellent offline support
-
-**Cons:**
-- More complex setup
-- Larger bundle size
-
-#### Option 3: React Native Leaflet
-**Not recommended** - Leaflet is web-based and has poor performance in React Native WebView.
+The OSMMap component wraps Leaflet in a WebView and handles communication between React Native and the map.
 
 ### OSM Tile Servers for Fiji
 

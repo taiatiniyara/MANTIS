@@ -117,7 +117,7 @@ Use these test accounts (make sure they exist in your Supabase database):
 
 ### Map not displaying
 - Check internet connection (maps require network)
-- Verify `react-native-maps` is installed
+- Verify `react-native-webview` is installed
 - Try restarting the development server
 
 ### Build errors after installing packages
@@ -186,4 +186,5 @@ For issues or questions:
 - [Expo Documentation](https://docs.expo.dev/)
 - [React Native Documentation](https://reactnative.dev/)
 - [Supabase Documentation](https://supabase.com/docs)
-- [React Native Maps](https://github.com/react-native-maps/react-native-maps)
+- [Leaflet Documentation](https://leafletjs.com/)
+- [OpenStreetMap](https://www.openstreetmap.org/)

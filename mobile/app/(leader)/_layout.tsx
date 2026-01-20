@@ -8,7 +8,7 @@ import { RoleBasedTabLayout, type TabConfig } from '@/components/RoleBasedTabLay
 const leaderTabs: TabConfig[] = [
   { name: 'index', title: 'Dashboard', iconName: 'house.fill' },
   { name: 'team', title: 'Team', iconName: 'person.3.fill' },
-  { name: 'create', title: 'Create', iconName: 'plus.circle.fill', iconSize: 32 },
+  { name: 'create', title: 'Create', iconName: 'plus.circle.fill', iconSize: 28 },
   { name: 'cases', title: 'Cases', iconName: 'list.bullet' },
   { name: 'profile', title: 'Profile', iconName: 'person.fill' },
 ];

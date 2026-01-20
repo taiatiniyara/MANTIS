@@ -16,12 +16,11 @@ import {
   ThemedText,
 } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRefresh, useThemeColors } from '@/hooks';
+import { useRefresh } from '@/hooks';
 
 export default function RefactoredDashboardExample() {
   const { user } = useAuth();
-  const colors = useThemeColors();
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     today: 0,
     week: 0,
     pending: 0,

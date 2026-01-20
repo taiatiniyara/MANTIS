@@ -4,7 +4,7 @@
  * View and manage saved draft infringements
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   ScrollView,
@@ -13,6 +13,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -21,36 +22,37 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getDrafts, deleteDraft } from '@/lib/offline';
 import { formatDate } from '@/lib/formatting';
 import { LocalInfringement } from '@/lib';
+import { queryKeys } from '@/lib/queryKeys';
 
 export default function DraftsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
 
-  const [drafts, setDrafts] = useState<LocalInfringement[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadDrafts();
-  }, []);
+  const {
+    data: drafts = [],
+    isPending: isLoading,
+    isFetching: isRefreshing,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.drafts,
+    queryFn: getDrafts,
+  });
 
-  const loadDrafts = async () => {
-    try {
-      const allDrafts = await getDrafts();
-      setDrafts(allDrafts);
-    } catch (error) {
-      console.error('Error loading drafts:', error);
-      Alert.alert('Error', 'Failed to load drafts');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const deleteMutation = useMutation({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to delete draft');
+    },
+  });
 
   const onRefresh = () => {
-    setRefreshing(true);
-    loadDrafts();
+    refetch();
   };
 
   const handleDeleteDraft = (id: string) => {
@@ -63,12 +65,7 @@ export default function DraftsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            try {
-              await deleteDraft(id);
-              loadDrafts();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete draft');
-            }
+            deleteMutation.mutate(id);
           },
         },
       ]
@@ -86,7 +83,7 @@ export default function DraftsScreen() {
     });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.centerContent}>
@@ -121,7 +118,7 @@ export default function DraftsScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
       <ThemedView style={styles.content}>
