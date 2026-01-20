@@ -57,6 +57,8 @@ The mobile app provides a streamlined, offline-first experience optimized for fi
 
 ### Planned Features
 - [ ] **Driver/Vehicle lookup** - Search existing records
+- [ ] **Draft management UI** - Review and edit saved drafts
+- [ ] **Team member list** - View and manage team members
 - [ ] **Approvals queue** - Review pending cases
 - [ ] **Push notifications** - Case updates
 - [ ] **Reports generation** - PDF export

@@ -18,7 +18,7 @@ Mobile app documentation for iOS and Android (Expo + React Native)
 
 ### 🌐 Web Application
 Web app documentation for the browser-based PWA (React + Vite)
-- Documentation coming soon
+- [Web App Guide](./web/README.md) - PWA features, setup, and architecture
 
 ### 🏗️ Architecture
 System design and technical architecture
@@ -47,8 +47,8 @@ Choose your platform to get started:
 
 ## 🔗 Additional Resources
 
-- [Contributing Guidelines](../CONTRIBUTING.md) - How to contribute to MANTIS
-- [Main README](../README.md) - Project overview
+- [Contributing Guidelines](./CONTRIBUTING.md) - How to contribute to MANTIS
+- [Project Overview](./overview.md) - High-level platform guide
 - Shared Supabase backend for both platforms
 
 ## 📞 Support

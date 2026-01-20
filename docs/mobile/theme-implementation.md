@@ -86,7 +86,7 @@ Built a comprehensive theme system and UI component library for the MANTIS mobil
 
 ### 4. Documentation
 
-#### Component Documentation (`components/ui/README.md`)
+#### Component Documentation (`docs/mobile/components/ui.md`)
 - Complete usage guide for all components
 - Code examples
 - Variant and prop documentation

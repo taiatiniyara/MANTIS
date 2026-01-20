@@ -170,15 +170,15 @@ mobile/
 ## Next Steps
 
 - **Customize**: Modify colors in `constants/theme.ts`
-- **Add Features**: Check `mobile/README.md` for pending features
+- **Add Features**: See planned items in `docs/mobile/app-overview.md`
 - **Deploy**: Use EAS Build for production apps
 - **Documentation**: See `/docs` folder for detailed guides
 
 ## Support
 
 For issues or questions:
-1. Check the troubleshooting section in `/docs/27-troubleshooting.md`
-2. Review the FAQ in `/docs/28-faq.md`
+1. Check the troubleshooting section in `../development/troubleshooting.md`
+2. Review the FAQ in `../development/faq.md`
 3. Contact your system administrator
 
 ## Resources
