@@ -8,7 +8,7 @@ import Map, {
   type ViewState,
   type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
-import maplibregl, { type GeolocateResultEvent } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +105,7 @@ export function MapPicker({
         <NavigationControl />
         <GeolocateControl
           trackUserLocation
-          onGeolocate={(event: GeolocateResultEvent) => {
+          onGeolocate={(event: GeolocationPosition) => {
             const { latitude: geoLatitude, longitude: geoLongitude } = event.coords;
             setMarker({ lat: geoLatitude, lng: geoLongitude });
             if (onLocationChange) {

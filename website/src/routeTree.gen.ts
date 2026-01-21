@@ -18,6 +18,11 @@ import { Route as OfficerIndexRouteImport } from './routes/officer/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as AgencyAdminIndexRouteImport } from './routes/agency-admin/index'
 import { Route as OfficerProfileRouteImport } from './routes/officer/profile'
+import { Route as DocsSearchAndFiltersRouteImport } from './routes/docs/search-and-filters'
+import { Route as DocsRolesAndPermissionsRouteImport } from './routes/docs/roles-and-permissions'
+import { Route as DocsMobileRouteImport } from './routes/docs/mobile'
+import { Route as DocsGettingStartedRouteImport } from './routes/docs/getting-started'
+import { Route as DocsCasesRouteImport } from './routes/docs/cases'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
@@ -78,6 +83,31 @@ const OfficerProfileRoute = OfficerProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => OfficerRoute,
+} as any)
+const DocsSearchAndFiltersRoute = DocsSearchAndFiltersRouteImport.update({
+  id: '/docs/search-and-filters',
+  path: '/docs/search-and-filters',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRolesAndPermissionsRoute = DocsRolesAndPermissionsRouteImport.update({
+  id: '/docs/roles-and-permissions',
+  path: '/docs/roles-and-permissions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsMobileRoute = DocsMobileRouteImport.update({
+  id: '/docs/mobile',
+  path: '/docs/mobile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
+  id: '/docs/getting-started',
+  path: '/docs/getting-started',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsCasesRoute = DocsCasesRouteImport.update({
+  id: '/docs/cases',
+  path: '/docs/cases',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/auth/register',
@@ -166,6 +196,11 @@ export interface FileRoutesByFullPath {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/docs/cases': typeof DocsCasesRoute
+  '/docs/getting-started': typeof DocsGettingStartedRoute
+  '/docs/mobile': typeof DocsMobileRoute
+  '/docs/roles-and-permissions': typeof DocsRolesAndPermissionsRoute
+  '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
   '/agency-admin/': typeof AgencyAdminIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -189,6 +224,11 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/docs/cases': typeof DocsCasesRoute
+  '/docs/getting-started': typeof DocsGettingStartedRoute
+  '/docs/mobile': typeof DocsMobileRoute
+  '/docs/roles-and-permissions': typeof DocsRolesAndPermissionsRoute
+  '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
   '/agency-admin': typeof AgencyAdminIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -216,6 +256,11 @@ export interface FileRoutesById {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/docs/cases': typeof DocsCasesRoute
+  '/docs/getting-started': typeof DocsGettingStartedRoute
+  '/docs/mobile': typeof DocsMobileRoute
+  '/docs/roles-and-permissions': typeof DocsRolesAndPermissionsRoute
+  '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
   '/agency-admin/': typeof AgencyAdminIndexRoute
   '/docs/': typeof DocsIndexRoute
@@ -244,6 +289,11 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/docs/cases'
+    | '/docs/getting-started'
+    | '/docs/mobile'
+    | '/docs/roles-and-permissions'
+    | '/docs/search-and-filters'
     | '/officer/profile'
     | '/agency-admin/'
     | '/docs'
@@ -267,6 +317,11 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/docs/cases'
+    | '/docs/getting-started'
+    | '/docs/mobile'
+    | '/docs/roles-and-permissions'
+    | '/docs/search-and-filters'
     | '/officer/profile'
     | '/agency-admin'
     | '/docs'
@@ -293,6 +348,11 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/docs/cases'
+    | '/docs/getting-started'
+    | '/docs/mobile'
+    | '/docs/roles-and-permissions'
+    | '/docs/search-and-filters'
     | '/officer/profile'
     | '/agency-admin/'
     | '/docs/'
@@ -320,6 +380,11 @@ export interface RootRouteChildren {
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
+  DocsCasesRoute: typeof DocsCasesRoute
+  DocsGettingStartedRoute: typeof DocsGettingStartedRoute
+  DocsMobileRoute: typeof DocsMobileRoute
+  DocsRolesAndPermissionsRoute: typeof DocsRolesAndPermissionsRoute
+  DocsSearchAndFiltersRoute: typeof DocsSearchAndFiltersRoute
   DocsIndexRoute: typeof DocsIndexRoute
 }
 
@@ -387,6 +452,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/officer/profile'
       preLoaderRoute: typeof OfficerProfileRouteImport
       parentRoute: typeof OfficerRoute
+    }
+    '/docs/search-and-filters': {
+      id: '/docs/search-and-filters'
+      path: '/docs/search-and-filters'
+      fullPath: '/docs/search-and-filters'
+      preLoaderRoute: typeof DocsSearchAndFiltersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/roles-and-permissions': {
+      id: '/docs/roles-and-permissions'
+      path: '/docs/roles-and-permissions'
+      fullPath: '/docs/roles-and-permissions'
+      preLoaderRoute: typeof DocsRolesAndPermissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/mobile': {
+      id: '/docs/mobile'
+      path: '/docs/mobile'
+      fullPath: '/docs/mobile'
+      preLoaderRoute: typeof DocsMobileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/getting-started': {
+      id: '/docs/getting-started'
+      path: '/docs/getting-started'
+      fullPath: '/docs/getting-started'
+      preLoaderRoute: typeof DocsGettingStartedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/cases': {
+      id: '/docs/cases'
+      path: '/docs/cases'
+      fullPath: '/docs/cases'
+      preLoaderRoute: typeof DocsCasesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/register': {
       id: '/auth/register'
@@ -565,6 +665,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
+  DocsCasesRoute: DocsCasesRoute,
+  DocsGettingStartedRoute: DocsGettingStartedRoute,
+  DocsMobileRoute: DocsMobileRoute,
+  DocsRolesAndPermissionsRoute: DocsRolesAndPermissionsRoute,
+  DocsSearchAndFiltersRoute: DocsSearchAndFiltersRoute,
   DocsIndexRoute: DocsIndexRoute,
 }
 export const routeTree = rootRouteImport
