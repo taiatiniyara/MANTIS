@@ -2,7 +2,7 @@
  * MANTIS Mobile - Create Infringement Screen
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -13,10 +13,11 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -27,26 +28,40 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { createInfringement, getOffences, upsertDriver, upsertVehicle, uploadEvidenceFile } from '@/lib/database';
 import { NewInfringement, Offence, GeoJSONPoint, NewDriver, NewVehicle } from '@/lib/types';
-import { formatCurrency } from '@/lib/formatting';
+import { formatCurrency, generateTin } from '@/lib/formatting';
 import OSMMap from '@/components/OSMMap';
 import { addWatermarkToImage, WatermarkData } from '@/lib/watermark';
 import { WatermarkedImage } from '@/components/WatermarkedImage';
 import { queryKeys } from '@/lib/queryKeys';
+import ViewShot, { CaptureOptions } from 'react-native-view-shot';
+
+const DEFAULT_CAPTURE_OPTIONS: CaptureOptions = {
+  format: 'jpg',
+  quality: 0.92,
+  result: 'tmpfile',
+};
 
 interface PhotoItem {
   uri: string;
   type: string;
   name: string;
   watermarkData?: WatermarkData;
+  processedUri?: string;
+  width?: number;
+  height?: number;
 }
 
 export default function CreateInfringementScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { user } = useAuth();
-  const router = useRouter();
   const params = useLocalSearchParams();
   const draftId = params.draftId as string | undefined;
+  const tinParam = useMemo(() => {
+    const value = params.tin;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params.tin]);
+  const [tin] = useState<string>(() => tinParam || generateTin());
 
   // Form state
   const [step, setStep] = useState<'offence' | 'driver' | 'vehicle' | 'location' | 'evidence' | 'review'>('offence');
@@ -64,6 +79,66 @@ export default function CreateInfringementScreen() {
 
   const loading = offencesQuery.isPending;
   const queryClient = useQueryClient();
+  const viewShotRefs = useRef<Record<string, ViewShot | null>>({});
+  const viewShotReady = useRef<Record<string, boolean>>({});
+  const scrollRef = useRef<ScrollView>(null);
+
+  const waitForLayout = async (ms = 260) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const prepareWatermarkedPhotos = useCallback(async (items: PhotoItem[]) => {
+    // Give React a moment to mount hidden ViewShot surfaces before capture
+    await waitForLayout();
+
+    const prepared = await Promise.all(items.map(async (photo) => {
+      if (!photo.watermarkData) return photo;
+
+      // Try to locate the ViewShot surface for this photo (use both processed and original keys)
+      const candidateKeys = [photo.processedUri, photo.uri].filter(Boolean) as string[];
+      let ref: ViewShot | null | undefined;
+      let captureKey: string | undefined;
+
+      for (const key of candidateKeys) {
+        if (viewShotRefs.current[key]) {
+          ref = viewShotRefs.current[key];
+          captureKey = key;
+          break;
+        }
+      }
+
+      if (!ref || !ref.capture || !captureKey) {
+        console.warn('Watermark capture ref not ready for photo', candidateKeys);
+        return photo;
+      }
+
+      // Wait until the ViewShot has laid out; retry a few times before giving up
+      for (let attempt = 0; attempt < 8; attempt++) {
+        if (viewShotReady.current[captureKey]) break;
+        await waitForLayout(260);
+      }
+
+      try {
+        let capturedUri: string | undefined | null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          capturedUri = await ref.capture();
+          if (capturedUri) break;
+          await waitForLayout(180 + attempt * 40);
+        }
+
+        if (capturedUri) {
+          console.log('Watermark baked into image', { captureKey, capturedUri });
+          return { ...photo, processedUri: capturedUri };
+        }
+
+        console.warn('Watermark capture returned empty uri', captureKey);
+      } catch (error) {
+        console.error('Error capturing watermarked photo', error);
+      }
+
+      return photo;
+    }));
+
+    return prepared;
+  }, []);
   const submittingMutation = useMutation({
     mutationFn: async (isDraft: boolean) => {
       if (!user || !selectedOffence) {
@@ -122,6 +197,7 @@ export default function CreateInfringementScreen() {
         agency_id: user.agency_id,
         team_id: user.team_id,
         officer_id: user.id,
+        tin,
         driver_id: driver_id,
         vehicle_id: vehicle_id,
         offence_code: selectedOffence.code,
@@ -132,13 +208,27 @@ export default function CreateInfringementScreen() {
         status: isDraft ? 'draft' : 'pending',
       };
 
+      const preparedPhotos = await prepareWatermarkedPhotos(photos);
+      setPhotos(preparedPhotos);
+
+      // Ensure we only ever upload/queue the baked, watermarked asset
+      const finalizedPhotos = preparedPhotos.map((photo) => {
+        const uploadUri = photo.processedUri || photo.uri;
+
+        if (photo.watermarkData && !photo.processedUri) {
+          throw new Error('Watermark is still rendering. Please wait a moment and try again.');
+        }
+
+        return { ...photo, uploadUri };
+      });
+
       if (shouldQueue) {
         await addToSyncQueue('infringement', newInfringement);
-        if (photos.length > 0) {
-          for (const photo of photos) {
+        if (finalizedPhotos.length > 0) {
+          for (const photo of finalizedPhotos) {
             await addToSyncQueue('evidence', {
               infringementId: 'pending',
-              fileUri: photo.uri,
+              fileUri: photo.uploadUri,
               fileType: photo.type,
             });
           }
@@ -152,12 +242,18 @@ export default function CreateInfringementScreen() {
       }
 
       let photoWarning = false;
-      if (photos.length > 0 && !isDraft) {
+      if (finalizedPhotos.length > 0 && !isDraft) {
         try {
-          const uploadPromises = photos.map(photo =>
-            uploadEvidenceFile(data.id, photo.uri, photo.type)
+          const uploadResults = await Promise.all(
+            finalizedPhotos.map(photo =>
+              uploadEvidenceFile(data.id, photo.uploadUri, photo.type || 'image/jpeg')
+            )
           );
-          await Promise.all(uploadPromises);
+
+          const failedUpload = uploadResults.find(result => result.error);
+          if (failedUpload) {
+            throw new Error(failedUpload.error?.message || 'Failed to upload evidence photo');
+          }
         } catch (photoError) {
           console.error('Error uploading photos:', photoError);
           photoWarning = true;
@@ -208,6 +304,56 @@ export default function CreateInfringementScreen() {
   // Evidence
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
+  const buildWatermarkPayload = useCallback((): WatermarkData => ({
+    platformName: 'MANTIS',
+    tin,
+    officerName: user?.display_name || 'Unknown Officer',
+    agencyName: user?.agency?.name || 'Unknown Agency',
+    locationEnglish: locationDescription || undefined,
+    latitude: currentLocation?.coords.latitude,
+    longitude: currentLocation?.coords.longitude,
+    timestamp: new Date(),
+  }), [tin, user?.display_name, user?.agency?.name, locationDescription, currentLocation?.coords.latitude, currentLocation?.coords.longitude]);
+
+  // Automatically bake the watermark into a file as soon as a photo is added
+  useEffect(() => {
+    const pending = photos.filter((photo) => photo.watermarkData && !photo.processedUri);
+    if (pending.length === 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const processed = await prepareWatermarkedPhotos(pending);
+      if (cancelled) return;
+
+      setPhotos((current) => current.map((photo) => {
+        // match by original uri (pre-processed) and current uri
+        const updated = processed.find((item) => item.uri === photo.uri || item.uri === photo.processedUri);
+        if (updated?.processedUri) {
+          // Replace the working URI so future previews and uploads use the baked version
+          return { ...photo, uri: updated.processedUri, processedUri: updated.processedUri };
+        }
+        return photo;
+      }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [photos, prepareWatermarkedPhotos]);
+
+  const resetForm = useCallback(() => {
+    setStep('offence');
+    setSelectedOffence(null);
+    setDescription('');
+    setDriverLicense('');
+    setVehiclePlate('');
+    setCurrentLocation(null);
+    setLocationDescription('');
+    setPhotos([]);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
   const loadDraftData = useCallback(async () => {
     if (!draftId) return;
     
@@ -254,6 +400,8 @@ export default function CreateInfringementScreen() {
             uri: p.uri,
             type: p.file_type,
             name: `photo_${Date.now()}.jpg`,
+            width: (p as any).width,
+            height: (p as any).height,
           })));
         }
       }
@@ -263,50 +411,130 @@ export default function CreateInfringementScreen() {
     }
   }, [draftId, offences]);
 
-  const reverseGeocodeMutation = useMutation({
-    mutationFn: async ({ lat, lng }: { lat: number; lng: number }) => {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'MANTIS Mobile App',
-          },
-        }
-      );
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch address');
+  const reverseGeocodeAddress = useCallback(async (lat: number, lng: number) => {
+    const isAbortLike = (err: unknown) => {
+      const name = (err as any)?.name?.toString()?.toLowerCase();
+      const msg = (err as any)?.message?.toString()?.toLowerCase();
+      return name === 'aborterror' || msg?.includes('aborted');
+    };
+
+    const fetchWithTimeout = async (url: string, timeoutMs = 4000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        // Avoid setting forbidden headers like User-Agent that can cause RN fetch to throw
+        return await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
       }
+    };
 
-      const data = await response.json();
-      if (data.display_name) {
-        return data.display_name as string;
-      }
-
-      if (data.address) {
+    const parseNominatim = (data: any) => {
+      if (data?.display_name) return data.display_name as string;
+      if (data?.address) {
         const parts = [
           data.address.road,
           data.address.suburb,
           data.address.city || data.address.town,
           data.address.country,
         ].filter(Boolean);
-        return parts.join(', ');
+        if (parts.length) return parts.join(', ');
+      }
+      return '';
+    };
+
+    const parsePhoton = (data: any) => {
+      const feature = data?.features?.[0];
+      const props = feature?.properties;
+      if (!props) return '';
+      const parts = [
+        props.name,
+        props.street,
+        props.district || props.city,
+        props.state,
+        props.country,
+      ].filter(Boolean);
+      return parts.length ? parts.join(', ') : '';
+    };
+
+    setIsReverseGeocoding(true);
+    try {
+      // Try Nominatim first
+      try {
+        const contactEmail = process.env.EXPO_PUBLIC_NOMINATIM_EMAIL;
+        const emailParam = contactEmail ? `&email=${encodeURIComponent(contactEmail)}` : '';
+        const res = await fetchWithTimeout(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1${emailParam}`
+        );
+        if (res?.ok) {
+          const data = await res.json();
+          const address = parseNominatim(data);
+          if (address) return address;
+        }
+      } catch (err) {
+        const msg = (err as any)?.message?.toString()?.toLowerCase();
+        if (!isAbortLike(err) && !msg?.includes('network request failed')) {
+          console.warn('Nominatim reverse geocode failed', err);
+        }
       }
 
-      return '';
-    },
-  });
+      // Fallback to native geocoder (uses device provider and often succeeds when third parties block requests)
+      try {
+        const nativeResults = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        const nativeAddress = nativeResults?.[0];
+        if (nativeAddress) {
+          const parts = [
+            nativeAddress.name,
+            nativeAddress.street,
+            nativeAddress.city || nativeAddress.district,
+            nativeAddress.region,
+            nativeAddress.country,
+          ].filter(Boolean);
+          if (parts.length) return parts.join(', ');
+        }
+      } catch (err) {
+        const msg = (err as any)?.message?.toString()?.toLowerCase();
+        if (!isAbortLike(err) && !msg?.includes('network request failed')) {
+          console.warn('Native reverse geocode failed', err);
+        }
+      }
+
+      // Fallback to Photon (often less strict)
+      try {
+        const res = await fetchWithTimeout(
+          `https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}&limit=1`
+        );
+        if (res?.ok) {
+          const data = await res.json();
+          const address = parsePhoton(data);
+          if (address) return address;
+        }
+      } catch (err) {
+        const msg = (err as any)?.message?.toString()?.toLowerCase();
+        if (!isAbortLike(err) && !msg?.includes('network request failed')) {
+          console.warn('Photon reverse geocode failed', err);
+        }
+      }
+
+      // Last resort: plain coordinates
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  }, []);
 
   const updateLocationDescription = useCallback(async (lat: number, lng: number) => {
+    const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     try {
-      const address = await reverseGeocodeMutation.mutateAsync({ lat, lng });
-      if (address !== undefined) {
-        setLocationDescription(address);
-      }
+      const address = await reverseGeocodeAddress(lat, lng);
+      setLocationDescription(address ?? fallback);
     } catch (error) {
       console.error('Error fetching address:', error);
+      setLocationDescription(fallback);
     }
-  }, [reverseGeocodeMutation]);
+  }, [reverseGeocodeAddress]);
 
   const getCurrentLocation = useCallback(async () => {
     setLoadingLocation(true);
@@ -332,12 +560,16 @@ export default function CreateInfringementScreen() {
     }
   }, [getCurrentLocation]);
 
+  // Run once on mount to avoid repeated permission prompts / flicker
   useEffect(() => {
     requestLocationPermission();
+  }, [requestLocationPermission]);
+
+  useEffect(() => {
     if (draftId) {
       loadDraftData();
     }
-  }, [draftId, loadDraftData, requestLocationPermission]);
+  }, [draftId, loadDraftData]);
 
   const handleMapLocationSelect = async (lat: number, lng: number) => {
     setCurrentLocation({
@@ -372,27 +604,18 @@ export default function CreateInfringementScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      
-      // Prepare watermark data
-      const watermarkData: WatermarkData = {
-        vehiclePlate: vehiclePlate || undefined,
-        driverLicense: driverLicense || undefined,
-        officerName: user?.display_name || 'Unknown Officer',
-        agencyName: user?.agency?.name || 'Unknown Agency',
-        address: locationDescription || undefined,
-        latitude: currentLocation?.coords.latitude,
-        longitude: currentLocation?.coords.longitude,
-        timestamp: new Date(),
-      };
+      const watermarkData = buildWatermarkPayload();
 
       // Process image with watermark metadata
       const watermarkedUri = await addWatermarkToImage(asset.uri, watermarkData);
-      
+
       setPhotos([...photos, {
         uri: watermarkedUri,
         type: 'image/jpeg',
         name: `evidence_${Date.now()}.jpg`,
         watermarkData,
+        width: asset.width,
+        height: asset.height,
       }]);
       
       Alert.alert(
@@ -417,10 +640,17 @@ export default function CreateInfringementScreen() {
     });
 
     if (!result.canceled) {
-      const newPhotos = result.assets.map((asset, index) => ({
-        uri: asset.uri,
-        type: 'image/jpeg',
-        name: `evidence_${Date.now()}_${index}.jpg`,
+      const watermarkData = buildWatermarkPayload();
+      const newPhotos = await Promise.all(result.assets.map(async (asset, index) => {
+        const processedUri = await addWatermarkToImage(asset.uri, watermarkData);
+        return {
+          uri: processedUri,
+          type: 'image/jpeg',
+          name: `evidence_${Date.now()}_${index}.jpg`,
+          watermarkData,
+          width: asset.width,
+          height: asset.height,
+        } as PhotoItem;
       }));
       setPhotos([...photos, ...newPhotos]);
     }
@@ -430,10 +660,11 @@ export default function CreateInfringementScreen() {
     try {
       const result = await submittingMutation.mutateAsync(isDraft);
       if (result.queued) {
+        resetForm();
         Alert.alert(
           'Queued for Sync',
           'Infringement saved and will be synced when you\'re back online.',
-          [{ text: 'OK', onPress: () => router.back() }]
+          [{ text: 'OK' }]
         );
         return;
       }
@@ -445,10 +676,11 @@ export default function CreateInfringementScreen() {
         );
       }
 
+      resetForm();
       Alert.alert(
         'Success',
         result.isDraft ? 'Draft saved successfully' : 'Infringement created successfully',
-        [{ text: 'OK', onPress: () => router.back() }]
+        [{ text: 'OK' }]
       );
     } catch (error: any) {
       console.error('Error submitting:', error);
@@ -611,7 +843,7 @@ export default function CreateInfringementScreen() {
 
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>
-          Location Description {reverseGeocodeMutation.isPending && '(Loading address...)'}
+          Location Description {isReverseGeocoding && '(Loading address...)'}
         </ThemedText>
         <TextInput
           style={[styles.textArea, { color: colors.foreground, borderColor: colors.icon }]}
@@ -621,7 +853,7 @@ export default function CreateInfringementScreen() {
           onChangeText={setLocationDescription}
           multiline
           numberOfLines={3}
-          editable={!reverseGeocodeMutation.isPending}
+          editable={!isReverseGeocoding}
         />
       </View>
 
@@ -755,7 +987,7 @@ export default function CreateInfringementScreen() {
         </ThemedText>
         {photos.length > 0 && (
           <ThemedText style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}>
-            ✓ Each photo includes: Vehicle plate, driver license, officer name, agency, location & GPS
+            ✓ Each photo includes: MANTIS label, TIN, date/time, location (EN), GPS coordinates, officer, agency
           </ThemedText>
         )}
         <ThemedText style={styles.reviewValue}>
@@ -817,7 +1049,7 @@ export default function CreateInfringementScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView style={styles.scrollView}>
+      <ScrollView ref={scrollRef} style={styles.scrollView}>
         <ThemedView style={styles.content}>
           {/* Progress Indicator */}
           <View style={styles.progressContainer}>
@@ -841,6 +1073,47 @@ export default function CreateInfringementScreen() {
           {step === 'review' && renderReviewStep()}
         </ThemedView>
       </ScrollView>
+
+      {/* Hidden capture surfaces to burn watermarks into files before upload */}
+      <View style={styles.hiddenCaptureContainer} pointerEvents="none">
+        {photos.map((photo, index) => {
+          // Capture at the photo's native resolution when available for crisper watermark text
+          const targetWidth = photo.width || 1080;
+          const targetHeight = photo.height || Math.round((photo.width || 1080) * (3 / 4));
+          const captureKey = photo.processedUri ? photo.processedUri : photo.uri;
+          return (
+            <ViewShot
+              key={`capture-${captureKey}-${index}`}
+              ref={(ref) => {
+                if (ref) {
+                  viewShotRefs.current[captureKey] = ref;
+                } else {
+                  delete viewShotRefs.current[captureKey];
+                }
+              }}
+              options={{ ...DEFAULT_CAPTURE_OPTIONS, width: targetWidth, height: targetHeight }}
+              style={[styles.capturePreview, { width: targetWidth, height: targetHeight }]}
+              onLayout={() => { viewShotReady.current[captureKey] = true; }}
+            >
+              {photo.watermarkData ? (
+                <WatermarkedImage
+                  imageUri={photo.uri}
+                  watermarkData={photo.watermarkData}
+                  style={{ width: targetWidth, height: targetHeight }}
+                  dimensions={{ width: targetWidth, height: targetHeight }}
+                  onReady={() => { viewShotReady.current[captureKey] = true; }}
+                />
+              ) : (
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={{ width: targetWidth, height: targetHeight }}
+                  onLoadEnd={() => { viewShotReady.current[captureKey] = true; }}
+                />
+              )}
+            </ViewShot>
+          );
+        })}
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -1114,6 +1387,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 16,
+  },
+  hiddenCaptureContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    opacity: 0.001,
+    zIndex: 0,
+  },
+  capturePreview: {
+    marginBottom: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   featureList: {
     gap: 8,

@@ -233,6 +233,7 @@ export interface Infringement {
   agency_id: string;
   team_id: string | null;
   officer_id: string;
+  tin: string | null;
   driver_id: string | null;
   vehicle_id: string | null;
   offence_code: string;
@@ -290,7 +291,7 @@ export type NewUser = Omit<User, 'created_at'>;
 export type NewDriver = Omit<Driver, 'id' | 'created_at'>;
 export type NewVehicle = Omit<Vehicle, 'id' | 'created_at'>;
 export type NewOffence = Omit<Offence, 'id' | 'created_at'>;
-export type NewInfringement = Omit<Infringement, 'id' | 'issued_at'>;
+export type NewInfringement = Omit<Infringement, 'id' | 'issued_at'> & { tin: string };
 export type NewEvidenceFile = Omit<EvidenceFile, 'id' | 'created_at'>;
 export type NewPayment = Omit<Payment, 'id' | 'paid_at'>;
 export type NewAppeal = Omit<Appeal, 'id' | 'created_at'>;

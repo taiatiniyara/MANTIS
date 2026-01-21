@@ -5,6 +5,8 @@
  */
 
 import { supabase } from '../utils/supabase';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 import type {
   Agency,
   Location,
@@ -27,6 +29,7 @@ import type {
   PaginatedResponse,
   TableNames,
 } from './types';
+import { generateTin } from './formatting';
 
 // -----------------------------------------------------
 // Generic Query Helpers
@@ -195,17 +198,33 @@ export async function getInfringementWithDetails(
 export async function createInfringement(
   infringement: NewInfringement
 ): Promise<ApiResponse<Infringement>> {
-  const { data, error } = await supabase
-    .from('infringements')
-    .insert(infringement as any)
-    .select()
-    .single();
+  let lastError: any = null;
 
-  if (error) {
-    return { error: { message: error.message, code: error.code } };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const tin = infringement.tin || generateTin();
+    const { data, error } = await supabase
+      .from('infringements')
+      .insert({ ...infringement, tin } as any)
+      .select()
+      .single();
+
+    const isDuplicateTin =
+      error?.code === '23505' ||
+      error?.message?.toLowerCase().includes('duplicate') ||
+      error?.details?.toLowerCase().includes('duplicate');
+
+    if (!error && data) {
+      return { data: data as Infringement };
+    }
+
+    if (!isDuplicateTin) {
+      return { error: { message: error?.message || 'Failed to create infringement', code: error?.code } };
+    }
+
+    lastError = error;
   }
 
-  return { data: data as Infringement };
+  return { error: { message: lastError?.message || 'Failed to create infringement', code: lastError?.code } };
 }
 
 export async function updateInfringement(
@@ -401,42 +420,47 @@ export async function uploadEvidenceFile(
   fileUri: string,
   fileType: string
 ): Promise<ApiResponse<EvidenceFile>> {
-  // 1. Upload file to Supabase Storage
-  const fileName = `${infringementId}/${Date.now()}.jpg`;
-  
-  // Convert local URI to blob
-  const response = await fetch(fileUri);
-  const blob = await response.blob();
+  try {
+    // 1. Upload file to Supabase Storage (read from filesystem to avoid RN fetch issues)
+    const fileName = `${infringementId}/${Date.now()}.jpg`;
 
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('evidence')
-    .upload(fileName, blob, {
-      contentType: fileType,
-      upsert: false,
-    });
+    // Use the modern File API from expo-file-system to avoid deprecated readAsStringAsync
+    const file = new FileSystem.File(fileUri);
+    const base64 = await file.base64();
+    const fileBuffer = decode(base64);
 
-  if (uploadError) {
-    return { error: { message: uploadError.message } };
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('evidence')
+      .upload(fileName, fileBuffer, {
+        contentType: fileType,
+        upsert: false,
+      });
+
+    if (uploadError || !uploadData) {
+      return { error: { message: uploadError?.message || 'Failed to upload evidence file' } };
+    }
+
+    // 2. Create evidence file record
+    const evidenceFile: NewEvidenceFile = {
+      infringement_id: infringementId,
+      file_path: uploadData.path,
+      file_type: fileType,
+    };
+
+    const { data, error } = await supabase
+      .from('evidence_files')
+      .insert(evidenceFile as any)
+      .select()
+      .single();
+
+    if (error) {
+      return { error: { message: error.message, code: error.code } };
+    }
+
+    return { data: data as EvidenceFile };
+  } catch (err: any) {
+    return { error: { message: err?.message || 'Unexpected error uploading evidence' } };
   }
-
-  // 2. Create evidence file record
-  const evidenceFile: NewEvidenceFile = {
-    infringement_id: infringementId,
-    file_path: uploadData.path,
-    file_type: fileType,
-  };
-
-  const { data, error } = await supabase
-    .from('evidence_files')
-    .insert(evidenceFile as any)
-    .select()
-    .single();
-
-  if (error) {
-    return { error: { message: error.message, code: error.code } };
-  }
-
-  return { data: data as EvidenceFile };
 }
 
 export async function getEvidenceFiles(

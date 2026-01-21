@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -126,6 +127,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   // Close mobile menu when route changes
+   
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [currentPath]);

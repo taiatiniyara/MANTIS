@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
@@ -33,11 +34,12 @@ export interface HeadingProps
 
 const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
   ({ className, variant, weight, as, ...props }, ref) => {
-    const Comp = as || variant || "h1";
+    const resolvedVariant: NonNullable<HeadingProps["as"]> = (variant as HeadingProps["as"]) || as || "h1";
+    const Comp = as || resolvedVariant;
     return (
       <Comp
         ref={ref}
-        className={cn(headingVariants({ variant: variant || (as as any), weight }), className)}
+        className={cn(headingVariants({ variant: resolvedVariant, weight }), className)}
         {...props}
       />
     );

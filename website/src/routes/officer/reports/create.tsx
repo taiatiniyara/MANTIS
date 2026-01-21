@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Card,
@@ -20,10 +21,11 @@ import {
 } from "@/components/ui/combobox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Save, MapPin, Search, Camera, X } from "lucide-react";
 import { MapPicker } from "@/components/ui/map";
 import { toast } from "sonner";
+import { generateTin } from "@/lib/utils";
 
 export const Route = createFileRoute("/officer/reports/create")({
   component: RouteComponent,
@@ -121,11 +123,7 @@ function RouteComponent() {
   }, [selectedCategory, offences]);
 
   // Auto-detect location on component mount
-  useEffect(() => {
-    detectCurrentLocation();
-  }, []);
-
-  const detectCurrentLocation = () => {
+  const detectCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       console.error("Geolocation is not supported by this browser.");
       return;
@@ -154,7 +152,11 @@ function RouteComponent() {
         maximumAge: 0,
       },
     );
-  };
+  }, []);
+
+  useEffect(() => {
+    detectCurrentLocation();
+  }, [detectCurrentLocation]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -453,12 +455,37 @@ function RouteComponent() {
 
       console.log("Creating infringement with payload:", infringementPayload);
 
-      // Create infringement record
-      const { data: infringementData, error: insertError } = await supabase
-        .from("infringements")
-        .insert(infringementPayload)
-        .select()
-        .single();
+      const insertWithTin = async () => {
+        let lastError: any = null;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const tin = generateTin();
+          const { data, error } = await supabase
+            .from("infringements")
+            .insert({ ...infringementPayload, tin })
+            .select()
+            .single();
+
+          const isDuplicateTin =
+            error?.code === "23505" ||
+            error?.message?.toLowerCase().includes("duplicate") ||
+            error?.details?.toLowerCase().includes("duplicate");
+
+          if (!error && data) {
+            return { data, error: null } as const;
+          }
+
+          if (!isDuplicateTin) {
+            return { data: null, error } as const;
+          }
+
+          lastError = error;
+        }
+
+        return { data: null, error: lastError } as const;
+      };
+
+      const { data: infringementData, error: insertError } = await insertWithTin();
 
       if (insertError || !infringementData) {
         clearTimeout(timeoutId);

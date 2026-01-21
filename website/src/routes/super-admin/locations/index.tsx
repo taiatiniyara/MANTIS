@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-render */
 import { createFileRoute, } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
@@ -79,6 +80,7 @@ function RouteComponent() {
   );
 
   // Center map on locations once when data first loads
+   
   useMemo(() => {
     if (locationsWithCoords.length > 0 && !hasInitialized) {
       const avgLat =

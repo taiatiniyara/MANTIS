@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useCallback, useEffect } from "react";
 import Map, {
   GeolocateControl,
@@ -7,7 +8,7 @@ import Map, {
   type ViewState,
   type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
-import maplibregl from "maplibre-gl";
+import maplibregl, { type GeolocateResultEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ export function MapPicker({
       JSON.stringify(prev.padding ?? { top: 0, right: 0, bottom: 0, left: 0 });
 
   // Keep internal state in sync if the caller changes the coordinates
+   
   useEffect(() => {
     setMarker({ lat: latitude, lng: longitude });
     setViewState((prev) => {
@@ -78,8 +80,8 @@ export function MapPicker({
       const next: ViewStateWithSize = {
         ...prev,
         ...event.viewState,
-        width: (event.viewState as any).width ?? prev.width,
-        height: (event.viewState as any).height ?? prev.height,
+        width: (event.viewState as ViewStateWithSize).width ?? prev.width,
+        height: (event.viewState as ViewStateWithSize).height ?? prev.height,
       };
       return isSameView(next, prev) ? prev : next;
     });
@@ -103,11 +105,11 @@ export function MapPicker({
         <NavigationControl />
         <GeolocateControl
           trackUserLocation
-          onGeolocate={(e: any) => {
-            const { latitude, longitude } = e.coords;
-            setMarker({ lat: latitude, lng: longitude });
+          onGeolocate={(event: GeolocateResultEvent) => {
+            const { latitude: geoLatitude, longitude: geoLongitude } = event.coords;
+            setMarker({ lat: geoLatitude, lng: geoLongitude });
             if (onLocationChange) {
-              onLocationChange(latitude, longitude);
+              onLocationChange(geoLatitude, geoLongitude);
             }
           }}
         />

@@ -8,11 +8,11 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 
 export interface WatermarkData {
-  vehiclePlate?: string;
-  driverLicense?: string;
+  platformName?: string;
+  tin?: string;
   officerName: string;
   agencyName: string;
-  address?: string;
+  locationEnglish?: string;
   latitude?: number;
   longitude?: number;
   timestamp?: Date;
@@ -38,14 +38,12 @@ export async function addWatermarkToImage(
     }
 
     // Compress and standardize image
+    // Keep original size; only recompress to standardize format
     const manipulatedImage = await ImageManipulator.manipulateAsync(
       imageUri,
-      [
-        // Resize if image is too large (max 1920px width)
-        { resize: { width: 1920 } },
-      ],
+      [],
       {
-        compress: 0.85,
+        compress: 0.9,
         format: ImageManipulator.SaveFormat.JPEG,
         base64: false,
       }
@@ -92,32 +90,30 @@ export async function addWatermarkToImage(
 export function buildWatermarkText(watermarkData: WatermarkData): string {
   const lines: string[] = [];
   
-  // Add timestamp first
+  const platformName = watermarkData.platformName?.trim() || 'MANTIS';
+  lines.push(`Platform: ${platformName}`);
+
+  const tin = watermarkData.tin?.trim() || 'Pending';
+  lines.push(`TIN: ${tin}`);
+
   const timestamp = watermarkData.timestamp || new Date();
-  lines.push(`📅 ${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`);
-  
-  // Add infringement details
-  if (watermarkData.vehiclePlate) {
-    lines.push(`🚗 Plate: ${watermarkData.vehiclePlate}`);
+  lines.push(`Date/Time: ${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`);
+
+  if (watermarkData.locationEnglish) {
+    const location = watermarkData.locationEnglish.length > 80
+      ? `${watermarkData.locationEnglish.substring(0, 77)}...`
+      : watermarkData.locationEnglish;
+    lines.push(`Location: ${location}`);
   }
-  if (watermarkData.driverLicense) {
-    lines.push(`🪪 License: ${watermarkData.driverLicense}`);
-  }
-  
-  lines.push(`👮 Officer: ${watermarkData.officerName}`);
-  lines.push(`🏛️ Agency: ${watermarkData.agencyName}`);
-  
-  if (watermarkData.address) {
-    // Truncate address if too long
-    const address = watermarkData.address.length > 50 
-      ? watermarkData.address.substring(0, 47) + '...'
-      : watermarkData.address;
-    lines.push(`📍 ${address}`);
-  }
-  
+
   if (watermarkData.latitude !== undefined && watermarkData.longitude !== undefined) {
-    lines.push(`🌐 ${watermarkData.latitude.toFixed(6)}, ${watermarkData.longitude.toFixed(6)}`);
+    lines.push(`GPS: ${watermarkData.latitude.toFixed(6)}, ${watermarkData.longitude.toFixed(6)}`);
+  } else {
+    lines.push('GPS: Not captured');
   }
+
+  lines.push(`Officer: ${watermarkData.officerName}`);
+  lines.push(`Agency: ${watermarkData.agencyName}`);
   
   return lines.join('\n');
 }
@@ -197,21 +193,25 @@ export async function getWatermarkMetadata(imageUri: string): Promise<WatermarkD
  */
 export function formatWatermarkInfo(data: WatermarkData): string {
   const lines: string[] = [];
-  
+
+  const platformName = data.platformName?.trim() || 'MANTIS';
+  lines.push(`Platform: ${platformName}`);
+
+  const tin = data.tin?.trim() || 'Pending';
+  lines.push(`TIN: ${tin}`);
+
   if (data.timestamp) {
     const date = new Date(data.timestamp);
-    lines.push(`📅 ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`);
+    lines.push(`Date/Time: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`);
   }
-  
-  if (data.vehiclePlate) lines.push(`🚗 Vehicle: ${data.vehiclePlate}`);
-  if (data.driverLicense) lines.push(`🪪 License: ${data.driverLicense}`);
-  lines.push(`👮 Officer: ${data.officerName}`);
-  lines.push(`🏛️ Agency: ${data.agencyName}`);
-  
-  if (data.address) lines.push(`📍 ${data.address}`);
+
+  if (data.locationEnglish) lines.push(`Location: ${data.locationEnglish}`);
   if (data.latitude !== undefined && data.longitude !== undefined) {
-    lines.push(`🌐 ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`);
+    lines.push(`GPS: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`);
   }
+
+  lines.push(`Officer: ${data.officerName}`);
+  lines.push(`Agency: ${data.agencyName}`);
   
   return lines.join('\n');
 }

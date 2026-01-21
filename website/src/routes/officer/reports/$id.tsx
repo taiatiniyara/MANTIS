@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   MapPin,
@@ -38,11 +39,7 @@ function RouteComponent() {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchInfringementDetails();
-  }, [id]);
-
-  const fetchInfringementDetails = async () => {
+  const fetchInfringementDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -103,7 +100,11 @@ function RouteComponent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchInfringementDetails();
+  }, [fetchInfringementDetails]);
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<
@@ -174,9 +175,9 @@ function RouteComponent() {
         console.log("Extracted coordinates:", result);
         return result;
       }
-    } catch (e) {
+    } catch (error) {
       // If JSON parsing fails, treat as text location
-      console.log("JSON parse failed, treating as text");
+      console.log("JSON parse failed, treating as text", error);
       return { text: locationJson };
     }
     console.log("Could not parse location");

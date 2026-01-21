@@ -5,6 +5,9 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
+import { supabase } from '@/utils/supabase';
 import {
   StorageKeys,
   LocalInfringement,
@@ -12,6 +15,7 @@ import {
   AppSettings,
   User,
   LocalPhoto,
+  NewEvidenceFile,
 } from './types';
 
 // -----------------------------------------------------
@@ -374,11 +378,7 @@ export async function getStorageInfo(): Promise<{
 // Supabase Storage - Photo Upload Functions
 // -----------------------------------------------------
 
-import { supabase } from '@/utils/supabase';
-import * as FileSystem from 'expo-file-system';
-import { decode } from 'base64-arraybuffer';
-
-const STORAGE_BUCKET = 'infringement-evidence';
+const STORAGE_BUCKET = 'evidence';
 
 /**
  * Upload a photo to Supabase storage
@@ -390,7 +390,9 @@ const STORAGE_BUCKET = 'infringement-evidence';
 export async function uploadPhoto(
   uri: string,
   fileName: string,
-  userId: string
+  userId: string,
+  infringementId?: string,
+  fileType = 'image/jpeg'
 ): Promise<string | null> {
   try {
     // Read the file as base64
@@ -408,13 +410,30 @@ export async function uploadPhoto(
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, arrayBuffer, {
-        contentType: 'image/jpeg',
+        contentType: fileType,
         upsert: false,
       });
 
     if (error) {
       console.error('Upload error:', error);
       return null;
+    }
+
+    if (infringementId) {
+      const evidenceFile: NewEvidenceFile = {
+        infringement_id: infringementId,
+        file_path: data?.path ?? filePath,
+        file_type: fileType,
+      };
+
+      const { error: insertError } = await supabase
+        .from('evidence_files')
+        .insert(evidenceFile as any);
+
+      if (insertError) {
+        console.error('Failed to save evidence record:', insertError);
+        return null;
+      }
     }
 
     // Get public URL
@@ -437,10 +456,11 @@ export async function uploadPhoto(
  */
 export async function uploadPhotos(
   photos: Array<{ uri: string; type: string; name: string }>,
-  userId: string
+  userId: string,
+  infringementId?: string
 ): Promise<Array<string | null>> {
   const uploadPromises = photos.map(photo =>
-    uploadPhoto(photo.uri, photo.name, userId)
+    uploadPhoto(photo.uri, photo.name, userId, infringementId, photo.type)
   );
   return Promise.all(uploadPromises);
 }

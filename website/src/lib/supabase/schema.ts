@@ -183,6 +183,8 @@ export const infringements = pgTable("infringements", {
     .notNull()
     .references(() => users.id),
 
+  tin: text("tin"),
+
   driver_id: uuid("driver_id").references(() => drivers.id),
   vehicle_id: uuid("vehicle_id").references(() => vehicles.id),
 

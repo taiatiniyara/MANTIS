@@ -162,36 +162,36 @@ export const BorderRadius = {
 // Typography scale
 export const Typography = {
   xs: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  sm: {
     fontSize: 14,
     lineHeight: 20,
   },
-  base: {
+  sm: {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 22,
+  },
+  base: {
+    fontSize: 18,
+    lineHeight: 26,
   },
   lg: {
-    fontSize: 18,
-    lineHeight: 28,
-  },
-  xl: {
     fontSize: 20,
     lineHeight: 28,
   },
-  '2xl': {
+  xl: {
     fontSize: 24,
     lineHeight: 32,
   },
-  '3xl': {
-    fontSize: 30,
+  '2xl': {
+    fontSize: 28,
     lineHeight: 36,
   },
-  '4xl': {
-    fontSize: 36,
+  '3xl': {
+    fontSize: 34,
     lineHeight: 40,
+  },
+  '4xl': {
+    fontSize: 40,
+    lineHeight: 44,
   },
 } as const;
 
