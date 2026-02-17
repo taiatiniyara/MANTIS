@@ -439,8 +439,6 @@ function RouteComponent() {
         },
       });
 
-      console.log("Location GeoJSON created:", locationGeoJSON);
-
       const infringementPayload = {
         agency_id: userMetadata.agency_id,
         team_id: userMetadata.team_id || null,
