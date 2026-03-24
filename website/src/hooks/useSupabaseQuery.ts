@@ -31,6 +31,11 @@ export function useSupabaseQuery<T>({
   realtime,
 }: useSupabaseQueryProps<T>) {
   const queryClient = useQueryClient();
+  const queryKeySignature = useMemo(() => queryKey.join("::"), [queryKey]);
+  const internalQueryKey = useMemo(
+    () => ["supabase", String(tableName), ...queryKey] as const,
+    [tableName, queryKeySignature],
+  );
   const filterHasValue = (() => {
     if (!filter) return true;
 
@@ -48,7 +53,7 @@ export function useSupabaseQuery<T>({
   }, [isQueryEnabled, realtime, tableName]);
 
   const { data, error, isLoading } = useQuery({
-    queryKey,
+    queryKey: internalQueryKey,
     enabled: isQueryEnabled,
     queryFn: async () => {
       let query = supabase
@@ -56,7 +61,11 @@ export function useSupabaseQuery<T>({
         .select(columns ? columns.join(", ") : "*");
 
       if (filter && filterHasValue) {
-        query = query.eq(filter.column as string, filter.value);
+        if (Array.isArray(filter.value)) {
+          query = query.in(filter.column as string, filter.value as any[]);
+        } else {
+          query = query.eq(filter.column as string, filter.value);
+        }
       }
 
       if (limit) {
@@ -81,14 +90,14 @@ export function useSupabaseQuery<T>({
   useEffect(() => {
     if (!shouldSubscribeRealtime) return;
 
-    const channelName = `realtime:${String(tableName)}:${queryKey.join(":")}`;
+    const channelName = `realtime:${String(tableName)}:${queryKeySignature}`;
     const channel = supabase
       .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: String(tableName) },
         () => {
-          queryClient.invalidateQueries({ queryKey });
+          queryClient.invalidateQueries({ queryKey: internalQueryKey });
         },
       )
       .subscribe();
@@ -96,7 +105,13 @@ export function useSupabaseQuery<T>({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient, queryKey, shouldSubscribeRealtime, tableName]);
+  }, [
+    internalQueryKey,
+    queryClient,
+    queryKeySignature,
+    shouldSubscribeRealtime,
+    tableName,
+  ]);
 
   return { data, error, isLoading };
 }
