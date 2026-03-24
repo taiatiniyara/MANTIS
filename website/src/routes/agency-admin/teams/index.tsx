@@ -21,6 +21,7 @@ function RouteComponent() {
       column: "agency_id",
       value: userMetadata?.agency_id || "",
     },
+    enabled: Boolean(userMetadata?.agency_id),
   });
   
   return (

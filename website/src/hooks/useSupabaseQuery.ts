@@ -46,6 +46,8 @@ export function useSupabaseQuery<T>({
   })();
 
   const isQueryEnabled = enabled ?? filterHasValue;
+  const waitingForFilterValue =
+    enabled === undefined && Boolean(filter) && !filterHasValue;
   const shouldSubscribeRealtime = useMemo(() => {
     if (!isQueryEnabled) return false;
     if (typeof realtime === "boolean") return realtime;
@@ -113,5 +115,9 @@ export function useSupabaseQuery<T>({
     tableName,
   ]);
 
-  return { data, error, isLoading };
+  return {
+    data,
+    error,
+    isLoading: isLoading || waitingForFilterValue,
+  };
 }
