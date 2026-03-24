@@ -19,7 +19,7 @@ Create a `.env.production` file:
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_production_anon_key
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_production_publishable_key
 
 # Optional: Analytics
 VITE_ANALYTICS_ID=your_analytics_id
@@ -224,7 +224,7 @@ jobs:
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
         run: npm run build
       
       - name: Deploy to Firebase
@@ -240,7 +240,7 @@ jobs:
 
 In GitHub repository settings, add secrets:
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
 - `FIREBASE_SERVICE_ACCOUNT`
 
 ## Performance Optimization

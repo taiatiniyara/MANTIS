@@ -1,31 +1,49 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet } from "react-native";
+import { WebView } from "react-native-webview";
 
 interface OSMMapProps {
   initialLat?: number;
   initialLng?: number;
+  focusLat?: number;
+  focusLng?: number;
   onLocationSelect?: (lat: number, lng: number) => void;
 }
 
-const OSMMap: React.FC<OSMMapProps> = ({ 
-  initialLat = 37.7749, 
+const OSMMap: React.FC<OSMMapProps> = ({
+  initialLat = 37.7749,
   initialLng = -122.4194,
-  onLocationSelect 
+  focusLat,
+  focusLng,
+  onLocationSelect,
 }) => {
   const webViewRef = useRef<WebView>(null);
+
+  useEffect(() => {
+    if (typeof focusLat !== "number" || typeof focusLng !== "number") {
+      return;
+    }
+
+    const payload = JSON.stringify({
+      type: "goToCoordinates",
+      lat: focusLat,
+      lng: focusLng,
+    });
+
+    webViewRef.current?.postMessage(payload);
+  }, [focusLat, focusLng]);
 
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'mapClick') {
-        console.log('Map clicked at:', data.lat, data.lng);
+      if (data.type === "mapClick") {
+        console.log("Map clicked at:", data.lat, data.lng);
         if (onLocationSelect) {
           onLocationSelect(data.lat, data.lng);
         }
       }
     } catch (error) {
-      console.error('Error parsing message:', error);
+      console.error("Error parsing message:", error);
     }
   };
 
@@ -144,7 +162,7 @@ const OSMMap: React.FC<OSMMapProps> = ({
     <View style={styles.container}>
       <WebView
         ref={webViewRef}
-        originWhitelist={['*']}
+        originWhitelist={["*"]}
         source={{ html: htmlContent }}
         style={styles.webview}
         onMessage={handleMessage}

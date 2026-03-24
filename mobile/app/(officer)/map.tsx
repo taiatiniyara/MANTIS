@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  TouchableOpacity,
+  useWindowDimensions,
 } from "react-native";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -23,16 +25,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Infringement } from "@/lib/types";
 import { formatDate, formatCurrency } from "@/lib/formatting";
 import OSMMap from "@/components/OSMMap";
-import { queryKeys } from '@/lib/queryKeys';
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function MapScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const { user } = useAuth();
+  const { height: screenHeight } = useWindowDimensions();
+  const mapHeight = Math.max(220, Math.round(screenHeight / 3));
 
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null,
   );
+  const [mapFocus, setMapFocus] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [selectedInfringementId, setSelectedInfringementId] = useState<
+    string | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const { data: infringements = [], isFetching: isFetchingCases } = useQuery({
     queryKey: queryKeys.infringementsByOfficer(user?.id, 50),
@@ -42,7 +53,8 @@ export default function MapScreen() {
         officer_id: user.id,
         limit: 50,
       });
-      if (error) throw new Error(error.message || 'Failed to load infringements');
+      if (error)
+        throw new Error(error.message || "Failed to load infringements");
       return (data ?? []).filter((inf) => inf.location);
     },
     enabled: Boolean(user?.id),
@@ -135,10 +147,12 @@ export default function MapScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Interactive OpenStreetMap */}
-      <View style={styles.mapContainer}>
+      <View style={[styles.mapContainer, { height: mapHeight }]}>
         <OSMMap
           initialLat={location?.coords.latitude ?? 37.7749}
           initialLng={location?.coords.longitude ?? -122.4194}
+          focusLat={mapFocus?.latitude}
+          focusLng={mapFocus?.longitude}
         />
       </View>
 
@@ -183,7 +197,9 @@ export default function MapScreen() {
             {isFetchingCases && infringements.length === 0 ? (
               <View style={styles.emptyState}>
                 <ActivityIndicator />
-                <ThemedText style={styles.emptyText}>Loading infringements...</ThemedText>
+                <ThemedText style={styles.emptyText}>
+                  Loading infringements...
+                </ThemedText>
               </View>
             ) : infringements.length === 0 ? (
               <View style={styles.emptyState}>
@@ -200,30 +216,42 @@ export default function MapScreen() {
                   inf.status === "draft"
                     ? "#8e8e93"
                     : inf.status === "pending"
-                    ? "#ff9500"
-                    : inf.status === "approved"
-                    ? "#34c759"
-                    : inf.status === "paid"
-                    ? "#34c759"
-                    : inf.status === "appealed"
-                    ? "#007AFF"
-                    : inf.status === "appeal_approved"
-                    ? "#34c759"
-                    : inf.status === "appeal_rejected"
-                    ? "#ff3b30"
-                    : inf.status === "cancelled"
-                    ? "#ff3b30"
-                    : inf.status === "overdue"
-                    ? "#ff3b30"
-                    : "#8e8e93";
+                      ? "#ff9500"
+                      : inf.status === "approved"
+                        ? "#34c759"
+                        : inf.status === "paid"
+                          ? "#34c759"
+                          : inf.status === "appealed"
+                            ? "#007AFF"
+                            : inf.status === "appeal_approved"
+                              ? "#34c759"
+                              : inf.status === "appeal_rejected"
+                                ? "#ff3b30"
+                                : inf.status === "cancelled"
+                                  ? "#ff3b30"
+                                  : inf.status === "overdue"
+                                    ? "#ff3b30"
+                                    : "#8e8e93";
 
                 return (
-                  <View
+                  <TouchableOpacity
                     key={inf.id}
                     style={[
                       styles.infringementCard,
                       { borderColor: colors.icon },
+                      selectedInfringementId === inf.id
+                        ? { backgroundColor: colors.tint + "14" }
+                        : null,
                     ]}
+                    onPress={() => {
+                      setSelectedInfringementId(inf.id);
+                      setMapFocus({
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                      });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Center map on case ${inf.id.slice(0, 8)}`}
                   >
                     <View style={styles.cardHeader}>
                       <View style={styles.cardInfo}>
@@ -273,7 +301,7 @@ export default function MapScreen() {
                         {formatDate(inf.issued_at, "short")}
                       </ThemedText>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })
             )}
@@ -283,13 +311,15 @@ export default function MapScreen() {
           <View style={styles.infoBox}>
             <ThemedText style={styles.infoTitle}>💡 About Map View</ThemedText>
             <ThemedText style={styles.infoText}>
-              • Use the interactive OpenStreetMap above to view and navigate to locations
+              • Use the interactive OpenStreetMap above to view and navigate to
+              locations
             </ThemedText>
             <ThemedText style={styles.infoText}>
-              • Infringement locations are displayed as markers on the map
+              • Tap an infringement card to center the map on that case
             </ThemedText>
             <ThemedText style={styles.infoText}>
-              • Your current location is shown with a marker when location permission is granted
+              • Your current location is shown with a marker when location
+              permission is granted
             </ThemedText>
           </View>
         </ThemedView>
@@ -303,7 +333,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapContainer: {
-    height: 450,
+    minHeight: 220,
   },
   scrollContent: {
     flex: 1,

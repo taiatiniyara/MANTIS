@@ -419,4 +419,4 @@ if (!navigator.geolocation) {
 
 ---
 
-**Next:** [Authentication & Authorization](./06-auth.md)
+**Next:** [Authentication & Authorization](./authentication.md)

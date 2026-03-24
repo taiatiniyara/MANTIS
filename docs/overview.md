@@ -70,7 +70,7 @@ Both apps are powered by **Supabase**. They enable Fiji's enforcement agencies â
 ### Website (`website/.env`)
 ```
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key
 ```
 
 ### Mobile App (`mobile/.env.local`)

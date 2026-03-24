@@ -23,7 +23,7 @@ function RouteComponent() {
     },
     enabled: Boolean(userMetadata?.agency_id),
   });
-  
+
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="space-y-1">
@@ -40,7 +40,10 @@ function RouteComponent() {
       >
         <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {teams.data?.map((team) => (
-            <Card key={team.id} className="hover:shadow-md active:shadow-lg transition-shadow touch-manipulation">
+            <Card
+              key={team.id}
+              className="hover:shadow-md active:shadow-lg transition-shadow touch-manipulation"
+            >
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
@@ -50,8 +53,13 @@ function RouteComponent() {
               <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground text-xs sm:text-sm">Team ID:</span>
-                    <Badge variant="outline" className="font-mono text-[10px] sm:text-xs shrink-0">
+                    <span className="text-muted-foreground text-xs sm:text-sm">
+                      Team ID:
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="font-mono text-[10px] sm:text-xs shrink-0"
+                    >
                       {team.id.slice(0, 8)}...
                     </Badge>
                   </div>
@@ -65,7 +73,9 @@ function RouteComponent() {
                   )}
                   {team.created_at && (
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground text-xs sm:text-sm">Created:</span>
+                      <span className="text-muted-foreground text-xs sm:text-sm">
+                        Created:
+                      </span>
                       <span className="text-xs">
                         {new Date(team.created_at).toLocaleDateString()}
                       </span>

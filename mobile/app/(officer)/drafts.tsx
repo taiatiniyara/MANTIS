@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
+  AccessibilityInfo,
 } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -44,14 +45,18 @@ export default function DraftsScreen() {
   const deleteMutation = useMutation({
     mutationFn: deleteDraft,
     onSuccess: () => {
+      AccessibilityInfo.announceForAccessibility('Draft deleted successfully.');
       queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
     },
     onError: () => {
+      AccessibilityInfo.announceForAccessibility('Failed to delete draft.');
       Alert.alert('Error', 'Failed to delete draft');
     },
   });
 
   const onRefresh = () => {
+    if (isRefreshing) return;
+    AccessibilityInfo.announceForAccessibility('Refreshing drafts list.');
     refetch();
   };
 
@@ -65,6 +70,7 @@ export default function DraftsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            AccessibilityInfo.announceForAccessibility('Deleting draft.');
             deleteMutation.mutate(id);
           },
         },
@@ -106,6 +112,8 @@ export default function DraftsScreen() {
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.tint }]}
             onPress={() => router.push('/(officer)/create')}
+            accessibilityRole="button"
+            accessibilityLabel="Create infringement"
           >
             <ThemedText style={styles.buttonText}>Create Infringement</ThemedText>
           </TouchableOpacity>
@@ -183,12 +191,20 @@ export default function DraftsScreen() {
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: colors.tint }]}
                 onPress={() => handleEditDraft(draft)}
+                disabled={deleteMutation.isPending}
+                accessibilityRole="button"
+                accessibilityLabel={`Edit draft ${draft.id.slice(0, 8)}`}
+                accessibilityState={{ disabled: deleteMutation.isPending }}
               >
                 <ThemedText style={styles.actionButtonText}>Edit</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, styles.deleteButton]}
                 onPress={() => handleDeleteDraft(draft.id)}
+                disabled={deleteMutation.isPending}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete draft ${draft.id.slice(0, 8)}`}
+                accessibilityState={{ disabled: deleteMutation.isPending, busy: deleteMutation.isPending }}
               >
                 <ThemedText style={styles.deleteButtonText}>Delete</ThemedText>
               </TouchableOpacity>

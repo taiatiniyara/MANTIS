@@ -4,6 +4,8 @@ export const queryKeys = {
     ['infringements', 'officer', officerId ?? 'anon', limit ?? 'all'] as const,
   evidenceByInfringement: (infringementId?: string | null) =>
     ['evidence', 'infringement', infringementId ?? 'none'] as const,
+  driverById: (driverId?: string | null) => ['drivers', 'id', driverId ?? 'none'] as const,
+  vehicleById: (vehicleId?: string | null) => ['vehicles', 'id', vehicleId ?? 'none'] as const,
   drafts: ['drafts'] as const,
   offencesActive: ['offences', 'active'] as const,
   officerStats: (officerId?: string | null) => ['stats', 'officer', officerId ?? 'anon'] as const,

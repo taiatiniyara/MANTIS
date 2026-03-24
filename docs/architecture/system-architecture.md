@@ -314,4 +314,4 @@ Developer → Git Push → GitHub Actions
 
 ---
 
-**Next:** [Tech Stack Details](./03-tech-stack.md)
+**Next:** [Tech Stack Details](./tech-stack.md)

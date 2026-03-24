@@ -38,8 +38,10 @@ export function Input({
   editable = true,
   ...props
 }: InputProps) {
+  const [isFocused, setIsFocused] = React.useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const derivedA11yLabel = props.accessibilityLabel ?? label ?? props.placeholder ?? 'Input';
 
   const inputWrapperStyles = [
     styles.inputWrapper,
@@ -52,7 +54,7 @@ export function Input({
       backgroundColor: colorScheme === 'dark' 
         ? `${colors.input}33` // 20% opacity for dark mode
         : colors.background,
-      borderColor: error ? colors.destructive : colors.input,
+      borderColor: error ? colors.destructive : isFocused ? colors.ring : colors.input,
       color: colors.foreground,
     },
     ...(leftIcon ? [styles.inputWithLeftIcon] : []),
@@ -76,6 +78,19 @@ export function Input({
           style={inputStyles}
           placeholderTextColor={colors.mutedForeground}
           editable={editable}
+          onFocus={(event) => {
+            setIsFocused(true);
+            props.onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setIsFocused(false);
+            props.onBlur?.(event);
+          }}
+          accessibilityLabel={derivedA11yLabel}
+          accessibilityState={{
+            disabled: !editable,
+          }}
+          accessibilityHint={error ? `Error: ${error}` : props.accessibilityHint}
           {...props}
         />
         {rightIcon && (
@@ -109,11 +124,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    height: 36,
+    minHeight: 44,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     fontSize: Typography.base.fontSize,
+    lineHeight: Typography.base.lineHeight,
   },
   inputWithLeftIcon: {
     paddingLeft: 40,
@@ -126,7 +142,7 @@ const styles = StyleSheet.create({
   },
   leftIconContainer: {
     position: 'absolute',
-    left: Spacing.sm,
+    left: Spacing.md,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
@@ -137,7 +153,7 @@ const styles = StyleSheet.create({
   },
   rightIconContainer: {
     position: 'absolute',
-    right: Spacing.sm,
+    right: Spacing.md,
     top: 0,
     bottom: 0,
     justifyContent: 'center',

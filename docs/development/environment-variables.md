@@ -1,125 +1,71 @@
 # Environment Variables
 
-Complete reference for all environment variables used in MANTIS.
+The project uses a **Supabase-only** configuration for both the website and the mobile app. Keep service role keys out of the clients—use only the publishable/anon key.
 
 ## Required Variables
 
-### Supabase Configuration
+### Website (Vite)
 
 ```env
-# Supabase project URL
 VITE_SUPABASE_URL=https://your-project.supabase.co
-
-# Supabase anonymous key (public, safe for client-side)
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_anon_or_publishable_key
 ```
 
-**How to get these values:**
+These are read in `src/lib/supabase/client.ts`.
 
-1. Go to your [Supabase Dashboard](https://app.supabase.com)
-2. Select your project
-3. Click on "Settings" → "API"
-4. Copy "Project URL" and "anon public" key
-
-## Optional Variables
-
-### Firebase Analytics
+### Mobile (Expo)
 
 ```env
-# Firebase Analytics ID (optional)
-VITE_FIREBASE_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-VITE_FIREBASE_PROJECT_ID=your-firebase-project
-VITE_FIREBASE_APP_ID=1:123456789:web:abcdef123456
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=your_anon_or_publishable_key
 ```
 
-### Error Tracking (Sentry)
-
-```env
-# Sentry DSN for error tracking (optional)
-VITE_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
-VITE_SENTRY_ENVIRONMENT=production
-```
-
-### Feature Flags
-
-```env
-# Enable beta features (optional)
-VITE_ENABLE_BETA_FEATURES=false
-
-# Enable debug mode (optional, dev only)
-VITE_DEBUG_MODE=false
-```
+These are read in `mobile/utils/supabase.ts`.
 
 ## Environment Files
 
-### Development (`.env`)
+- **website/.env** – create manually; keep out of Git
+- **mobile/.env.local** – copy from `mobile/.env.example`
+
+Example `website/.env`:
 
 ```env
-# Local development
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_ANON_KEY=your_local_anon_key
-VITE_DEBUG_MODE=true
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_anon_or_publishable_key
 ```
 
-### Staging (`.env.staging`)
+Example `mobile/.env.local`:
 
 ```env
-# Staging environment
-VITE_SUPABASE_URL=https://staging-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_staging_anon_key
-VITE_SENTRY_ENVIRONMENT=staging
-```
-
-### Production (`.env.production`)
-
-```env
-# Production environment
-VITE_SUPABASE_URL=https://production-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_production_anon_key
-VITE_SENTRY_ENVIRONMENT=production
-VITE_ENABLE_BETA_FEATURES=false
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=your_anon_or_publishable_key
 ```
 
 ## Security Best Practices
 
-### ✅ DO
-
-- Use `.env.example` with placeholder values
 - Add `.env*` to `.gitignore`
-- Use different keys for each environment
+- Use different keys per environment
 - Rotate keys regularly
-- Store secrets in CI/CD environment variables
-
-### ❌ DON'T
-
-- Commit `.env` files to Git
-- Share production keys in Slack/email
-- Use production keys in development
-- Hardcode secrets in source code
-- Expose service role keys to frontend
+- Do not share production keys in chat/email
+- Never expose the **service role** key to web or mobile apps
 
 ## Accessing Variables
 
-### In React Components
+### Website (Vite)
 
 ```typescript
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 ```
 
-### Type Safety
-
-Add to `vite-env.d.ts`:
+Add to `vite-env.d.ts` if needed:
 
 ```typescript
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string;
-  readonly VITE_SUPABASE_ANON_KEY: string;
-  readonly VITE_FIREBASE_API_KEY?: string;
-  readonly VITE_SENTRY_DSN?: string;
-  readonly VITE_DEBUG_MODE?: string;
+  readonly VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY: string;
 }
 
 interface ImportMeta {
@@ -127,36 +73,40 @@ interface ImportMeta {
 }
 ```
 
+### Mobile (Expo)
+
+Expo exposes env variables on `process.env` when prefixed with `EXPO_PUBLIC_`:
+
+```typescript
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
+```
+
 ## CI/CD Configuration
 
-### GitHub Actions
-
-In repository settings → Secrets, add:
+Add these secrets to your CI system:
 
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `FIREBASE_SERVICE_ACCOUNT`
+- `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
 
-Use in workflow:
+Example GitHub Actions snippet:
 
 ```yaml
 env:
   VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+  VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
 ```
 
 ## Validation
-
-Create a validation script:
 
 ```typescript
 // scripts/validate-env.ts
 const requiredVars = [
   'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_ANON_KEY'
+  'VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY'
 ];
 
-requiredVars.forEach(varName => {
+requiredVars.forEach((varName) => {
   if (!import.meta.env[varName]) {
     throw new Error(`Missing required environment variable: ${varName}`);
   }
@@ -167,24 +117,16 @@ console.log('✅ All required environment variables are set');
 
 ## Troubleshooting
 
-### Variables Not Loading
+### Variables not loading
 
-1. Restart dev server after changing `.env`
-2. Ensure variable names start with `VITE_`
-3. Check for typos in variable names
-4. Verify `.env` file is in correct directory
+1. Restart the dev server after editing `.env`
+2. Confirm Vite vars start with `VITE_` and Expo vars with `EXPO_PUBLIC_`
+3. Ensure the env files live in the right app folder (website vs mobile)
+4. Check for typos or stray quotes
 
-### Undefined Variables
-
-```typescript
-// Add fallback for optional variables
-const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true' || false;
-```
-
-### Build Issues
+### Build issues
 
 ```bash
-# Clear cache
 rm -rf node_modules dist .vite
 npm install
 npm run build
@@ -192,4 +134,4 @@ npm run build
 
 ---
 
-**Next:** [Troubleshooting Guide](./27-troubleshooting.md)
+Next: [Troubleshooting Guide](./troubleshooting.md)

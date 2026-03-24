@@ -13,6 +13,7 @@ Mobile app documentation for iOS and Android (Expo + React Native)
 - [App Overview](./mobile/app-overview.md) - Features, tech stack, and architecture
 - [Quick Start](./mobile/quickstart.md) - Get the mobile app running
 - [Testing Guide](./mobile/testing.md) - Test scenarios and procedures
+- [Release Checklist](./mobile/release-checklist.md) - EAS build and store submission checklist
 - [Theme Implementation](./mobile/theme-implementation.md) - UI components and theming
 - [Refactoring Guide](./mobile/refactoring.md) - Code optimization patterns
 
@@ -62,4 +63,4 @@ For questions or issues:
 ---
 
 **Version:** 2.0.0  
-**Last Updated:** January 16, 2026
+**Last Updated:** February 17, 2026

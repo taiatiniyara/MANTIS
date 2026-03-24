@@ -84,6 +84,43 @@ rm -rf node_modules/.vite
 npm run dev
 ```
 
+## Mobile App Issues
+
+### Case Details shows "Loading..." for Driver/Vehicle forever
+
+**Problem:** In the officer case details modal, Driver License and Vehicle Plate do not resolve.
+
+**Cause:** Related `driver`/`vehicle` records were not being fetched by ID.
+
+**Solution:** Ensure the app is using the current helpers:
+- `getDriverById(driverId)`
+- `getVehicleById(vehicleId)`
+
+These are wired in `mobile/app/(officer)/cases.tsx` with TanStack Query keys from `mobile/lib/queryKeys.ts`.
+
+### Tab icon and text misaligned
+
+**Problem:** Tab icon appears left while label shifts right.
+
+**Solution:**
+- Keep default tab button rendering (do not override `tabBarButton`)
+- Force label stacking with `tabBarLabelPosition: 'below-icon'`
+- Use conservative `tabBarStyle` / `tabBarLabelStyle` in `mobile/components/RoleBasedTabLayout.tsx`
+
+### Expo env vars not picked up
+
+**Problem:** `EXPO_PUBLIC_SUPABASE_URL` or `EXPO_PUBLIC_SUPABASE_KEY` is undefined.
+
+**Solution:**
+```bash
+cp .env.example .env.local
+npm run start
+```
+Then restart Expo with cache clear:
+```bash
+npx expo start -c
+```
+
 ## Authentication Issues
 
 ### "Invalid JWT token"

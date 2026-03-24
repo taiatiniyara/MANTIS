@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, AccessibilityInfo } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,15 +15,24 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [signingOut, setSigningOut] = React.useState(false);
 
   const handleSignOut = () => {
+    if (signingOut) return;
+
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await signOut();
+          try {
+            setSigningOut(true);
+            AccessibilityInfo.announceForAccessibility('Signing out. Please wait.');
+            await signOut();
+          } finally {
+            setSigningOut(false);
+          }
         },
       },
     ]);
@@ -84,6 +93,8 @@ export default function ProfileScreen() {
             onPress={() => {
               // Navigate to settings
             }}
+            accessibilityRole="button"
+            accessibilityLabel="App settings"
           >
             <ThemedText>⚙️ App Settings</ThemedText>
           </TouchableOpacity>
@@ -92,6 +103,8 @@ export default function ProfileScreen() {
             onPress={() => {
               // Navigate to help
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Help and support"
           >
             <ThemedText>❓ Help & Support</ThemedText>
           </TouchableOpacity>
@@ -100,6 +113,8 @@ export default function ProfileScreen() {
             onPress={() => {
               // Navigate to about
             }}
+            accessibilityRole="button"
+            accessibilityLabel="About MANTIS"
           >
             <ThemedText>ℹ️ About MANTIS</ThemedText>
           </TouchableOpacity>
@@ -109,6 +124,10 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={[styles.signOutButton, { backgroundColor: '#f44336' }]}
           onPress={handleSignOut}
+          disabled={signingOut}
+          accessibilityRole="button"
+          accessibilityLabel={signingOut ? 'Signing out' : 'Sign out'}
+          accessibilityState={{ disabled: signingOut, busy: signingOut }}
         >
           <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
         </TouchableOpacity>

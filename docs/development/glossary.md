@@ -285,6 +285,6 @@ Add the web app to device home screen for app-like experience.
 ---
 
 **See Also:**
-- [FAQ](./28-faq.md) for common questions
-- [Data Model](./04-data-model.md) for database terms
-- [GIS & Locations](./05-gis-locations.md) for geographic terms
+- [FAQ](./faq.md) for common questions
+- [Data Model](../architecture/data-model.md) for database terms
+- [GIS & Locations](../architecture/gis-locations.md) for geographic terms

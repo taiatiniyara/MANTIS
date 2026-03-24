@@ -33,7 +33,7 @@ The web app enables LTA, Municipal Councils, and Fiji Police to issue, manage, a
 Create `website/.env`:
 ```
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_publishable_key
 ```
 Never commit secrets or service role keys.
 

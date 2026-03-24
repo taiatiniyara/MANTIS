@@ -16,6 +16,7 @@ interface BadgeProps {
   icon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  accessibilityLabel?: string;
 }
 
 export function Badge({
@@ -24,6 +25,7 @@ export function Badge({
   icon,
   style,
   textStyle,
+  accessibilityLabel,
 }: BadgeProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -41,7 +43,12 @@ export function Badge({
   ];
 
   return (
-    <View style={badgeStyles}>
+    <View
+      style={badgeStyles}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityLabel ?? (typeof children === 'string' ? children : 'Status badge')}
+    >
       {icon && <View style={styles.icon}>{icon}</View>}
       <Text style={badgeTextStyles}>{children}</Text>
     </View>
@@ -53,7 +60,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 20,
+    minHeight: 24,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: BorderRadius.full,
@@ -83,7 +90,7 @@ function getVariantStyles(variant: BadgeVariant, colors: typeof Colors.light): V
       };
     case 'destructive':
       return {
-        backgroundColor: `${colors.destructive}1A`, // 10% opacity
+        backgroundColor: colors.destructive,
       };
     case 'outline':
       return {
@@ -105,7 +112,7 @@ function getVariantTextStyles(variant: BadgeVariant, colors: typeof Colors.light
       };
     case 'destructive':
       return {
-        color: colors.destructive,
+        color: colors.destructiveForeground,
       };
     case 'outline':
       return {

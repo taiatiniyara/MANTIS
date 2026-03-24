@@ -1,24 +1,22 @@
 /**
  * MANTIS Mobile - Database Helper
- * 
+ *
  * Type-safe wrapper around Supabase client for mobile app
  */
 
-import { supabase } from '../utils/supabase';
-import * as FileSystem from 'expo-file-system';
-import { decode } from 'base64-arraybuffer';
+import { supabase } from "../utils/supabase";
+import * as FileSystem from "expo-file-system";
+import { decode } from "base64-arraybuffer";
 import type {
   Agency,
   Location,
-  Team,
   User,
   Driver,
   Vehicle,
+  OffenceCategory,
   Offence,
   Infringement,
   EvidenceFile,
-  Payment,
-  Appeal,
   NewDriver,
   NewVehicle,
   NewInfringement,
@@ -26,10 +24,8 @@ import type {
   InfringementWithDetails,
   UserWithRelations,
   ApiResponse,
-  PaginatedResponse,
-  TableNames,
-} from './types';
-import { generateTin } from './formatting';
+} from "./types";
+import { generateTin } from "./formatting";
 
 // -----------------------------------------------------
 // Generic Query Helpers
@@ -37,12 +33,12 @@ import { generateTin } from './formatting';
 
 export async function fetchOne<T>(
   table: string,
-  id: string
+  id: string,
 ): Promise<ApiResponse<T>> {
   const { data, error } = await supabase
     .from(table)
-    .select('*')
-    .eq('id', id)
+    .select("*")
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -60,9 +56,9 @@ export async function fetchMany<T>(
     ascending?: boolean;
     limit?: number;
     offset?: number;
-  }
+  },
 ): Promise<ApiResponse<T[]>> {
-  let query = supabase.from(table).select('*');
+  let query = supabase.from(table).select("*");
 
   // Apply filters
   if (options?.filter) {
@@ -73,7 +69,9 @@ export async function fetchMany<T>(
 
   // Apply ordering
   if (options?.orderBy) {
-    query = query.order(options.orderBy, { ascending: options.ascending ?? true });
+    query = query.order(options.orderBy, {
+      ascending: options.ascending ?? true,
+    });
   }
 
   // Apply pagination
@@ -81,7 +79,10 @@ export async function fetchMany<T>(
     query = query.limit(options.limit);
   }
   if (options?.offset) {
-    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+    query = query.range(
+      options.offset,
+      options.offset + (options.limit || 10) - 1,
+    );
   }
 
   const { data, error } = await query;
@@ -97,21 +98,25 @@ export async function fetchMany<T>(
 // User Queries
 // -----------------------------------------------------
 
-export async function getCurrentUser(): Promise<ApiResponse<UserWithRelations>> {
+export async function getCurrentUser(): Promise<
+  ApiResponse<UserWithRelations>
+> {
   const { data: authData } = await supabase.auth.getUser();
-  
+
   if (!authData.user) {
-    return { error: { message: 'Not authenticated' } };
+    return { error: { message: "Not authenticated" } };
   }
 
   const { data, error } = await supabase
-    .from('users')
-    .select(`
+    .from("users")
+    .select(
+      `
       *,
       agency:agencies(*),
       team:teams(*)
-    `)
-    .eq('id', authData.user.id)
+    `,
+    )
+    .eq("id", authData.user.id)
     .single();
 
   if (error) {
@@ -122,7 +127,7 @@ export async function getCurrentUser(): Promise<ApiResponse<UserWithRelations>> 
 }
 
 export async function getUserById(userId: string): Promise<ApiResponse<User>> {
-  return fetchOne<User>('users', userId);
+  return fetchOne<User>("users", userId);
 }
 
 // -----------------------------------------------------
@@ -137,18 +142,18 @@ export async function getInfringements(options?: {
   offset?: number;
 }): Promise<ApiResponse<Infringement[]>> {
   let query = supabase
-    .from('infringements')
-    .select('*')
-    .order('issued_at', { ascending: false });
+    .from("infringements")
+    .select("*")
+    .order("issued_at", { ascending: false });
 
   if (options?.status) {
-    query = query.eq('status', options.status);
+    query = query.eq("status", options.status);
   }
   if (options?.officer_id) {
-    query = query.eq('officer_id', options.officer_id);
+    query = query.eq("officer_id", options.officer_id);
   }
   if (options?.team_id) {
-    query = query.eq('team_id', options.team_id);
+    query = query.eq("team_id", options.team_id);
   }
   if (options?.limit) {
     query = query.limit(options.limit);
@@ -168,11 +173,12 @@ export async function getInfringements(options?: {
 }
 
 export async function getInfringementWithDetails(
-  id: string
+  id: string,
 ): Promise<ApiResponse<InfringementWithDetails>> {
   const { data, error } = await supabase
-    .from('infringements')
-    .select(`
+    .from("infringements")
+    .select(
+      `
       *,
       driver:drivers(*),
       vehicle:vehicles(*),
@@ -184,8 +190,9 @@ export async function getInfringementWithDetails(
       evidence_files(*),
       payments(*),
       appeals(*)
-    `)
-    .eq('id', id)
+    `,
+    )
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -196,45 +203,55 @@ export async function getInfringementWithDetails(
 }
 
 export async function createInfringement(
-  infringement: NewInfringement
+  infringement: NewInfringement,
 ): Promise<ApiResponse<Infringement>> {
   let lastError: any = null;
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const tin = infringement.tin || generateTin();
     const { data, error } = await supabase
-      .from('infringements')
+      .from("infringements")
       .insert({ ...infringement, tin } as any)
       .select()
       .single();
 
     const isDuplicateTin =
-      error?.code === '23505' ||
-      error?.message?.toLowerCase().includes('duplicate') ||
-      error?.details?.toLowerCase().includes('duplicate');
+      error?.code === "23505" ||
+      error?.message?.toLowerCase().includes("duplicate") ||
+      error?.details?.toLowerCase().includes("duplicate");
 
     if (!error && data) {
       return { data: data as Infringement };
     }
 
     if (!isDuplicateTin) {
-      return { error: { message: error?.message || 'Failed to create infringement', code: error?.code } };
+      return {
+        error: {
+          message: error?.message || "Failed to create infringement",
+          code: error?.code,
+        },
+      };
     }
 
     lastError = error;
   }
 
-  return { error: { message: lastError?.message || 'Failed to create infringement', code: lastError?.code } };
+  return {
+    error: {
+      message: lastError?.message || "Failed to create infringement",
+      code: lastError?.code,
+    },
+  };
 }
 
 export async function updateInfringement(
   id: string,
-  updates: Partial<Infringement>
+  updates: Partial<Infringement>,
 ): Promise<ApiResponse<Infringement>> {
   const { data, error } = await supabase
-    .from('infringements')
+    .from("infringements")
     .update(updates as any)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -250,29 +267,39 @@ export async function updateInfringement(
 // -----------------------------------------------------
 
 export async function searchDriverByLicense(
-  licenseNumber: string
+  licenseNumber: string,
 ): Promise<ApiResponse<Driver>> {
   const { data, error } = await supabase
-    .from('drivers')
-    .select('*')
-    .eq('license_number', licenseNumber)
+    .from("drivers")
+    .select("*")
+    .eq("license_number", licenseNumber)
     .single();
 
-  if (error && error.code !== 'PGRST116') {
+  if (error && error.code !== "PGRST116") {
     // PGRST116 = not found, which is expected
     return { error: { message: error.message, code: error.code } };
   }
 
-  return { data: (data as unknown) as Driver };
+  return { data: data as unknown as Driver };
 }
 
-export async function searchDriver(licenseNumber: string): Promise<ApiResponse<Driver>> {
+export async function getDriverById(
+  driverId: string,
+): Promise<ApiResponse<Driver>> {
+  return fetchOne<Driver>("drivers", driverId);
+}
+
+export async function searchDriver(
+  licenseNumber: string,
+): Promise<ApiResponse<Driver>> {
   return searchDriverByLicense(licenseNumber);
 }
 
-export async function createDriver(driver: NewDriver): Promise<ApiResponse<Driver>> {
+export async function createDriver(
+  driver: NewDriver,
+): Promise<ApiResponse<Driver>> {
   const { data, error } = await supabase
-    .from('drivers')
+    .from("drivers")
     .insert(driver as any)
     .select()
     .single();
@@ -284,10 +311,12 @@ export async function createDriver(driver: NewDriver): Promise<ApiResponse<Drive
   return { data: data as Driver };
 }
 
-export async function upsertDriver(driver: NewDriver): Promise<ApiResponse<Driver>> {
+export async function upsertDriver(
+  driver: NewDriver,
+): Promise<ApiResponse<Driver>> {
   const { data, error } = await supabase
-    .from('drivers')
-    .upsert(driver as any, { onConflict: 'license_number' })
+    .from("drivers")
+    .upsert(driver as any, { onConflict: "license_number" })
     .select()
     .single();
 
@@ -303,28 +332,38 @@ export async function upsertDriver(driver: NewDriver): Promise<ApiResponse<Drive
 // -----------------------------------------------------
 
 export async function searchVehicleByPlate(
-  plateNumber: string
+  plateNumber: string,
 ): Promise<ApiResponse<Vehicle>> {
   const { data, error } = await supabase
-    .from('vehicles')
-    .select('*')
-    .eq('plate_number', plateNumber)
+    .from("vehicles")
+    .select("*")
+    .eq("plate_number", plateNumber)
     .single();
 
-  if (error && error.code !== 'PGRST116') {
+  if (error && error.code !== "PGRST116") {
     return { error: { message: error.message, code: error.code } };
   }
 
-  return { data: (data as unknown) as Vehicle };
+  return { data: data as unknown as Vehicle };
 }
 
-export async function searchVehicle(plateNumber: string): Promise<ApiResponse<Vehicle>> {
+export async function getVehicleById(
+  vehicleId: string,
+): Promise<ApiResponse<Vehicle>> {
+  return fetchOne<Vehicle>("vehicles", vehicleId);
+}
+
+export async function searchVehicle(
+  plateNumber: string,
+): Promise<ApiResponse<Vehicle>> {
   return searchVehicleByPlate(plateNumber);
 }
 
-export async function createVehicle(vehicle: NewVehicle): Promise<ApiResponse<Vehicle>> {
+export async function createVehicle(
+  vehicle: NewVehicle,
+): Promise<ApiResponse<Vehicle>> {
   const { data, error } = await supabase
-    .from('vehicles')
+    .from("vehicles")
     .insert(vehicle as any)
     .select()
     .single();
@@ -336,10 +375,12 @@ export async function createVehicle(vehicle: NewVehicle): Promise<ApiResponse<Ve
   return { data: data as Vehicle };
 }
 
-export async function upsertVehicle(vehicle: NewVehicle): Promise<ApiResponse<Vehicle>> {
+export async function upsertVehicle(
+  vehicle: NewVehicle,
+): Promise<ApiResponse<Vehicle>> {
   const { data, error } = await supabase
-    .from('vehicles')
-    .upsert(vehicle as any, { onConflict: 'plate_number' })
+    .from("vehicles")
+    .upsert(vehicle as any, { onConflict: "plate_number" })
     .select()
     .single();
 
@@ -356,10 +397,10 @@ export async function upsertVehicle(vehicle: NewVehicle): Promise<ApiResponse<Ve
 
 export async function getActiveOffences(): Promise<ApiResponse<Offence[]>> {
   const { data, error } = await supabase
-    .from('offences')
-    .select('*')
-    .eq('active', true)
-    .order('name');
+    .from("offences")
+    .select("*")
+    .eq("active", true)
+    .order("name");
 
   if (error) {
     return { error: { message: error.message, code: error.code } };
@@ -368,21 +409,33 @@ export async function getActiveOffences(): Promise<ApiResponse<Offence[]>> {
   return { data: data as Offence[] };
 }
 
+export async function getOffenceCategories(): Promise<
+  ApiResponse<OffenceCategory[]>
+> {
+  const { data, error } = await supabase
+    .from("offence_categories")
+    .select("*")
+    .order("name");
+
+  if (error) {
+    return { error: { message: error.message, code: error.code } };
+  }
+
+  return { data: data as OffenceCategory[] };
+}
+
 export async function getOffences(options?: {
   active?: boolean;
   agency_type?: string;
   limit?: number;
 }): Promise<ApiResponse<Offence[]>> {
-  let query = supabase
-    .from('offences')
-    .select('*')
-    .order('name');
+  let query = supabase.from("offences").select("*").order("name");
 
   if (options?.active !== undefined) {
-    query = query.eq('active', options.active);
+    query = query.eq("active", options.active);
   }
   if (options?.agency_type) {
-    query = query.eq('agency_type', options.agency_type);
+    query = query.eq("agency_type", options.agency_type);
   }
   if (options?.limit) {
     query = query.limit(options.limit);
@@ -397,11 +450,13 @@ export async function getOffences(options?: {
   return { data: data as Offence[] };
 }
 
-export async function getOffenceByCode(code: string): Promise<ApiResponse<Offence>> {
+export async function getOffenceByCode(
+  code: string,
+): Promise<ApiResponse<Offence>> {
   const { data, error } = await supabase
-    .from('offences')
-    .select('*')
-    .eq('code', code)
+    .from("offences")
+    .select("*")
+    .eq("code", code)
     .single();
 
   if (error) {
@@ -418,7 +473,7 @@ export async function getOffenceByCode(code: string): Promise<ApiResponse<Offenc
 export async function uploadEvidenceFile(
   infringementId: string,
   fileUri: string,
-  fileType: string
+  fileType: string,
 ): Promise<ApiResponse<EvidenceFile>> {
   try {
     // 1. Upload file to Supabase Storage (read from filesystem to avoid RN fetch issues)
@@ -430,14 +485,18 @@ export async function uploadEvidenceFile(
     const fileBuffer = decode(base64);
 
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('evidence')
+      .from("evidence")
       .upload(fileName, fileBuffer, {
         contentType: fileType,
         upsert: false,
       });
 
     if (uploadError || !uploadData) {
-      return { error: { message: uploadError?.message || 'Failed to upload evidence file' } };
+      return {
+        error: {
+          message: uploadError?.message || "Failed to upload evidence file",
+        },
+      };
     }
 
     // 2. Create evidence file record
@@ -448,7 +507,7 @@ export async function uploadEvidenceFile(
     };
 
     const { data, error } = await supabase
-      .from('evidence_files')
+      .from("evidence_files")
       .insert(evidenceFile as any)
       .select()
       .single();
@@ -459,17 +518,19 @@ export async function uploadEvidenceFile(
 
     return { data: data as EvidenceFile };
   } catch (err: any) {
-    return { error: { message: err?.message || 'Unexpected error uploading evidence' } };
+    return {
+      error: { message: err?.message || "Unexpected error uploading evidence" },
+    };
   }
 }
 
 export async function getEvidenceFiles(
-  infringementId: string
+  infringementId: string,
 ): Promise<ApiResponse<EvidenceFile[]>> {
   const { data, error } = await supabase
-    .from('evidence_files')
-    .select('*')
-    .eq('infringement_id', infringementId);
+    .from("evidence_files")
+    .select("*")
+    .eq("infringement_id", infringementId);
 
   if (error) {
     return { error: { message: error.message, code: error.code } };
@@ -479,9 +540,7 @@ export async function getEvidenceFiles(
 }
 
 export async function getEvidenceFileUrl(filePath: string): Promise<string> {
-  const { data } = supabase.storage
-    .from('evidence')
-    .getPublicUrl(filePath);
+  const { data } = supabase.storage.from("evidence").getPublicUrl(filePath);
 
   return data.publicUrl;
 }
@@ -491,30 +550,34 @@ export async function getEvidenceFileUrl(filePath: string): Promise<string> {
 // -----------------------------------------------------
 
 export async function getLocations(): Promise<ApiResponse<Location[]>> {
-  return fetchMany<Location>('locations', {
-    orderBy: 'name',
+  return fetchMany<Location>("locations", {
+    orderBy: "name",
     ascending: true,
   });
 }
 
-export async function getLocationById(id: string): Promise<ApiResponse<Location>> {
-  return fetchOne<Location>('locations', id);
+export async function getLocationById(
+  id: string,
+): Promise<ApiResponse<Location>> {
+  return fetchOne<Location>("locations", id);
 }
 
 // -----------------------------------------------------
 // Team Queries
 // -----------------------------------------------------
 
-export async function getTeamMembers(teamId: string): Promise<ApiResponse<User[]>> {
-  return fetchMany<User>('users', {
+export async function getTeamMembers(
+  teamId: string,
+): Promise<ApiResponse<User[]>> {
+  return fetchMany<User>("users", {
     filter: { team_id: teamId },
-    orderBy: 'display_name',
+    orderBy: "display_name",
   });
 }
 
 export async function getTeamInfringements(
   teamId: string,
-  options?: { limit?: number; offset?: number }
+  options?: { limit?: number; offset?: number },
 ): Promise<ApiResponse<Infringement[]>> {
   return getInfringements({
     team_id: teamId,
@@ -527,8 +590,8 @@ export async function getTeamInfringements(
 // -----------------------------------------------------
 
 export async function getAgencies(): Promise<ApiResponse<Agency[]>> {
-  return fetchMany<Agency>('agencies', {
-    orderBy: 'name',
+  return fetchMany<Agency>("agencies", {
+    orderBy: "name",
   });
 }
 
@@ -538,20 +601,20 @@ export async function getAgencies(): Promise<ApiResponse<Agency[]>> {
 
 export function subscribeToInfringements(
   callback: (payload: any) => void,
-  filter?: { officer_id?: string; team_id?: string }
+  filter?: { officer_id?: string; team_id?: string },
 ) {
-  let channel = supabase
-    .channel('infringements-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'infringements',
-        filter: filter?.officer_id ? `officer_id=eq.${filter.officer_id}` : undefined,
-      },
-      callback
-    );
+  let channel = supabase.channel("infringements-changes").on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "infringements",
+      filter: filter?.officer_id
+        ? `officer_id=eq.${filter.officer_id}`
+        : undefined,
+    },
+    callback,
+  );
 
   channel.subscribe();
 
@@ -568,25 +631,24 @@ export async function getTeamStats(teamId: string) {
   // This would typically call a Supabase Edge Function or use RPC
   // For now, return basic stats
   const { data: infringements } = await getTeamInfringements(teamId);
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  const todayCount = infringements?.filter(i => 
-    new Date(i.issued_at) >= today
-  ).length || 0;
+
+  const todayCount =
+    infringements?.filter((i) => new Date(i.issued_at) >= today).length || 0;
 
   const weekAgo = new Date(today);
   weekAgo.setDate(weekAgo.getDate() - 7);
-  
-  const weekCount = infringements?.filter(i => 
-    new Date(i.issued_at) >= weekAgo
-  ).length || 0;
+
+  const weekCount =
+    infringements?.filter((i) => new Date(i.issued_at) >= weekAgo).length || 0;
 
   return {
     total_infringements: infringements?.length || 0,
     today_infringements: todayCount,
     week_infringements: weekCount,
-    pending_approvals: infringements?.filter(i => i.status === 'pending').length || 0,
+    pending_approvals:
+      infringements?.filter((i) => i.status === "pending").length || 0,
   };
 }

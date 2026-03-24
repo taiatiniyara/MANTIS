@@ -1,196 +1,175 @@
 # Getting Started with MANTIS
 
-This guide will help you get MANTIS up and running on your local development environment.
+This guide helps you run MANTIS locally for both the website and the mobile app.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
-
-- **Node.js** (v18 or higher)
-- **npm** (v9 or higher) or **yarn**
+- **Node.js** 18+ (includes npm)
 - **Git**
 - **Supabase account** (for backend services)
 - A modern web browser (Chrome, Firefox, Safari, or Edge)
 
 ## Installation
 
-### 1. Clone the Repository
+### 1) Clone the Repository
 
 ```bash
 git clone https://github.com/your-org/mantis.git
-cd mantis
+cd MANTIS
 ```
 
-### 2. Choose Your App
+### 2) Pick the app to run
 
-MANTIS consists of two applications:
+- **Website** – React + Vite PWA
+- **Mobile** – Expo + React Native
 
-- **Website** - React + Vite PWA for desktop/browser-based operations
-- **Mobile** - Expo + React Native for field officers on iOS/Android
+---
 
 ## Website Setup
 
-### 1. Navigate to Website Directory
+1) **Move into the web workspace**
 
 ```bash
 cd website
 ```
 
-### 2. Install Dependencies
+2) **Install dependencies**
 
 ```bash
 npm install
 ```
 
-### 3. Environment Configuration
+3) **Create the env file**
 
-Create a `.env` file in the `website` directory:
-
-```bash
-cp .env.example .env
-```
-
-Add your Supabase credentials:
+Create `website/.env` and add your Supabase publishable credentials:
 
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_anon_or_publishable_key
 ```
 
-**⚠️ Important:** Never commit the `.env` file to version control. The `.env.example` file should contain placeholder values only.
+> There is no `.env.example` for the website; create this file manually and never commit real keys.
 
-### 4. Database Setup
-
-If you're setting up a new Supabase project, run the database migrations:
+4) **(Optional) Push database schema to Supabase**
 
 ```bash
 npm run db-push
 ```
 
-This will:
-- Create all necessary tables
-- Set up Row Level Security (RLS) policies
-- Configure PostGIS extensions
-- Initialize the location hierarchy
+This uses Drizzle to push the schema defined in `src/lib/supabase/schema.ts`.
 
-### 5. Start Development Server
+5) **Start the dev server**
 
 ```bash
 npm run dev
 ```
 
-The website will be available at `http://localhost:5173`
+Open http://localhost:5173.
+
+---
 
 ## Mobile App Setup
 
-### 1. Navigate to Mobile Directory
+1) **Move into the mobile workspace**
 
 ```bash
 cd mobile
 ```
 
-### 2. Install Dependencies
+2) **Install dependencies**
 
 ```bash
 npm install
 ```
 
-### 3. Environment Configuration
-
-Create a `.env.local` file in the `mobile` directory:
+3) **Configure environment**
 
 ```bash
 cp .env.example .env.local
 ```
 
-Add your Supabase credentials:
+Update the values:
 
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_KEY=your-anon-key
+EXPO_PUBLIC_SUPABASE_KEY=your-anon-or-publishable-key
 ```
 
-**⚠️ Important:** These are public keys (safe to expose). Never add service role keys to the mobile app.
+> Only use the Supabase **anon/publishable** key in the mobile app—never the service role key.
 
-### 4. Install Expo CLI
+4) **Start Expo**
 
 ```bash
-npm install -g expo-cli
+npm run start
 ```
 
-### 5. Start Development Server
-
-```bash
-npm start
-```
-
-Then choose your target:
-- Press `i` for iOS Simulator (Mac only)
+Then:
+- Press `i` for iOS Simulator (macOS only)
 - Press `a` for Android Emulator
-- Scan the QR code with **Expo Go** app on your physical device
+- Or scan the QR code with **Expo Go** on a device
 
-For detailed mobile setup, see [10-mobile-app.md](./10-mobile-app.md).
+See [../mobile/quickstart.md](../mobile/quickstart.md) for more mobile details.
+
+---
 
 ## First-Time Setup
 
 ### Create Your First User
 
-1. Navigate to `http://localhost:5173/auth/register`
-2. Create an account with your email
-3. Check your email for verification link
-4. After verification, you'll need a Super Admin to assign your role
+1. Visit http://localhost:5173/auth/register
+2. Sign up with your email
+3. Verify your email
+4. Have a Super Admin assign your role
 
 ### Super Admin Bootstrap
 
-For the first Super Admin user:
+1. Create a user through the registration flow
+2. In Supabase Table Editor, open `users`
+3. Set that user's `role` to `"Super Admin"`
+4. Assign or create an agency for the user
 
-1. Create a user account through the registration flow
-2. In your Supabase dashboard, navigate to the `users` table
-3. Update the newly created user's `role` field to `"Super Admin"`
-4. Assign an agency (you may need to create one first in the `agencies` table)
+---
 
 ## Verify Installation
 
-To verify everything is working correctly:
+- **Auth**: Log in and confirm a session is created
+- **Database**: Confirm dashboard data loads
+- **PWA**: Check Application → Manifest in DevTools
+- **Offline**: Toggle offline in DevTools → Network and verify cached data
 
-1. **Authentication**: Try logging in with your credentials
-2. **Database Connection**: Check if data loads on the dashboard
-3. **PWA Features**: Open DevTools → Application → Manifest
-4. **Offline Mode**: Toggle offline mode in DevTools → Network
+---
 
 ## Common Setup Issues
 
-### Build Errors
-
-If you encounter build errors:
+### Build errors
 
 ```bash
-# Clear cache and reinstall
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Database Connection Issues
+### Database connection issues
 
-- Verify your Supabase URL and anon key are correct
-- Check that your Supabase project is active
-- Ensure RLS policies are properly configured
+- Verify Supabase URL and key values
+- Confirm the Supabase project is active
+- Ensure RLS policies are configured in Supabase
 
-### Port Already in Use
-
-If port 5173 is already in use:
+### Port already in use
 
 ```bash
-# Use a different port
 npm run dev -- --port 3000
 ```
 
+---
+
 ## Next Steps
 
-- Read the [Architecture Overview](./02-architecture.md)
-- Explore the [Data Model](./04-data-model.md)
-- Learn about [Officer Workflows](./08-officer-workflows.md)
-- Set up [Development Environment](./18-development-setup.md)
+- Architecture: [../architecture/system-architecture.md](../architecture/system-architecture.md)
+- Data model: [../architecture/data-model.md](../architecture/data-model.md)
+- Mobile workflows: [../mobile/app-overview.md](../mobile/app-overview.md)
+- Troubleshooting: [./troubleshooting.md](./troubleshooting.md)
+
+---
 
 ## Development Commands
 
@@ -200,9 +179,9 @@ npm run dev -- --port 3000
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
-| `npm run db-push` | Push schema changes to database |
-| `npm run deploy` | Full deployment (install, build, deploy) |
+| `npm run db-push` | Push schema changes to Supabase |
+| `npm run deploy` | Install, build, deploy (web) |
 
 ---
 
-**Need Help?** Check the [Troubleshooting Guide](./27-troubleshooting.md) or open an issue on GitHub.
+Need help? See [./troubleshooting.md](./troubleshooting.md) or open an issue.

@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, Switch, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, Switch, ActivityIndicator, AccessibilityInfo } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -25,6 +25,7 @@ export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [sessionTimeout] = useState(15);
@@ -100,22 +101,33 @@ export default function ProfileScreen() {
   }, [checkBiometric, loadOfflineMode]);
 
   const handleSignOut = () => {
+    if (signingOut) return;
+
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await signOut();
+          try {
+            setSigningOut(true);
+            AccessibilityInfo.announceForAccessibility('Signing out. Please wait.');
+            await signOut();
+          } finally {
+            setSigningOut(false);
+          }
         },
       },
     ]);
   };
 
   const handleManualSync = async () => {
+    if (syncing || syncStats.queueCount === 0) return;
     setSyncing(true);
     try {
+      AccessibilityInfo.announceForAccessibility('Sync started.');
       const result = await syncPendingData();
+      AccessibilityInfo.announceForAccessibility(`Sync complete. ${result.success} successful, ${result.failed} failed.`);
       Alert.alert(
         'Sync Complete',
         `Successfully synced: ${result.success}\nFailed: ${result.failed}`,
@@ -123,6 +135,7 @@ export default function ProfileScreen() {
       );
     } catch (error) {
       console.error('Sync error:', error);
+      AccessibilityInfo.announceForAccessibility('Sync failed.');
       Alert.alert('Sync Error', 'Failed to sync pending data');
     } finally {
       setSyncing(false);
@@ -141,6 +154,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             await clearSyncQueue();
             await queryClient.invalidateQueries({ queryKey: queryKeys.syncStats });
+            AccessibilityInfo.announceForAccessibility('Sync queue cleared.');
             Alert.alert('Success', 'Sync queue cleared');
           },
         },
@@ -160,6 +174,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             await clearAllDrafts();
             await queryClient.invalidateQueries({ queryKey: queryKeys.syncStats });
+            AccessibilityInfo.announceForAccessibility('All drafts cleared.');
             Alert.alert('Success', 'All drafts cleared');
           },
         },
@@ -170,6 +185,7 @@ export default function ProfileScreen() {
   const handleOfflineModeToggle = async (value: boolean) => {
     setOfflineMode(value);
     await setOfflineModeStorage(value);
+    AccessibilityInfo.announceForAccessibility(value ? 'Offline mode enabled.' : 'Offline mode disabled.');
   };
 
   const handleBiometricToggle = async (value: boolean) => {
@@ -182,6 +198,7 @@ export default function ProfileScreen() {
           return;
         }
         setBiometricEnabled(true);
+        AccessibilityInfo.announceForAccessibility('Biometric login enabled.');
         Alert.alert('Biometric Enabled', 'You can now use biometric authentication to sign in');
       } catch (error) {
         console.error('Error enabling biometrics:', error);
@@ -189,6 +206,7 @@ export default function ProfileScreen() {
       }
     } else {
       setBiometricEnabled(false);
+      AccessibilityInfo.announceForAccessibility('Biometric login disabled.');
     }
   };
 
@@ -311,6 +329,9 @@ export default function ProfileScreen() {
               style={[styles.syncActionButton, { backgroundColor: colors.tint }]}
               onPress={handleManualSync}
               disabled={syncing || syncStats.queueCount === 0}
+              accessibilityRole="button"
+              accessibilityLabel="Sync pending data now"
+              accessibilityState={{ disabled: syncing || syncStats.queueCount === 0, busy: syncing }}
             >
               {syncing ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -326,6 +347,8 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={[styles.dangerButton, { borderColor: '#f44336' }]}
               onPress={handleClearSyncQueue}
+              accessibilityRole="button"
+              accessibilityLabel="Clear sync queue"
             >
               <ThemedText style={[styles.dangerButtonText, { color: '#f44336' }]}>
                 Clear Sync Queue
@@ -337,6 +360,8 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={[styles.dangerButton, { borderColor: '#f44336' }]}
               onPress={handleClearDrafts}
+              accessibilityRole="button"
+              accessibilityLabel="Clear all drafts"
             >
               <ThemedText style={[styles.dangerButtonText, { color: '#f44336' }]}>
                 Clear All Drafts
@@ -361,6 +386,8 @@ export default function ProfileScreen() {
                 onValueChange={setNotificationsEnabled}
                 trackColor={{ false: '#767577', true: colors.tint }}
                 thumbColor={notificationsEnabled ? '#fff' : '#f4f3f4'}
+                accessibilityLabel="Notifications"
+                accessibilityRole="switch"
               />
             </View>
             <View style={styles.settingRow}>
@@ -373,6 +400,8 @@ export default function ProfileScreen() {
                 onValueChange={handleOfflineModeToggle}
                 trackColor={{ false: '#767577', true: colors.tint }}
                 thumbColor={offlineMode ? '#fff' : '#f4f3f4'}
+                accessibilityLabel="Offline mode"
+                accessibilityRole="switch"
               />
             </View>
             {biometricAvailable && (
@@ -386,6 +415,8 @@ export default function ProfileScreen() {
                   onValueChange={handleBiometricToggle}
                   trackColor={{ false: '#767577', true: colors.tint }}
                   thumbColor={biometricEnabled ? '#fff' : '#f4f3f4'}
+                  accessibilityLabel="Biometric login"
+                  accessibilityRole="switch"
                 />
               </View>
             )}
@@ -408,6 +439,8 @@ export default function ProfileScreen() {
             onPress={() => {
               Alert.alert('Help & Support', 'Contact: support@mantis.app\nPhone: +1-800-MANTIS');
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Help and support"
           >
             <View style={styles.menuItemContent}>
               <ThemedText>❓ Help & Support</ThemedText>
@@ -422,6 +455,8 @@ export default function ProfileScreen() {
                 'Mobile Application for Network Traffic Infringement System\n\nVersion 1.0.0\n\n© 2026 MANTIS Team'
               );
             }}
+            accessibilityRole="button"
+            accessibilityLabel="About MANTIS"
           >
             <View style={styles.menuItemContent}>
               <ThemedText>ℹ️ About MANTIS</ThemedText>
@@ -434,6 +469,10 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={[styles.signOutButton, { backgroundColor: '#f44336' }]}
           onPress={handleSignOut}
+          disabled={signingOut}
+          accessibilityRole="button"
+          accessibilityLabel={signingOut ? 'Signing out' : 'Sign out'}
+          accessibilityState={{ disabled: signingOut, busy: signingOut }}
         >
           <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
         </TouchableOpacity>

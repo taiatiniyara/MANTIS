@@ -396,4 +396,4 @@ For a medium-sized agency (500 officers, 50,000 infringements/year):
 
 ---
 
-**Next:** [GIS & Locations](./05-gis-locations.md)
+**Next:** [GIS & Locations](./gis-locations.md)

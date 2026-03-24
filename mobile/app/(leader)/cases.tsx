@@ -10,6 +10,7 @@ import {
   StyleSheet,
   RefreshControl,
   TextInput,
+  AccessibilityInfo,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
@@ -70,6 +71,8 @@ export default function CasesListScreen() {
   }, [cases, filter, searchQuery]);
 
   const onRefresh = () => {
+    if (isFetching) return;
+    AccessibilityInfo.announceForAccessibility('Refreshing cases list.');
     refetch();
   };
 
@@ -83,6 +86,8 @@ export default function CasesListScreen() {
           placeholderTextColor={colors.icon}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          accessibilityLabel="Search cases by offence code"
+          returnKeyType="search"
         />
       </View>
 
@@ -99,6 +104,9 @@ export default function CasesListScreen() {
             filter === 'all' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('all')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter all cases"
+          accessibilityState={{ selected: filter === 'all' }}
         >
           <ThemedText
             style={[styles.filterText, filter === 'all' && styles.filterTextActive]}
@@ -112,6 +120,9 @@ export default function CasesListScreen() {
             filter === 'pending' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('pending')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter pending cases"
+          accessibilityState={{ selected: filter === 'pending' }}
         >
           <ThemedText
             style={[
@@ -128,6 +139,9 @@ export default function CasesListScreen() {
             filter === 'approved' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('approved')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter approved cases"
+          accessibilityState={{ selected: filter === 'approved' }}
         >
           <ThemedText
             style={[

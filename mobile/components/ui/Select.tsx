@@ -33,6 +33,7 @@ interface SelectProps {
   containerStyle?: ViewStyle;
   labelStyle?: TextStyle;
   errorStyle?: TextStyle;
+  accessibilityLabel?: string;
 }
 
 export function Select({
@@ -46,10 +47,13 @@ export function Select({
   containerStyle,
   labelStyle,
   errorStyle,
+  accessibilityLabel,
 }: SelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isFocused, setIsFocused] = React.useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const derivedA11yLabel = accessibilityLabel ?? label ?? placeholder;
 
   const selectedOption = options.find(option => option.value === value);
 
@@ -59,7 +63,7 @@ export function Select({
       backgroundColor: colorScheme === 'dark'
         ? `${colors.input}33`
         : colors.background,
-      borderColor: error ? colors.destructive : colors.input,
+      borderColor: error ? colors.destructive : isFocused || isOpen ? colors.ring : colors.input,
     },
     ...(disabled ? [styles.disabled] : []),
     Shadows.xs,
@@ -81,6 +85,15 @@ export function Select({
         style={triggerStyles}
         onPress={() => !disabled && setIsOpen(true)}
         disabled={disabled}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        accessibilityRole="button"
+        accessibilityLabel={derivedA11yLabel}
+        accessibilityHint={error ? `Error: ${error}` : undefined}
+        accessibilityState={{
+          disabled,
+          expanded: isOpen,
+        }}
       >
         <Text
           style={[
@@ -105,6 +118,8 @@ export function Select({
           style={styles.overlay}
           activeOpacity={1}
           onPress={() => setIsOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close options"
         >
           <View
             style={[
@@ -129,6 +144,9 @@ export function Select({
                     },
                   ]}
                   onPress={() => handleSelect(item.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: item.value === value }}
                 >
                   <Text
                     style={[
@@ -164,10 +182,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   trigger: {
-    height: 36,
+    minHeight: 44,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -208,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    minHeight: 40,
+    minHeight: 44,
   },
   optionText: {
     flex: 1,

@@ -1,0 +1,101 @@
+name: Mobile Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+
+jobs:
+  guard-and-lint:
+    name: Guard and Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets['EXPO_PUBLIC_SUPABASE_URL'] }}
+      EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets['EXPO_PUBLIC_SUPABASE_KEY'] }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Release guard
+        run: npm run release:check
+
+      - name: Lint
+        run: npm run lint
+
+  build-ios:
+    name: Build iOS (production)
+    runs-on: ubuntu-latest
+    needs: guard-and-lint
+    if: github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'ios'
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets['EXPO_TOKEN'] }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build iOS
+        run: npx eas build --platform ios --profile production --non-interactive --no-wait
+
+  build-android:
+    name: Build Android (production)
+    runs-on: ubuntu-latest
+    needs: guard-and-lint
+    if: github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android'
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets['EXPO_TOKEN'] }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Android
+        run: npx eas build --platform android --profile production --non-interactive --no-wait

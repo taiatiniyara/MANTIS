@@ -2,7 +2,13 @@
  * MANTIS Mobile - Create Infringement Screen
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   View,
   ScrollView,
@@ -14,31 +20,47 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-} from 'react-native';
-import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useAuth } from '@/contexts/AuthContext';
-import { addToSyncQueue, getDraft, isOfflineMode } from '@/lib/offline';
-import * as Network from 'expo-network';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { createInfringement, getOffences, upsertDriver, upsertVehicle, uploadEvidenceFile } from '@/lib/database';
-import { NewInfringement, Offence, GeoJSONPoint, NewDriver, NewVehicle } from '@/lib/types';
-import { formatCurrency, generateTin } from '@/lib/formatting';
-import OSMMap from '@/components/OSMMap';
-import { addWatermarkToImage, WatermarkData } from '@/lib/watermark';
-import { WatermarkedImage } from '@/components/WatermarkedImage';
-import { queryKeys } from '@/lib/queryKeys';
-import ViewShot, { CaptureOptions } from 'react-native-view-shot';
+  AccessibilityInfo,
+} from "react-native";
+import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
+import { useLocalSearchParams } from "expo-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Select } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
+import { addToSyncQueue, getDraft, isOfflineMode } from "@/lib/offline";
+import * as Network from "expo-network";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  createInfringement,
+  getOffenceCategories,
+  getOffences,
+  upsertDriver,
+  upsertVehicle,
+  uploadEvidenceFile,
+} from "@/lib/database";
+import {
+  NewInfringement,
+  Offence,
+  OffenceCategory,
+  GeoJSONPoint,
+  NewDriver,
+  NewVehicle,
+} from "@/lib/types";
+import { formatCurrency, generateTin } from "@/lib/formatting";
+import OSMMap from "@/components/OSMMap";
+import { addWatermarkToImage, WatermarkData } from "@/lib/watermark";
+import { WatermarkedImage } from "@/components/WatermarkedImage";
+import { queryKeys } from "@/lib/queryKeys";
+import ViewShot, { CaptureOptions } from "react-native-view-shot";
 
 const DEFAULT_CAPTURE_OPTIONS: CaptureOptions = {
-  format: 'jpg',
+  format: "jpg",
   quality: 0.92,
-  result: 'tmpfile',
+  result: "tmpfile",
 };
 
 interface PhotoItem {
@@ -51,9 +73,11 @@ interface PhotoItem {
   height?: number;
 }
 
+const UNCATEGORIZED_CATEGORY_VALUE = "__uncategorized__";
+
 export default function CreateInfringementScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? "light"];
   const { user } = useAuth();
   const params = useLocalSearchParams();
   const draftId = params.draftId as string | undefined;
@@ -64,89 +88,112 @@ export default function CreateInfringementScreen() {
   const [tin] = useState<string>(() => tinParam || generateTin());
 
   // Form state
-  const [step, setStep] = useState<'offence' | 'driver' | 'vehicle' | 'location' | 'evidence' | 'review'>('offence');
   const offencesQuery = useQuery({
     queryKey: queryKeys.offencesActive,
     queryFn: async () => {
       const { data, error } = await getOffences({ active: true });
       if (error) {
-        throw new Error(error.message || 'Failed to load offences');
+        throw new Error(error.message || "Failed to load offences");
       }
       return data ?? [];
     },
     staleTime: 1000 * 60 * 5,
   });
 
-  const loading = offencesQuery.isPending;
+  const offenceCategoriesQuery = useQuery({
+    queryKey: ["offence-categories"],
+    queryFn: async () => {
+      const { data, error } = await getOffenceCategories();
+      if (error) {
+        throw new Error(error.message || "Failed to load offence categories");
+      }
+      return data ?? [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const loading = offencesQuery.isPending || offenceCategoriesQuery.isPending;
   const queryClient = useQueryClient();
   const viewShotRefs = useRef<Record<string, ViewShot | null>>({});
   const viewShotReady = useRef<Record<string, boolean>>({});
   const scrollRef = useRef<ScrollView>(null);
+  const submitLockRef = useRef(false);
 
-  const waitForLayout = async (ms = 260) => new Promise(resolve => setTimeout(resolve, ms));
+  const waitForLayout = async (ms = 260) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   const prepareWatermarkedPhotos = useCallback(async (items: PhotoItem[]) => {
     // Give React a moment to mount hidden ViewShot surfaces before capture
     await waitForLayout();
 
-    const prepared = await Promise.all(items.map(async (photo) => {
-      if (!photo.watermarkData) return photo;
+    const prepared = await Promise.all(
+      items.map(async (photo) => {
+        if (!photo.watermarkData) return photo;
 
-      // Try to locate the ViewShot surface for this photo (use both processed and original keys)
-      const candidateKeys = [photo.processedUri, photo.uri].filter(Boolean) as string[];
-      let ref: ViewShot | null | undefined;
-      let captureKey: string | undefined;
+        // Try to locate the ViewShot surface for this photo (use both processed and original keys)
+        const candidateKeys = [photo.processedUri, photo.uri].filter(
+          Boolean,
+        ) as string[];
+        let ref: ViewShot | null | undefined;
+        let captureKey: string | undefined;
 
-      for (const key of candidateKeys) {
-        if (viewShotRefs.current[key]) {
-          ref = viewShotRefs.current[key];
-          captureKey = key;
-          break;
+        for (const key of candidateKeys) {
+          if (viewShotRefs.current[key]) {
+            ref = viewShotRefs.current[key];
+            captureKey = key;
+            break;
+          }
         }
-      }
 
-      if (!ref || !ref.capture || !captureKey) {
-        console.warn('Watermark capture ref not ready for photo', candidateKeys);
+        if (!ref || !ref.capture || !captureKey) {
+          console.warn(
+            "Watermark capture ref not ready for photo",
+            candidateKeys,
+          );
+          return photo;
+        }
+
+        // Wait until the ViewShot has laid out; retry a few times before giving up
+        for (let attempt = 0; attempt < 8; attempt++) {
+          if (viewShotReady.current[captureKey]) break;
+          await waitForLayout(260);
+        }
+
+        try {
+          let capturedUri: string | undefined | null;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            capturedUri = await ref.capture();
+            if (capturedUri) break;
+            await waitForLayout(180 + attempt * 40);
+          }
+
+          if (capturedUri) {
+            console.log("Watermark baked into image", {
+              captureKey,
+              capturedUri,
+            });
+            return { ...photo, processedUri: capturedUri };
+          }
+
+          console.warn("Watermark capture returned empty uri", captureKey);
+        } catch (error) {
+          console.error("Error capturing watermarked photo", error);
+        }
+
         return photo;
-      }
-
-      // Wait until the ViewShot has laid out; retry a few times before giving up
-      for (let attempt = 0; attempt < 8; attempt++) {
-        if (viewShotReady.current[captureKey]) break;
-        await waitForLayout(260);
-      }
-
-      try {
-        let capturedUri: string | undefined | null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          capturedUri = await ref.capture();
-          if (capturedUri) break;
-          await waitForLayout(180 + attempt * 40);
-        }
-
-        if (capturedUri) {
-          console.log('Watermark baked into image', { captureKey, capturedUri });
-          return { ...photo, processedUri: capturedUri };
-        }
-
-        console.warn('Watermark capture returned empty uri', captureKey);
-      } catch (error) {
-        console.error('Error capturing watermarked photo', error);
-      }
-
-      return photo;
-    }));
+      }),
+    );
 
     return prepared;
   }, []);
   const submittingMutation = useMutation({
     mutationFn: async (isDraft: boolean) => {
       if (!user || !selectedOffence) {
-        throw new Error('Missing required information');
+        throw new Error("Missing required information");
       }
 
       if (!isDraft && (!driverLicense || !vehiclePlate)) {
-        throw new Error('Driver license and vehicle plate are required');
+        throw new Error("Driver license and vehicle plate are required");
       }
 
       // Check if we should queue for later sync
@@ -159,15 +206,18 @@ export default function CreateInfringementScreen() {
       if (driverLicense) {
         const newDriver: NewDriver = {
           license_number: driverLicense,
-          full_name: 'Unknown', // Will be updated later when more info is available
+          full_name: "Unknown", // Will be updated later when more info is available
           address: null,
           dob: null,
         };
-        const { data: driver, error: driverError } = await upsertDriver(newDriver);
+        const { data: driver, error: driverError } =
+          await upsertDriver(newDriver);
         if (driver) {
           driver_id = driver.id;
         } else if (driverError) {
-          throw new Error(driverError.message || 'Failed to create/update driver');
+          throw new Error(
+            driverError.message || "Failed to create/update driver",
+          );
         }
       }
 
@@ -180,18 +230,26 @@ export default function CreateInfringementScreen() {
           color: null,
           owner_id: driver_id,
         };
-        const { data: vehicle, error: vehicleError } = await upsertVehicle(newVehicle);
+        const { data: vehicle, error: vehicleError } =
+          await upsertVehicle(newVehicle);
         if (vehicle) {
           vehicle_id = vehicle.id;
         } else if (vehicleError) {
-          throw new Error(vehicleError.message || 'Failed to create/update vehicle');
+          throw new Error(
+            vehicleError.message || "Failed to create/update vehicle",
+          );
         }
       }
 
-      const geoLocation: GeoJSONPoint | null = currentLocation ? {
-        type: 'Point',
-        coordinates: [currentLocation.coords.longitude, currentLocation.coords.latitude],
-      } : null;
+      const geoLocation: GeoJSONPoint | null = currentLocation
+        ? {
+            type: "Point",
+            coordinates: [
+              currentLocation.coords.longitude,
+              currentLocation.coords.latitude,
+            ],
+          }
+        : null;
 
       const newInfringement: NewInfringement = {
         agency_id: user.agency_id,
@@ -205,7 +263,7 @@ export default function CreateInfringementScreen() {
         fine_amount: selectedOffence.fixed_penalty,
         location: geoLocation ? JSON.stringify(geoLocation) : null,
         jurisdiction_location_id: null,
-        status: isDraft ? 'draft' : 'pending',
+        status: isDraft ? "draft" : "pending",
       };
 
       const preparedPhotos = await prepareWatermarkedPhotos(photos);
@@ -216,18 +274,20 @@ export default function CreateInfringementScreen() {
         const uploadUri = photo.processedUri || photo.uri;
 
         if (photo.watermarkData && !photo.processedUri) {
-          throw new Error('Watermark is still rendering. Please wait a moment and try again.');
+          throw new Error(
+            "Watermark is still rendering. Please wait a moment and try again.",
+          );
         }
 
         return { ...photo, uploadUri };
       });
 
       if (shouldQueue) {
-        await addToSyncQueue('infringement', newInfringement);
+        await addToSyncQueue("infringement", newInfringement);
         if (finalizedPhotos.length > 0) {
           for (const photo of finalizedPhotos) {
-            await addToSyncQueue('evidence', {
-              infringementId: 'pending',
+            await addToSyncQueue("evidence", {
+              infringementId: "pending",
               fileUri: photo.uploadUri,
               fileType: photo.type,
             });
@@ -238,24 +298,30 @@ export default function CreateInfringementScreen() {
 
       const { data, error } = await createInfringement(newInfringement);
       if (error || !data) {
-        throw new Error(error?.message || 'Failed to create infringement');
+        throw new Error(error?.message || "Failed to create infringement");
       }
 
       let photoWarning = false;
       if (finalizedPhotos.length > 0 && !isDraft) {
         try {
           const uploadResults = await Promise.all(
-            finalizedPhotos.map(photo =>
-              uploadEvidenceFile(data.id, photo.uploadUri, photo.type || 'image/jpeg')
-            )
+            finalizedPhotos.map((photo) =>
+              uploadEvidenceFile(
+                data.id,
+                photo.uploadUri,
+                photo.type || "image/jpeg",
+              ),
+            ),
           );
 
-          const failedUpload = uploadResults.find(result => result.error);
+          const failedUpload = uploadResults.find((result) => result.error);
           if (failedUpload) {
-            throw new Error(failedUpload.error?.message || 'Failed to upload evidence photo');
+            throw new Error(
+              failedUpload.error?.message || "Failed to upload evidence photo",
+            );
           }
         } catch (photoError) {
-          console.error('Error uploading photos:', photoError);
+          console.error("Error uploading photos:", photoError);
           photoWarning = true;
         }
       }
@@ -263,7 +329,9 @@ export default function CreateInfringementScreen() {
       return { queued: false, isDraft, photoWarning } as const;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.infringementsByOfficer(user?.id, 100) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.infringementsByOfficer(user?.id, 100),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
     },
   });
@@ -277,7 +345,7 @@ export default function CreateInfringementScreen() {
       const offline = await isOfflineMode();
       setIsOnline((networkState.isConnected ?? false) && !offline);
     } catch (error) {
-      console.error('Error checking network:', error);
+      console.error("Error checking network:", error);
     }
   }, []);
 
@@ -286,38 +354,118 @@ export default function CreateInfringementScreen() {
   }, [checkNetworkStatus]);
 
   // Offence
-  const offences = useMemo(() => offencesQuery.data ?? [], [offencesQuery.data]);
+  const offences = useMemo(
+    () => offencesQuery.data ?? [],
+    [offencesQuery.data],
+  );
+  const offenceCategories = useMemo<OffenceCategory[]>(
+    () => offenceCategoriesQuery.data ?? [],
+    [offenceCategoriesQuery.data],
+  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [selectedOffence, setSelectedOffence] = useState<Offence | null>(null);
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState("");
+
+  const categoryOptions = useMemo(() => {
+    const options = offenceCategories.map((category) => ({
+      label: category.name,
+      value: category.id,
+    }));
+
+    const hasUncategorizedOffences = offences.some(
+      (offence) => !offence.category_id,
+    );
+    if (hasUncategorizedOffences) {
+      options.push({
+        label: "Uncategorized",
+        value: UNCATEGORIZED_CATEGORY_VALUE,
+      });
+    }
+
+    return options;
+  }, [offenceCategories, offences]);
+
+  const filteredOffences = useMemo(() => {
+    if (!selectedCategoryId) {
+      return offences;
+    }
+
+    if (selectedCategoryId === UNCATEGORIZED_CATEGORY_VALUE) {
+      return offences.filter((offence) => !offence.category_id);
+    }
+
+    return offences.filter(
+      (offence) => offence.category_id === selectedCategoryId,
+    );
+  }, [offences, selectedCategoryId]);
+
+  const offenceOptions = useMemo(() => {
+    return filteredOffences.map((offence) => ({
+      label: `${offence.code} - ${offence.name} (${formatCurrency(offence.fixed_penalty)})`,
+      value: offence.id,
+    }));
+  }, [filteredOffences]);
+
+  useEffect(() => {
+    if (
+      selectedOffence &&
+      !filteredOffences.some((offence) => offence.id === selectedOffence.id)
+    ) {
+      setSelectedOffence(null);
+    }
+  }, [filteredOffences, selectedOffence]);
+
+  useEffect(() => {
+    if (!selectedOffence) {
+      return;
+    }
+
+    setSelectedCategoryId(
+      selectedOffence.category_id ?? UNCATEGORIZED_CATEGORY_VALUE,
+    );
+  }, [selectedOffence]);
 
   // Driver
-  const [driverLicense, setDriverLicense] = useState('');
+  const [driverLicense, setDriverLicense] = useState("");
 
   // Vehicle
-  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState("");
 
   // Location
-  const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
-  const [locationDescription, setLocationDescription] = useState('');
+  const [currentLocation, setCurrentLocation] =
+    useState<Location.LocationObject | null>(null);
+  const [locationDescription, setLocationDescription] = useState("");
   const [loadingLocation, setLoadingLocation] = useState(false);
 
   // Evidence
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
-  const buildWatermarkPayload = useCallback((): WatermarkData => ({
-    platformName: 'MANTIS',
-    tin,
-    officerName: user?.display_name || 'Unknown Officer',
-    agencyName: user?.agency?.name || 'Unknown Agency',
-    locationEnglish: locationDescription || undefined,
-    latitude: currentLocation?.coords.latitude,
-    longitude: currentLocation?.coords.longitude,
-    timestamp: new Date(),
-  }), [tin, user?.display_name, user?.agency?.name, locationDescription, currentLocation?.coords.latitude, currentLocation?.coords.longitude]);
+  const buildWatermarkPayload = useCallback(
+    (): WatermarkData => ({
+      platformName: "MANTIS",
+      tin,
+      officerName: user?.display_name || "Unknown Officer",
+      agencyName: user?.agency?.name || "Unknown Agency",
+      locationEnglish: locationDescription || undefined,
+      latitude: currentLocation?.coords.latitude,
+      longitude: currentLocation?.coords.longitude,
+      timestamp: new Date(),
+    }),
+    [
+      tin,
+      user?.display_name,
+      user?.agency?.name,
+      locationDescription,
+      currentLocation?.coords.latitude,
+      currentLocation?.coords.longitude,
+    ],
+  );
 
   // Automatically bake the watermark into a file as soon as a photo is added
   useEffect(() => {
-    const pending = photos.filter((photo) => photo.watermarkData && !photo.processedUri);
+    const pending = photos.filter(
+      (photo) => photo.watermarkData && !photo.processedUri,
+    );
     if (pending.length === 0) return;
 
     let cancelled = false;
@@ -326,15 +474,23 @@ export default function CreateInfringementScreen() {
       const processed = await prepareWatermarkedPhotos(pending);
       if (cancelled) return;
 
-      setPhotos((current) => current.map((photo) => {
-        // match by original uri (pre-processed) and current uri
-        const updated = processed.find((item) => item.uri === photo.uri || item.uri === photo.processedUri);
-        if (updated?.processedUri) {
-          // Replace the working URI so future previews and uploads use the baked version
-          return { ...photo, uri: updated.processedUri, processedUri: updated.processedUri };
-        }
-        return photo;
-      }));
+      setPhotos((current) =>
+        current.map((photo) => {
+          // match by original uri (pre-processed) and current uri
+          const updated = processed.find(
+            (item) => item.uri === photo.uri || item.uri === photo.processedUri,
+          );
+          if (updated?.processedUri) {
+            // Replace the working URI so future previews and uploads use the baked version
+            return {
+              ...photo,
+              uri: updated.processedUri,
+              processedUri: updated.processedUri,
+            };
+          }
+          return photo;
+        }),
+      );
     })();
 
     return () => {
@@ -343,20 +499,20 @@ export default function CreateInfringementScreen() {
   }, [photos, prepareWatermarkedPhotos]);
 
   const resetForm = useCallback(() => {
-    setStep('offence');
+    setSelectedCategoryId("");
     setSelectedOffence(null);
-    setDescription('');
-    setDriverLicense('');
-    setVehiclePlate('');
+    setDescription("");
+    setDriverLicense("");
+    setVehiclePlate("");
     setCurrentLocation(null);
-    setLocationDescription('');
+    setLocationDescription("");
     setPhotos([]);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
   const loadDraftData = useCallback(async () => {
     if (!draftId) return;
-    
+
     try {
       const draft = await getDraft(draftId);
       if (draft) {
@@ -364,18 +520,20 @@ export default function CreateInfringementScreen() {
         if (draft.data.offence_code) {
           // Will need to find and set the offence after offences are loaded
           setTimeout(() => {
-            const offence = offences.find(o => o.code === draft.data.offence_code);
+            const offence = offences.find(
+              (o) => o.code === draft.data.offence_code,
+            );
             if (offence) setSelectedOffence(offence);
           }, 500);
         }
-        
+
         if (draft.data.description) setDescription(draft.data.description);
-        
+
         // Parse location if exists
         if (draft.data.location) {
           try {
             const geoJSON = JSON.parse(draft.data.location);
-            if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+            if (geoJSON.type === "Point" && geoJSON.coordinates) {
               setCurrentLocation({
                 coords: {
                   latitude: geoJSON.coordinates[1],
@@ -390,151 +548,164 @@ export default function CreateInfringementScreen() {
               } as Location.LocationObject);
             }
           } catch (e) {
-            console.error('Error parsing location:', e);
+            console.error("Error parsing location:", e);
           }
         }
-        
+
         // Load photos
         if (draft.photos && draft.photos.length > 0) {
-          setPhotos(draft.photos.map(p => ({
-            uri: p.uri,
-            type: p.file_type,
-            name: `photo_${Date.now()}.jpg`,
-            width: (p as any).width,
-            height: (p as any).height,
-          })));
+          setPhotos(
+            draft.photos.map((p) => ({
+              uri: p.uri,
+              type: p.file_type,
+              name: `photo_${Date.now()}.jpg`,
+              width: (p as any).width,
+              height: (p as any).height,
+            })),
+          );
         }
       }
     } catch (error) {
-      console.error('Error loading draft:', error);
-      Alert.alert('Error', 'Failed to load draft data');
+      console.error("Error loading draft:", error);
+      Alert.alert("Error", "Failed to load draft data");
     }
   }, [draftId, offences]);
 
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
-  const reverseGeocodeAddress = useCallback(async (lat: number, lng: number) => {
-    const isAbortLike = (err: unknown) => {
-      const name = (err as any)?.name?.toString()?.toLowerCase();
-      const msg = (err as any)?.message?.toString()?.toLowerCase();
-      return name === 'aborterror' || msg?.includes('aborted');
-    };
-
-    const fetchWithTimeout = async (url: string, timeoutMs = 4000) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        // Avoid setting forbidden headers like User-Agent that can cause RN fetch to throw
-        return await fetch(url, { signal: controller.signal });
-      } finally {
-        clearTimeout(timer);
-      }
-    };
-
-    const parseNominatim = (data: any) => {
-      if (data?.display_name) return data.display_name as string;
-      if (data?.address) {
-        const parts = [
-          data.address.road,
-          data.address.suburb,
-          data.address.city || data.address.town,
-          data.address.country,
-        ].filter(Boolean);
-        if (parts.length) return parts.join(', ');
-      }
-      return '';
-    };
-
-    const parsePhoton = (data: any) => {
-      const feature = data?.features?.[0];
-      const props = feature?.properties;
-      if (!props) return '';
-      const parts = [
-        props.name,
-        props.street,
-        props.district || props.city,
-        props.state,
-        props.country,
-      ].filter(Boolean);
-      return parts.length ? parts.join(', ') : '';
-    };
-
-    setIsReverseGeocoding(true);
-    try {
-      // Try Nominatim first
-      try {
-        const contactEmail = process.env.EXPO_PUBLIC_NOMINATIM_EMAIL;
-        const emailParam = contactEmail ? `&email=${encodeURIComponent(contactEmail)}` : '';
-        const res = await fetchWithTimeout(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1${emailParam}`
-        );
-        if (res?.ok) {
-          const data = await res.json();
-          const address = parseNominatim(data);
-          if (address) return address;
-        }
-      } catch (err) {
+  const reverseGeocodeAddress = useCallback(
+    async (lat: number, lng: number) => {
+      const isAbortLike = (err: unknown) => {
+        const name = (err as any)?.name?.toString()?.toLowerCase();
         const msg = (err as any)?.message?.toString()?.toLowerCase();
-        if (!isAbortLike(err) && !msg?.includes('network request failed')) {
-          console.warn('Nominatim reverse geocode failed', err);
-        }
-      }
+        return name === "aborterror" || msg?.includes("aborted");
+      };
 
-      // Fallback to native geocoder (uses device provider and often succeeds when third parties block requests)
-      try {
-        const nativeResults = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-        const nativeAddress = nativeResults?.[0];
-        if (nativeAddress) {
+      const fetchWithTimeout = async (url: string, timeoutMs = 4000) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          // Avoid setting forbidden headers like User-Agent that can cause RN fetch to throw
+          return await fetch(url, { signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+
+      const parseNominatim = (data: any) => {
+        if (data?.display_name) return data.display_name as string;
+        if (data?.address) {
           const parts = [
-            nativeAddress.name,
-            nativeAddress.street,
-            nativeAddress.city || nativeAddress.district,
-            nativeAddress.region,
-            nativeAddress.country,
+            data.address.road,
+            data.address.suburb,
+            data.address.city || data.address.town,
+            data.address.country,
           ].filter(Boolean);
-          if (parts.length) return parts.join(', ');
+          if (parts.length) return parts.join(", ");
         }
-      } catch (err) {
-        const msg = (err as any)?.message?.toString()?.toLowerCase();
-        if (!isAbortLike(err) && !msg?.includes('network request failed')) {
-          console.warn('Native reverse geocode failed', err);
-        }
-      }
+        return "";
+      };
 
-      // Fallback to Photon (often less strict)
+      const parsePhoton = (data: any) => {
+        const feature = data?.features?.[0];
+        const props = feature?.properties;
+        if (!props) return "";
+        const parts = [
+          props.name,
+          props.street,
+          props.district || props.city,
+          props.state,
+          props.country,
+        ].filter(Boolean);
+        return parts.length ? parts.join(", ") : "";
+      };
+
+      setIsReverseGeocoding(true);
       try {
-        const res = await fetchWithTimeout(
-          `https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}&limit=1`
-        );
-        if (res?.ok) {
-          const data = await res.json();
-          const address = parsePhoton(data);
-          if (address) return address;
+        // Try Nominatim first
+        try {
+          const contactEmail = process.env.EXPO_PUBLIC_NOMINATIM_EMAIL;
+          const emailParam = contactEmail
+            ? `&email=${encodeURIComponent(contactEmail)}`
+            : "";
+          const res = await fetchWithTimeout(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1${emailParam}`,
+          );
+          if (res?.ok) {
+            const data = await res.json();
+            const address = parseNominatim(data);
+            if (address) return address;
+          }
+        } catch (err) {
+          const msg = (err as any)?.message?.toString()?.toLowerCase();
+          if (!isAbortLike(err) && !msg?.includes("network request failed")) {
+            console.warn("Nominatim reverse geocode failed", err);
+          }
         }
-      } catch (err) {
-        const msg = (err as any)?.message?.toString()?.toLowerCase();
-        if (!isAbortLike(err) && !msg?.includes('network request failed')) {
-          console.warn('Photon reverse geocode failed', err);
+
+        // Fallback to native geocoder (uses device provider and often succeeds when third parties block requests)
+        try {
+          const nativeResults = await Location.reverseGeocodeAsync({
+            latitude: lat,
+            longitude: lng,
+          });
+          const nativeAddress = nativeResults?.[0];
+          if (nativeAddress) {
+            const parts = [
+              nativeAddress.name,
+              nativeAddress.street,
+              nativeAddress.city || nativeAddress.district,
+              nativeAddress.region,
+              nativeAddress.country,
+            ].filter(Boolean);
+            if (parts.length) return parts.join(", ");
+          }
+        } catch (err) {
+          const msg = (err as any)?.message?.toString()?.toLowerCase();
+          if (!isAbortLike(err) && !msg?.includes("network request failed")) {
+            console.warn("Native reverse geocode failed", err);
+          }
         }
+
+        // Fallback to Photon (often less strict)
+        try {
+          const res = await fetchWithTimeout(
+            `https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}&limit=1`,
+          );
+          if (res?.ok) {
+            const data = await res.json();
+            const address = parsePhoton(data);
+            if (address) return address;
+          }
+        } catch (err) {
+          const msg = (err as any)?.message?.toString()?.toLowerCase();
+          if (!isAbortLike(err) && !msg?.includes("network request failed")) {
+            console.warn("Photon reverse geocode failed", err);
+          }
+        }
+
+        // Last resort: plain coordinates
+        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      } finally {
+        setIsReverseGeocoding(false);
       }
+    },
+    [],
+  );
 
-      // Last resort: plain coordinates
-      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    } finally {
-      setIsReverseGeocoding(false);
-    }
-  }, []);
-
-  const updateLocationDescription = useCallback(async (lat: number, lng: number) => {
-    const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    try {
-      const address = await reverseGeocodeAddress(lat, lng);
-      setLocationDescription(address ?? fallback);
-    } catch (error) {
-      console.error('Error fetching address:', error);
-      setLocationDescription(fallback);
-    }
-  }, [reverseGeocodeAddress]);
+  const updateLocationDescription = useCallback(
+    async (lat: number, lng: number) => {
+      const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      try {
+        const address = await reverseGeocodeAddress(lat, lng);
+        setLocationDescription(address ?? fallback);
+      } catch (error) {
+        console.error("Error fetching address:", error);
+        setLocationDescription(fallback);
+      }
+    },
+    [reverseGeocodeAddress],
+  );
 
   const getCurrentLocation = useCallback(async () => {
     setLoadingLocation(true);
@@ -543,11 +714,14 @@ export default function CreateInfringementScreen() {
         accuracy: Location.Accuracy.High,
       });
       setCurrentLocation(location);
-      
-      await updateLocationDescription(location.coords.latitude, location.coords.longitude);
+
+      await updateLocationDescription(
+        location.coords.latitude,
+        location.coords.longitude,
+      );
     } catch (error) {
-      console.error('Error getting location:', error);
-      Alert.alert('Location Error', 'Failed to get current location');
+      console.error("Error getting location:", error);
+      Alert.alert("Location Error", "Failed to get current location");
     } finally {
       setLoadingLocation(false);
     }
@@ -555,7 +729,7 @@ export default function CreateInfringementScreen() {
 
   const requestLocationPermission = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
+    if (status === "granted") {
       getCurrentLocation();
     }
   }, [getCurrentLocation]);
@@ -584,20 +758,23 @@ export default function CreateInfringementScreen() {
       },
       timestamp: Date.now(),
     } as Location.LocationObject);
-    
+
     // Fetch address for the selected location
     await updateLocationDescription(lat, lng);
   };
 
   const takePicture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Camera permission is required to take photos');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Camera permission is required to take photos",
+      );
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: false,
       quality: 0.8,
     });
@@ -607,122 +784,166 @@ export default function CreateInfringementScreen() {
       const watermarkData = buildWatermarkPayload();
 
       // Process image with watermark metadata
-      const watermarkedUri = await addWatermarkToImage(asset.uri, watermarkData);
-
-      setPhotos([...photos, {
-        uri: watermarkedUri,
-        type: 'image/jpeg',
-        name: `evidence_${Date.now()}.jpg`,
+      const watermarkedUri = await addWatermarkToImage(
+        asset.uri,
         watermarkData,
-        width: asset.width,
-        height: asset.height,
-      }]);
-      
+      );
+
+      setPhotos([
+        ...photos,
+        {
+          uri: watermarkedUri,
+          type: "image/jpeg",
+          name: `evidence_${Date.now()}.jpg`,
+          watermarkData,
+          width: asset.width,
+          height: asset.height,
+        },
+      ]);
+
       Alert.alert(
-        'Photo Captured',
-        'Photo has been watermarked with infringement details.',
-        [{ text: 'OK' }]
+        "Photo Captured",
+        "Photo has been watermarked with infringement details.",
+        [{ text: "OK" }],
       );
     }
   };
 
   const pickFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Gallery permission is required');
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Gallery permission is required");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsMultipleSelection: true,
       quality: 0.8,
     });
 
     if (!result.canceled) {
       const watermarkData = buildWatermarkPayload();
-      const newPhotos = await Promise.all(result.assets.map(async (asset, index) => {
-        const processedUri = await addWatermarkToImage(asset.uri, watermarkData);
-        return {
-          uri: processedUri,
-          type: 'image/jpeg',
-          name: `evidence_${Date.now()}_${index}.jpg`,
-          watermarkData,
-          width: asset.width,
-          height: asset.height,
-        } as PhotoItem;
-      }));
+      const newPhotos = await Promise.all(
+        result.assets.map(async (asset, index) => {
+          const processedUri = await addWatermarkToImage(
+            asset.uri,
+            watermarkData,
+          );
+          return {
+            uri: processedUri,
+            type: "image/jpeg",
+            name: `evidence_${Date.now()}_${index}.jpg`,
+            watermarkData,
+            width: asset.width,
+            height: asset.height,
+          } as PhotoItem;
+        }),
+      );
       setPhotos([...photos, ...newPhotos]);
     }
   };
 
   const handleSubmit = async (isDraft: boolean = false) => {
+    if (submitLockRef.current || submitting) {
+      return;
+    }
+
+    submitLockRef.current = true;
+
     try {
+      AccessibilityInfo.announceForAccessibility(
+        isDraft
+          ? "Saving draft. Please wait."
+          : "Submitting infringement. Please wait.",
+      );
       const result = await submittingMutation.mutateAsync(isDraft);
       if (result.queued) {
         resetForm();
+        AccessibilityInfo.announceForAccessibility(
+          "Infringement queued for sync while offline.",
+        );
         Alert.alert(
-          'Queued for Sync',
-          'Infringement saved and will be synced when you\'re back online.',
-          [{ text: 'OK' }]
+          "Queued for Sync",
+          "Infringement saved and will be synced when you're back online.",
+          [{ text: "OK" }],
         );
         return;
       }
 
       if (result.photoWarning) {
+        AccessibilityInfo.announceForAccessibility(
+          "Infringement created with photo upload warning.",
+        );
         Alert.alert(
-          'Warning',
-          'Infringement created but some photos failed to upload. You can try uploading them again later.'
+          "Warning",
+          "Infringement created but some photos failed to upload. You can try uploading them again later.",
         );
       }
 
       resetForm();
+      AccessibilityInfo.announceForAccessibility(
+        result.isDraft
+          ? "Draft saved successfully."
+          : "Infringement created successfully.",
+      );
       Alert.alert(
-        'Success',
-        result.isDraft ? 'Draft saved successfully' : 'Infringement created successfully',
-        [{ text: 'OK' }]
+        "Success",
+        result.isDraft
+          ? "Draft saved successfully"
+          : "Infringement created successfully",
+        [{ text: "OK" }],
       );
     } catch (error: any) {
-      console.error('Error submitting:', error);
-      Alert.alert('Error', error?.message || 'An unexpected error occurred');
+      console.error("Error submitting:", error);
+      AccessibilityInfo.announceForAccessibility(
+        error?.message || "Submission failed. Please try again.",
+      );
+      Alert.alert("Error", error?.message || "An unexpected error occurred");
+    } finally {
+      submitLockRef.current = false;
     }
   };
 
   const renderOffenceStep = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="subtitle" style={styles.stepTitle}>Select Offence</ThemedText>
+      <ThemedText
+        type="subtitle"
+        style={styles.stepTitle}
+      >
+        Select Offence
+      </ThemedText>
       {loading ? (
         <ActivityIndicator size="large" />
       ) : (
         <>
-          <TextInput
-            style={[styles.input, { color: colors.foreground, borderColor: colors.icon }]}
-            placeholder="Search offences..."
-            placeholderTextColor={colors.icon}
+          <Select
+            label="Offence Category"
+            value={selectedCategoryId}
+            onValueChange={setSelectedCategoryId}
+            options={categoryOptions}
+            placeholder="Select offence category"
+            accessibilityLabel="Select offence category"
           />
-          <ScrollView style={styles.offenceList}>
-            {offences.slice(0, 10).map((offence) => (
-              <TouchableOpacity
-                key={offence.id}
-                style={[
-                  styles.offenceItem,
-                  selectedOffence?.id === offence.id && { backgroundColor: colors.tint + '20' }
-                ]}
-                onPress={() => setSelectedOffence(offence)}
-              >
-                <ThemedText style={styles.offenceCode}>{offence.code}</ThemedText>
-                <ThemedText style={styles.offenceName}>{offence.name}</ThemedText>
-                <ThemedText style={styles.offenceFine}>{formatCurrency(offence.fixed_penalty)}</ThemedText>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {selectedOffence && (
-            <TouchableOpacity
-              style={[styles.nextButton, { backgroundColor: colors.tint }]}
-              onPress={() => setStep('driver')}
-            >
-              <ThemedText style={styles.buttonText}>Next: Driver Details</ThemedText>
-            </TouchableOpacity>
+          <Select
+            label="Offence"
+            value={selectedOffence?.id}
+            onValueChange={(offenceId) => {
+              const offence =
+                filteredOffences.find((item) => item.id === offenceId) ?? null;
+              setSelectedOffence(offence);
+            }}
+            options={offenceOptions}
+            placeholder={
+              selectedCategoryId ? "Select offence" : "Select category first"
+            }
+            disabled={!selectedCategoryId || offenceOptions.length === 0}
+            accessibilityLabel="Select offence"
+          />
+          {selectedCategoryId && offenceOptions.length === 0 && (
+            <ThemedText style={styles.hint}>
+              No offences found for the selected category.
+            </ThemedText>
           )}
         </>
       )}
@@ -731,74 +952,69 @@ export default function CreateInfringementScreen() {
 
   const renderDriverStep = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="subtitle" style={styles.stepTitle}>Driver Information</ThemedText>
-      
+      <ThemedText
+        type="subtitle"
+        style={styles.stepTitle}
+      >
+        Driver Information
+      </ThemedText>
+
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>License Number *</ThemedText>
         <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.icon }]}
+          style={[
+            styles.input,
+            { color: colors.foreground, borderColor: colors.icon },
+          ]}
           placeholder="Enter license number"
           placeholderTextColor={colors.icon}
           value={driverLicense}
           onChangeText={setDriverLicense}
           autoCapitalize="characters"
+          accessibilityLabel="Driver license number"
+          returnKeyType="next"
         />
-      </View>
-
-      <View style={styles.stepButtons}>
-        <TouchableOpacity
-          style={[styles.backButton, { borderColor: colors.tint }]}
-          onPress={() => setStep('offence')}
-        >
-          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.nextButton, { backgroundColor: colors.tint }]}
-          onPress={() => setStep('vehicle')}
-        >
-          <ThemedText style={styles.buttonText}>Next: Vehicle</ThemedText>
-        </TouchableOpacity>
       </View>
     </View>
   );
 
   const renderVehicleStep = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="subtitle" style={styles.stepTitle}>Vehicle Information</ThemedText>
-      
+      <ThemedText
+        type="subtitle"
+        style={styles.stepTitle}
+      >
+        Vehicle Information
+      </ThemedText>
+
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>Plate Number *</ThemedText>
         <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.icon }]}
+          style={[
+            styles.input,
+            { color: colors.foreground, borderColor: colors.icon },
+          ]}
           placeholder="Enter plate number"
           placeholderTextColor={colors.icon}
           value={vehiclePlate}
           onChangeText={setVehiclePlate}
           autoCapitalize="characters"
+          accessibilityLabel="Vehicle plate number"
+          returnKeyType="next"
         />
-      </View>
-
-      <View style={styles.stepButtons}>
-        <TouchableOpacity
-          style={[styles.backButton, { borderColor: colors.tint }]}
-          onPress={() => setStep('driver')}
-        >
-          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.nextButton, { backgroundColor: colors.tint }]}
-          onPress={() => setStep('location')}
-        >
-          <ThemedText style={styles.buttonText}>Next: Location</ThemedText>
-        </TouchableOpacity>
       </View>
     </View>
   );
 
   const renderLocationStep = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="subtitle" style={styles.stepTitle}>Location & Description</ThemedText>
-      
+      <ThemedText
+        type="subtitle"
+        style={styles.stepTitle}
+      >
+        Location & Description
+      </ThemedText>
+
       {/* Interactive Map */}
       <View style={styles.mapPreview}>
         <OSMMap
@@ -808,8 +1024,10 @@ export default function CreateInfringementScreen() {
         />
       </View>
 
-      <ThemedText style={styles.mapHint}>📍 Tap on the map to select location</ThemedText>
-      
+      <ThemedText style={styles.mapHint}>
+        📍 Tap on the map to select location
+      </ThemedText>
+
       <View style={styles.locationBox}>
         {loadingLocation ? (
           <ActivityIndicator size="small" />
@@ -824,29 +1042,43 @@ export default function CreateInfringementScreen() {
             {locationDescription && (
               <View style={styles.addressBox}>
                 <ThemedText style={styles.addressLabel}>Address:</ThemedText>
-                <ThemedText style={styles.addressText}>{locationDescription}</ThemedText>
+                <ThemedText style={styles.addressText}>
+                  {locationDescription}
+                </ThemedText>
               </View>
             )}
           </>
         ) : (
-          <ThemedText style={styles.locationText}>No location captured</ThemedText>
+          <ThemedText style={styles.locationText}>
+            No location captured
+          </ThemedText>
         )}
         <TouchableOpacity
           style={[styles.smallButton, { backgroundColor: colors.tint }]}
           onPress={getCurrentLocation}
+          accessibilityRole="button"
+          accessibilityLabel={
+            currentLocation
+              ? "Update with my current location"
+              : "Get my current location"
+          }
+          accessibilityHint="Uses GPS to set the infringement location"
         >
           <ThemedText style={styles.buttonText}>
-            {currentLocation ? 'Use My Location' : 'Get My Location'}
+            {currentLocation ? "Use My Location" : "Get My Location"}
           </ThemedText>
         </TouchableOpacity>
       </View>
 
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>
-          Location Description {isReverseGeocoding && '(Loading address...)'}
+          Location Description {isReverseGeocoding && "(Loading address...)"}
         </ThemedText>
         <TextInput
-          style={[styles.textArea, { color: colors.foreground, borderColor: colors.icon }]}
+          style={[
+            styles.textArea,
+            { color: colors.foreground, borderColor: colors.icon },
+          ]}
           placeholder="e.g., Queens Road near Victoria Parade intersection"
           placeholderTextColor={colors.icon}
           value={locationDescription}
@@ -854,66 +1086,74 @@ export default function CreateInfringementScreen() {
           multiline
           numberOfLines={3}
           editable={!isReverseGeocoding}
+          accessibilityLabel="Location description"
         />
       </View>
 
       <View style={styles.inputGroup}>
         <ThemedText style={styles.label}>Additional Description</ThemedText>
         <TextInput
-          style={[styles.textArea, { color: colors.foreground, borderColor: colors.icon }]}
+          style={[
+            styles.textArea,
+            { color: colors.foreground, borderColor: colors.icon },
+          ]}
           placeholder="Add any additional notes about the infringement..."
           placeholderTextColor={colors.icon}
           value={description}
           onChangeText={setDescription}
           multiline
           numberOfLines={4}
+          accessibilityLabel="Additional description"
         />
-      </View>
-
-      <View style={styles.stepButtons}>
-        <TouchableOpacity
-          style={[styles.backButton, { borderColor: colors.tint }]}
-          onPress={() => setStep('vehicle')}
-        >
-          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.nextButton, { backgroundColor: colors.tint }]}
-          onPress={() => setStep('evidence')}
-        >
-          <ThemedText style={styles.buttonText}>Next: Evidence</ThemedText>
-        </TouchableOpacity>
       </View>
     </View>
   );
 
   const renderEvidenceStep = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="subtitle" style={styles.stepTitle}>Photo Evidence</ThemedText>
-      
-      <ThemedText style={styles.infoText}>
-        ℹ️ Photos are automatically watermarked with vehicle, driver, officer, agency, location, and GPS coordinates.
+      <ThemedText
+        type="subtitle"
+        style={styles.stepTitle}
+      >
+        Photo Evidence
       </ThemedText>
-      
+
+      <ThemedText style={styles.infoText}>
+        ℹ️ Photos are automatically watermarked with vehicle, driver, officer,
+        agency, location, and GPS coordinates.
+      </ThemedText>
+
       <View style={styles.photoButtons}>
         <TouchableOpacity
           style={[styles.photoButton, { backgroundColor: colors.tint }]}
           onPress={takePicture}
+          accessibilityRole="button"
+          accessibilityLabel="Take photo evidence"
         >
           <ThemedText style={styles.buttonText}>📷 Take Photo</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.photoButton, { backgroundColor: colors.tint }]}
           onPress={pickFromGallery}
+          accessibilityRole="button"
+          accessibilityLabel="Choose photo evidence from gallery"
         >
           <ThemedText style={styles.buttonText}>🖼️ From Gallery</ThemedText>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.photoScrollView} showsVerticalScrollIndicator={true}>
+      <ScrollView
+        style={styles.photoScrollView}
+        showsVerticalScrollIndicator={true}
+      >
         {photos.map((photo, index) => (
-          <View key={index} style={styles.photoPreviewContainer}>
-            <ThemedText style={styles.photoLabel}>📷 Photo {index + 1}</ThemedText>
+          <View
+            key={index}
+            style={styles.photoPreviewContainer}
+          >
+            <ThemedText style={styles.photoLabel}>
+              📷 Photo {index + 1}
+            </ThemedText>
             {photo.watermarkData ? (
               <WatermarkedImage
                 imageUri={photo.uri}
@@ -922,12 +1162,16 @@ export default function CreateInfringementScreen() {
               />
             ) : (
               <View style={styles.photoThumb}>
-                <ThemedText style={styles.photoIndex}>Photo {index + 1}</ThemedText>
+                <ThemedText style={styles.photoIndex}>
+                  Photo {index + 1}
+                </ThemedText>
               </View>
             )}
             <TouchableOpacity
-              style={[styles.removePhotoButton, { backgroundColor: '#FF5252' }]}
+              style={[styles.removePhotoButton, { backgroundColor: "#FF5252" }]}
               onPress={() => setPhotos(photos.filter((_, i) => i !== index))}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove photo ${index + 1}`}
             >
               <ThemedText style={styles.removePhotoText}>✕ Remove</ThemedText>
             </TouchableOpacity>
@@ -938,63 +1182,67 @@ export default function CreateInfringementScreen() {
       <ThemedText style={styles.hint}>
         {photos.length} photo(s) attached with watermarks
       </ThemedText>
-
-      <View style={styles.stepButtons}>
-        <TouchableOpacity
-          style={[styles.backButton, { borderColor: colors.tint }]}
-          onPress={() => setStep('location')}
-        >
-          <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>Back</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.nextButton, { backgroundColor: colors.tint }]}
-          onPress={() => setStep('review')}
-        >
-          <ThemedText style={styles.buttonText}>Review</ThemedText>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 
   const renderReviewStep = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="subtitle" style={styles.stepTitle}>Review & Submit</ThemedText>
-      
+      <ThemedText
+        type="subtitle"
+        style={styles.stepTitle}
+      >
+        Review & Submit
+      </ThemedText>
+
       <View style={styles.reviewSection}>
         <ThemedText style={styles.reviewLabel}>Offence:</ThemedText>
         <ThemedText style={styles.reviewValue}>
           {selectedOffence?.code} - {selectedOffence?.name}
         </ThemedText>
         <ThemedText style={styles.reviewValue}>
-          Fine: {selectedOffence && formatCurrency(selectedOffence.fixed_penalty)}
+          Fine:{" "}
+          {selectedOffence && formatCurrency(selectedOffence.fixed_penalty)}
         </ThemedText>
       </View>
 
       <View style={styles.reviewSection}>
         <ThemedText style={styles.reviewLabel}>Driver:</ThemedText>
-        <ThemedText style={styles.reviewValue}>License: {driverLicense || 'Not provided'}</ThemedText>
+        <ThemedText style={styles.reviewValue}>
+          License: {driverLicense || "Not provided"}
+        </ThemedText>
       </View>
 
       <View style={styles.reviewSection}>
         <ThemedText style={styles.reviewLabel}>Vehicle:</ThemedText>
-        <ThemedText style={styles.reviewValue}>Plate: {vehiclePlate || 'Not provided'}</ThemedText>
+        <ThemedText style={styles.reviewValue}>
+          Plate: {vehiclePlate || "Not provided"}
+        </ThemedText>
       </View>
 
       <View style={styles.reviewSection}>
         <ThemedText style={styles.reviewLabel}>Evidence:</ThemedText>
         <ThemedText style={styles.reviewValue}>
-          {photos.length} watermarked photo(s) {photos.length > 0 ? '(with infringement details)' : ''}
+          {photos.length} watermarked photo(s){" "}
+          {photos.length > 0 ? "(with infringement details)" : ""}
         </ThemedText>
         {photos.length > 0 && (
-          <ThemedText style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}>
-            ✓ Each photo includes: MANTIS label, TIN, date/time, location (EN), GPS coordinates, officer, agency
+          <ThemedText
+            style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}
+          >
+            ✓ Each photo includes: MANTIS label, TIN, date/time, location (EN),
+            GPS coordinates, officer, agency
           </ThemedText>
         )}
         <ThemedText style={styles.reviewValue}>
-          Location: {currentLocation ? `${currentLocation.coords.latitude.toFixed(6)}, ${currentLocation.coords.longitude.toFixed(6)}` : 'Not captured'}
+          Location:{" "}
+          {currentLocation
+            ? `${currentLocation.coords.latitude.toFixed(6)}, ${currentLocation.coords.longitude.toFixed(6)}`
+            : "Not captured"}
         </ThemedText>
         {locationDescription && (
-          <ThemedText style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}>
+          <ThemedText
+            style={[styles.reviewValue, { fontSize: 12, marginTop: 4 }]}
+          >
             📍 {locationDescription}
           </ThemedText>
         )}
@@ -1013,6 +1261,9 @@ export default function CreateInfringementScreen() {
           style={[styles.draftButton, { borderColor: colors.tint }]}
           onPress={() => handleSubmit(true)}
           disabled={submitting}
+          accessibilityRole="button"
+          accessibilityLabel="Save infringement as draft"
+          accessibilityState={{ disabled: submitting, busy: submitting }}
         >
           {submitting ? (
             <ActivityIndicator color={colors.tint} />
@@ -1026,6 +1277,9 @@ export default function CreateInfringementScreen() {
           style={[styles.submitButton, { backgroundColor: colors.tint }]}
           onPress={() => handleSubmit(false)}
           disabled={submitting}
+          accessibilityRole="button"
+          accessibilityLabel="Submit infringement"
+          accessibilityState={{ disabled: submitting, busy: submitting }}
         >
           {submitting ? (
             <ActivityIndicator color="#fff" />
@@ -1034,53 +1288,41 @@ export default function CreateInfringementScreen() {
           )}
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={styles.backLink}
-        onPress={() => setStep('evidence')}
-      >
-        <ThemedText style={[styles.link, { color: colors.tint }]}>← Back to edit</ThemedText>
-      </TouchableOpacity>
     </View>
   );
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView ref={scrollRef} style={styles.scrollView}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollView}
+      >
         <ThemedView style={styles.content}>
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            {['offence', 'driver', 'vehicle', 'location', 'evidence', 'review'].map((s, i) => (
-              <View
-                key={s}
-                style={[
-                  styles.progressDot,
-                  step === s && { backgroundColor: colors.tint },
-                  { borderColor: colors.icon },
-                ]}
-              />
-            ))}
-          </View>
-
-          {step === 'offence' && renderOffenceStep()}
-          {step === 'driver' && renderDriverStep()}
-          {step === 'vehicle' && renderVehicleStep()}
-          {step === 'location' && renderLocationStep()}
-          {step === 'evidence' && renderEvidenceStep()}
-          {step === 'review' && renderReviewStep()}
+          {renderOffenceStep()}
+          {renderDriverStep()}
+          {renderVehicleStep()}
+          {renderLocationStep()}
+          {renderEvidenceStep()}
+          {renderReviewStep()}
         </ThemedView>
       </ScrollView>
 
       {/* Hidden capture surfaces to burn watermarks into files before upload */}
-      <View style={styles.hiddenCaptureContainer} pointerEvents="none">
+      <View
+        style={styles.hiddenCaptureContainer}
+        pointerEvents="none"
+      >
         {photos.map((photo, index) => {
           // Capture at the photo's native resolution when available for crisper watermark text
           const targetWidth = photo.width || 1080;
-          const targetHeight = photo.height || Math.round((photo.width || 1080) * (3 / 4));
-          const captureKey = photo.processedUri ? photo.processedUri : photo.uri;
+          const targetHeight =
+            photo.height || Math.round((photo.width || 1080) * (3 / 4));
+          const captureKey = photo.processedUri
+            ? photo.processedUri
+            : photo.uri;
           return (
             <ViewShot
               key={`capture-${captureKey}-${index}`}
@@ -1091,9 +1333,18 @@ export default function CreateInfringementScreen() {
                   delete viewShotRefs.current[captureKey];
                 }
               }}
-              options={{ ...DEFAULT_CAPTURE_OPTIONS, width: targetWidth, height: targetHeight }}
-              style={[styles.capturePreview, { width: targetWidth, height: targetHeight }]}
-              onLayout={() => { viewShotReady.current[captureKey] = true; }}
+              options={{
+                ...DEFAULT_CAPTURE_OPTIONS,
+                width: targetWidth,
+                height: targetHeight,
+              }}
+              style={[
+                styles.capturePreview,
+                { width: targetWidth, height: targetHeight },
+              ]}
+              onLayout={() => {
+                viewShotReady.current[captureKey] = true;
+              }}
             >
               {photo.watermarkData ? (
                 <WatermarkedImage
@@ -1101,13 +1352,17 @@ export default function CreateInfringementScreen() {
                   watermarkData={photo.watermarkData}
                   style={{ width: targetWidth, height: targetHeight }}
                   dimensions={{ width: targetWidth, height: targetHeight }}
-                  onReady={() => { viewShotReady.current[captureKey] = true; }}
+                  onReady={() => {
+                    viewShotReady.current[captureKey] = true;
+                  }}
                 />
               ) : (
                 <Image
                   source={{ uri: photo.uri }}
                   style={{ width: targetWidth, height: targetHeight }}
-                  onLoadEnd={() => { viewShotReady.current[captureKey] = true; }}
+                  onLoadEnd={() => {
+                    viewShotReady.current[captureKey] = true;
+                  }}
                 />
               )}
             </ViewShot>
@@ -1130,8 +1385,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 8,
     marginBottom: 24,
   },
@@ -1154,23 +1409,23 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
   },
   offenceCode: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   offenceName: {
     marginBottom: 4,
   },
   offenceFine: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
   inputGroup: {
     gap: 8,
   },
   label: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
   input: {
     borderWidth: 1,
@@ -1184,26 +1439,26 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     minHeight: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   mapPreview: {
     height: 300,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   mapHint: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 16,
     opacity: 0.7,
   },
   locationBox: {
     padding: 16,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     gap: 8,
   },
   locationText: {
@@ -1212,13 +1467,13 @@ const styles = StyleSheet.create({
   addressBox: {
     marginTop: 8,
     padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     borderRadius: 8,
-    width: '100%',
+    width: "100%",
   },
   addressLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
     opacity: 0.7,
   },
@@ -1230,22 +1485,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     marginBottom: 16,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    textAlign: "center",
+    fontStyle: "italic",
   },
   photoButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   photoButton: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   photoScrollView: {
@@ -1255,16 +1510,16 @@ const styles = StyleSheet.create({
   photoPreviewContainer: {
     marginBottom: 16,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   photoLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 8,
     opacity: 0.8,
   },
   watermarkedPreview: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 4 / 3,
     borderRadius: 8,
     marginBottom: 8,
@@ -1273,33 +1528,33 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   photoIndex: {
     fontSize: 12,
   },
   removePhoto: {
-    position: 'absolute',
+    position: "absolute",
     top: 4,
     right: 4,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'red',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "red",
+    justifyContent: "center",
+    alignItems: "center",
   },
   removePhotoButton: {
     padding: 10,
     borderRadius: 6,
-    alignItems: 'center',
+    alignItems: "center",
   },
   removePhotoText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   hint: {
     opacity: 0.7,
@@ -1308,30 +1563,30 @@ const styles = StyleSheet.create({
   reviewSection: {
     padding: 12,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     gap: 4,
   },
   reviewLabel: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   reviewValue: {
     opacity: 0.8,
   },
   offlineWarning: {
-    backgroundColor: '#fff3cd',
+    backgroundColor: "#fff3cd",
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   offlineText: {
-    color: '#856404',
+    color: "#856404",
     fontSize: 14,
-    textAlign: 'center',
-    fontWeight: '600',
+    textAlign: "center",
+    fontWeight: "600",
   },
   stepButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 16,
   },
@@ -1340,29 +1595,29 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     borderWidth: 2,
-    alignItems: 'center',
+    alignItems: "center",
   },
   backButtonText: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
   nextButton: {
     flex: 2,
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   smallButton: {
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 16,
   },
   submitButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 16,
   },
@@ -1371,25 +1626,25 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     borderWidth: 2,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButton: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   backLink: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 16,
   },
   link: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 16,
   },
   hiddenCaptureContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     opacity: 0.001,
@@ -1398,7 +1653,7 @@ const styles = StyleSheet.create({
   capturePreview: {
     marginBottom: 12,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   featureList: {
     gap: 8,
@@ -1411,17 +1666,17 @@ const styles = StyleSheet.create({
   button: {
     padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   helpBox: {
     marginTop: 24,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
   },
   helpText: {
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
   },
 });

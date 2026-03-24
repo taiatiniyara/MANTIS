@@ -36,7 +36,7 @@ MANTIS is built with open-source technologies. Check the project license for usa
 - **State:** TanStack Query
 - **Routing:** TanStack Router
 
-See [Tech Stack](./03-tech-stack.md) for complete details.
+See [Tech Stack](../architecture/tech-stack.md) for complete details.
 
 ### Can MANTIS work offline?
 
@@ -55,7 +55,7 @@ MANTIS uses multiple security layers:
 - **Role-based access control (RBAC)**
 - **Audit logging** for all actions
 
-See [Security Model](./23-security.md) for details.
+See [Authentication & Access](../architecture/authentication.md) for details.
 
 ### What browsers are supported?
 
@@ -74,7 +74,7 @@ MANTIS uses PostGIS for location-aware operations:
 - **Automatic location resolution** from GPS
 - **Boundary management** for agencies
 
-See [GIS & Locations](./05-gis-locations.md) for details.
+See [GIS & Locations](../architecture/gis-locations.md) for details.
 
 ## Usage
 
@@ -165,7 +165,7 @@ As Super Admin:
 | Team Leader | Team supervisor | Own team |
 | Officer | Field officer | Own records |
 
-See [Authentication](./06-auth.md) for details.
+See [Authentication](../architecture/authentication.md) for details.
 
 ## Deployment
 
@@ -181,7 +181,7 @@ This handles:
 - Firebase deployment
 - Git commit and push
 
-See [Deployment Guide](./22-deployment.md) for details.
+See [Deployment Guide](./deployment.md) for details.
 
 ### What hosting is required?
 
@@ -224,20 +224,26 @@ See [Contributing Guide](../CONTRIBUTING.md) for details.
 ```bash
 # Clone repository
 git clone https://github.com/your-org/mantis.git
-cd mantis/website
+cd mantis
 
-# Install dependencies
+# Website
+cd website
 npm install
 
 # Set up environment
-cp .env.example .env
-# Add your Supabase credentials
+# Create website/.env and add Supabase credentials
 
 # Start dev server
 npm run dev
+
+# Mobile
+cd ../mobile
+npm install
+cp .env.example .env.local
+npm run start
 ```
 
-See [Getting Started](./01-getting-started.md) for details.
+See [Getting Started](./getting-started.md) for details.
 
 ### How do I add a new feature?
 
@@ -305,7 +311,7 @@ Common causes:
 - Session expired
 - Account deactivated
 
-See [Troubleshooting](./27-troubleshooting.md).
+See [Troubleshooting](./troubleshooting.md).
 
 ### Why is the map not showing?
 

@@ -7,8 +7,9 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -30,11 +31,12 @@ export function RoleBasedTabLayout({ headerTitle, tabs }: RoleBasedTabLayoutProp
   const insets = useSafeAreaInsets();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const screenOptions = {
+  const screenOptions: BottomTabNavigationOptions = {
     tabBarActiveTintColor: colors.tint,
+    tabBarInactiveTintColor: colors.tabIconDefault,
+    tabBarLabelPosition: 'below-icon' as const,
     headerShown: false,
-    tabBarButton: HapticTab,
-    sceneContainerStyle: {
+    sceneStyle: {
       backgroundColor: colors.background,
       paddingTop: insets.top,
       paddingLeft: insets.left,
@@ -42,22 +44,27 @@ export function RoleBasedTabLayout({ headerTitle, tabs }: RoleBasedTabLayoutProp
     },
     tabBarStyle: {
       height: Platform.select({
-        ios: 60 + insets.bottom,
-        default: 120,
+        ios: 58 + insets.bottom,
+        default: 62 + Math.max(insets.bottom, 6),
       }),
       paddingBottom: Platform.select({
         ios: insets.bottom,
-        default: 16,
+        default: Math.max(insets.bottom, 6),
       }),
-      paddingTop: 8,
+      paddingTop: 6,
+    },
+    tabBarItemStyle: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    tabBarIconStyle: {
+      marginBottom: 0,
     },
     tabBarLabelStyle: {
       fontSize: 11,
-      marginTop: -2,
-      marginBottom: Platform.select({
-        ios: 2,
-        default: 2,
-      }),
+      marginTop: 0,
+      marginBottom: 0,
+      textAlign: 'center' as const,
     },
   };
 
@@ -73,6 +80,13 @@ export function RoleBasedTabLayout({ headerTitle, tabs }: RoleBasedTabLayoutProp
             tabBarIcon: ({ color }) => (
               <IconSymbol size={tab.iconSize ?? 22} name={tab.iconName} color={color} />
             ),
+          }}
+          listeners={{
+            tabPress: () => {
+              if (Platform.OS !== 'web') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            },
           }}
         />
       ))}

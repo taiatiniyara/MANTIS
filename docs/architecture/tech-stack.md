@@ -478,4 +478,4 @@ We follow **semantic versioning** (SemVer).
 
 ---
 
-**Next:** [Data Model](./04-data-model.md)
+**Next:** [Data Model](./data-model.md)

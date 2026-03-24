@@ -5,13 +5,13 @@
 
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
   type ViewStyle,
   type TextStyle,
-  type TouchableOpacityProps,
+  type PressableProps,
 } from 'react-native';
 import { Colors, BorderRadius, Typography, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,7 +19,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 type ButtonVariant = 'default' | 'outline' | 'secondary' | 'ghost' | 'destructive' | 'link';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
 
-interface ButtonProps extends TouchableOpacityProps {
+interface ButtonProps extends PressableProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   children?: React.ReactNode;
@@ -39,22 +39,26 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const [isFocused, setIsFocused] = React.useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const disabledState = disabled || loading;
 
-  const buttonStyles: ViewStyle[] = [
-    styles.base,
-    getVariantStyles(variant, colors),
-    getSizeStyles(size),
-    ...((disabled || loading) ? [styles.disabled] : []),
-    ...(style ? [style as ViewStyle] : []),
-  ];
+  const derivedA11yLabel = React.useMemo(() => {
+    if (typeof props.accessibilityLabel === 'string') {
+      return props.accessibilityLabel;
+    }
+    if (typeof children === 'string') {
+      return children;
+    }
+    return 'Button';
+  }, [children, props.accessibilityLabel]);
 
   const textStyles: TextStyle[] = [
     styles.text,
     getVariantTextStyles(variant, colors),
     getSizeTextStyles(size),
-    ...((disabled || loading) ? [styles.disabledText] : []),
+    ...(disabledState ? [styles.disabledText] : []),
   ];
 
   const content = (
@@ -80,28 +84,37 @@ export function Button({
     </>
   );
 
-  if (variant === 'link') {
-    return (
-      <TouchableOpacity
-        disabled={disabled || loading}
-        style={buttonStyles}
-        activeOpacity={0.7}
-        {...props}
-      >
-        {content}
-      </TouchableOpacity>
-    );
-  }
-
   return (
-    <TouchableOpacity
-      disabled={disabled || loading}
-      style={buttonStyles}
-      activeOpacity={0.8}
+    <Pressable
       {...props}
+      onFocus={(event) => {
+        setIsFocused(true);
+        props.onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setIsFocused(false);
+        props.onBlur?.(event);
+      }}
+      disabled={disabledState}
+      accessibilityRole={props.accessibilityRole ?? 'button'}
+      accessibilityLabel={derivedA11yLabel}
+      accessibilityState={{
+        ...props.accessibilityState,
+        disabled: !!disabledState,
+        busy: !!loading,
+      }}
+      style={({ pressed }) => [
+        styles.base,
+        getVariantStyles(variant, colors),
+        getSizeStyles(size),
+        pressed && !disabledState ? styles.pressed : null,
+        isFocused ? { borderColor: colors.ring } : null,
+        disabledState ? styles.disabled : null,
+        style as ViewStyle,
+      ]}
     >
       {content}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -113,6 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: 'transparent',
+    minHeight: 44,
   },
   text: {
     fontWeight: '500',
@@ -120,6 +134,9 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+  },
+  pressed: {
+    opacity: 0.9,
   },
   disabledText: {
     opacity: 0.5,
@@ -151,7 +168,7 @@ function getVariantStyles(variant: ButtonVariant, colors: typeof Colors.light): 
       };
     case 'destructive':
       return {
-        backgroundColor: `${colors.destructive}1A`, // 10% opacity
+        backgroundColor: colors.destructive,
       };
     case 'link':
       return {
@@ -181,7 +198,7 @@ function getVariantTextStyles(variant: ButtonVariant, colors: typeof Colors.ligh
       };
     case 'destructive':
       return {
-        color: colors.destructive,
+        color: colors.destructiveForeground,
       };
     case 'link':
       return {
@@ -195,26 +212,26 @@ function getSizeStyles(size: ButtonSize): ViewStyle {
   switch (size) {
     case 'default':
       return {
-        height: 36,
+        height: 44,
         paddingHorizontal: Spacing.md,
         gap: Spacing.xs,
       };
     case 'sm':
       return {
-        height: 32,
-        paddingHorizontal: Spacing.sm,
+        height: 44,
+        paddingHorizontal: Spacing.md,
         gap: Spacing.xs,
       };
     case 'lg':
       return {
-        height: 40,
+        height: 48,
         paddingHorizontal: Spacing.lg,
         gap: Spacing.sm,
       };
     case 'icon':
       return {
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         paddingHorizontal: 0,
       };
   }

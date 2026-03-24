@@ -485,4 +485,4 @@ Supabase automatically syncs auth state across tabs using `BroadcastChannel`.
 
 ---
 
-**Next:** [Multi-Agency Structure](./07-multi-agency.md)
+**Next:** [System Architecture](./system-architecture.md)

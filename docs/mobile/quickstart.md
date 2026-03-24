@@ -5,7 +5,6 @@ This guide will help you get the MANTIS mobile app up and running on your device
 ## Prerequisites
 
 - **Node.js** 18+ and npm
-- **Expo CLI**: Install globally with `npm install -g expo-cli`
 - **Expo Go app** on your phone (iOS/Android) for testing
 - **Supabase account** with MANTIS database set up
 
@@ -38,7 +37,7 @@ You can find these values in your Supabase project settings at: https://app.supa
 ### 3. Start Development Server
 
 ```bash
-npm start
+npm run start
 ```
 
 This will start the Expo development server and show you a QR code.
@@ -141,13 +140,15 @@ Use these test accounts (make sure they exist in your Supabase database):
 
 ### Building for Production
 
-```bash
-# iOS (requires Mac + Apple Developer account)
-npx expo build:ios
+Use EAS for store-ready builds (requires an Expo account):
 
-# Android
-npx expo build:android
+```bash
+npx eas build --platform ios
+npx eas build --platform android
 ```
+For local web/static export previews, you can still run `npx expo export --platform all`.
+
+For a full release flow (profiles, secrets, submit), see [release-checklist.md](./release-checklist.md).
 
 ## Project Structure
 

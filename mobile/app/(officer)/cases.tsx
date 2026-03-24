@@ -13,13 +13,14 @@ import {
   Modal,
   Image,
   ActivityIndicator,
+  AccessibilityInfo,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SyncStatus } from '@/components/SyncStatus';
 import { useAuth } from '@/contexts/AuthContext';
-import { getInfringements, getEvidenceFiles, getEvidenceFileUrl } from '@/lib/database';
+import { getInfringements, getEvidenceFiles, getEvidenceFileUrl, getDriverById, getVehicleById } from '@/lib/database';
 import { Infringement } from '@/lib/types';
 import { formatDate, formatCurrency, formatInfringementStatus } from '@/lib/formatting';
 import { Colors } from '@/constants/theme';
@@ -89,7 +90,37 @@ export default function CasesListScreen() {
     enabled: Boolean(selectedCase?.id),
   });
 
+  const {
+    data: selectedDriver,
+    isFetching: loadingDriver,
+  } = useQuery({
+    queryKey: queryKeys.driverById(selectedCase?.driver_id),
+    queryFn: async () => {
+      if (!selectedCase?.driver_id) return null;
+      const { data, error } = await getDriverById(selectedCase.driver_id);
+      if (error) throw new Error(error.message || 'Failed to load driver');
+      return data ?? null;
+    },
+    enabled: Boolean(selectedCase?.driver_id),
+  });
+
+  const {
+    data: selectedVehicle,
+    isFetching: loadingVehicle,
+  } = useQuery({
+    queryKey: queryKeys.vehicleById(selectedCase?.vehicle_id),
+    queryFn: async () => {
+      if (!selectedCase?.vehicle_id) return null;
+      const { data, error } = await getVehicleById(selectedCase.vehicle_id);
+      if (error) throw new Error(error.message || 'Failed to load vehicle');
+      return data ?? null;
+    },
+    enabled: Boolean(selectedCase?.vehicle_id),
+  });
+
   const onRefresh = () => {
+    if (isRefetchingCases) return;
+    AccessibilityInfo.announceForAccessibility('Refreshing cases list.');
     refetchCases();
   };
 
@@ -106,6 +137,8 @@ export default function CasesListScreen() {
           placeholderTextColor={colors.icon}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          accessibilityLabel="Search cases by offence code"
+          returnKeyType="search"
         />
       </View>
 
@@ -127,6 +160,9 @@ export default function CasesListScreen() {
             filter === 'all' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('all')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter all cases"
+          accessibilityState={{ selected: filter === 'all' }}
         >
           <ThemedText
             style={[styles.filterText, filter === 'all' && styles.filterTextActive]}
@@ -140,6 +176,9 @@ export default function CasesListScreen() {
             filter === 'draft' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('draft')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter draft cases"
+          accessibilityState={{ selected: filter === 'draft' }}
         >
           <ThemedText
             style={[
@@ -156,6 +195,9 @@ export default function CasesListScreen() {
             filter === 'submitted' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('submitted')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter submitted cases"
+          accessibilityState={{ selected: filter === 'submitted' }}
         >
           <ThemedText
             style={[
@@ -172,6 +214,9 @@ export default function CasesListScreen() {
             filter === 'pending' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('pending')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter pending cases"
+          accessibilityState={{ selected: filter === 'pending' }}
         >
           <ThemedText
             style={[
@@ -188,6 +233,9 @@ export default function CasesListScreen() {
             filter === 'approved' && { backgroundColor: colors.tint },
           ]}
           onPress={() => setFilter('approved')}
+          accessibilityRole="button"
+          accessibilityLabel="Filter approved cases"
+          accessibilityState={{ selected: filter === 'approved' }}
         >
           <ThemedText
             style={[
@@ -227,6 +275,8 @@ export default function CasesListScreen() {
                 key={infringement.id}
                 style={[styles.caseCard, { borderColor: colors.icon }]}
                 onPress={() => setSelectedCase(infringement)}
+                accessibilityRole="button"
+                accessibilityLabel={`Open case ${infringement.offence_code}, status ${formatInfringementStatus(infringement.status)}, amount ${formatCurrency(infringement.fine_amount)}`}
               >
                 <View style={styles.caseHeader}>
                   <ThemedText style={styles.caseCode}>
@@ -273,11 +323,12 @@ export default function CasesListScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={handleCloseModal}
+        accessibilityViewIsModal
       >
         <ThemedView style={styles.modalContainer}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.icon }]}>
             <ThemedText style={styles.modalTitle}>Case Details</ThemedText>
-            <TouchableOpacity onPress={handleCloseModal}>
+            <TouchableOpacity onPress={handleCloseModal} accessibilityRole="button" accessibilityLabel="Close case details">
               <ThemedText style={[styles.closeButton, { color: colors.tint }]}>Close</ThemedText>
             </TouchableOpacity>
           </View>
@@ -374,8 +425,9 @@ export default function CasesListScreen() {
                     <View style={styles.modalInfoRow}>
                       <ThemedText style={styles.modalLabel}>License:</ThemedText>
                       <ThemedText style={styles.modalValue}>
-                        {/* This would need driver data to be loaded */}
-                        Loading...
+                        {loadingDriver
+                          ? 'Loading...'
+                          : selectedDriver?.license_number || 'Unavailable'}
                       </ThemedText>
                     </View>
                   </View>
@@ -388,8 +440,9 @@ export default function CasesListScreen() {
                     <View style={styles.modalInfoRow}>
                       <ThemedText style={styles.modalLabel}>Plate:</ThemedText>
                       <ThemedText style={styles.modalValue}>
-                        {/* This would need vehicle data to be loaded */}
-                        Loading...
+                        {loadingVehicle
+                          ? 'Loading...'
+                          : selectedVehicle?.plate_number || 'Unavailable'}
                       </ThemedText>
                     </View>
                   </View>
