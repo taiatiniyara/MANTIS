@@ -267,6 +267,9 @@ export const auditLogs = pgTable("audit_logs", {
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 
+export type OffenceCategory = typeof offenceCategories.$inferSelect;
+export type NewOffenceCategory = typeof offenceCategories.$inferInsert;
+
 export const tables = {
   agencies,
   locations,
@@ -274,6 +277,8 @@ export const tables = {
   users,
   drivers,
   vehicles,
+  offenceCategories,
+  offences,
   infringements,
   evidenceFiles,
   payments,
@@ -288,6 +293,8 @@ export const tableNames = {
   users: "users",
   drivers: "drivers",
   vehicles: "vehicles",
+  offenceCategories: "offence_categories",
+  offences: "offences",
   infringements: "infringements",
   evidenceFiles: "evidence_files",
   payments: "payments",

@@ -1,5 +1,6 @@
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 
 export const Route = createFileRoute("/agency-admin")({
   component: RouteComponent,
@@ -7,10 +8,12 @@ export const Route = createFileRoute("/agency-admin")({
 
 function RouteComponent() {
   return (
-    <DashboardLayout>
-      <div className="p-4">
-        <Outlet />
-      </div>
-    </DashboardLayout>
+    <RoleProtectedRoute allowedRoles={["Agency Admin"]}>
+      <DashboardLayout>
+        <div className="p-4">
+          <Outlet />
+        </div>
+      </DashboardLayout>
+    </RoleProtectedRoute>
   );
 }

@@ -28,13 +28,19 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as SuperAdminUsersIndexRouteImport } from './routes/super-admin/users/index'
 import { Route as SuperAdminTeamsIndexRouteImport } from './routes/super-admin/teams/index'
+import { Route as SuperAdminOffencesIndexRouteImport } from './routes/super-admin/offences/index'
+import { Route as SuperAdminOffenceCategoriesIndexRouteImport } from './routes/super-admin/offence-categories/index'
 import { Route as SuperAdminLocationsIndexRouteImport } from './routes/super-admin/locations/index'
 import { Route as SuperAdminAgenciesIndexRouteImport } from './routes/super-admin/agencies/index'
 import { Route as OfficerReportsIndexRouteImport } from './routes/officer/reports/index'
 import { Route as AgencyAdminTeamsIndexRouteImport } from './routes/agency-admin/teams/index'
 import { Route as AgencyAdminLocationsIndexRouteImport } from './routes/agency-admin/locations/index'
+import { Route as SuperAdminUsersCreateRouteImport } from './routes/super-admin/users/create'
 import { Route as SuperAdminTeamsCreateRouteImport } from './routes/super-admin/teams/create'
+import { Route as SuperAdminOffencesCreateRouteImport } from './routes/super-admin/offences/create'
+import { Route as SuperAdminOffenceCategoriesCreateRouteImport } from './routes/super-admin/offence-categories/create'
 import { Route as SuperAdminLocationsCreateRouteImport } from './routes/super-admin/locations/create'
+import { Route as SuperAdminAgenciesCreateRouteImport } from './routes/super-admin/agencies/create'
 import { Route as SuperAdminAgenciesIdRouteImport } from './routes/super-admin/agencies/$id'
 import { Route as OfficerReportsCreateRouteImport } from './routes/officer/reports/create'
 import { Route as OfficerReportsIdRouteImport } from './routes/officer/reports/$id'
@@ -134,6 +140,17 @@ const SuperAdminTeamsIndexRoute = SuperAdminTeamsIndexRouteImport.update({
   path: '/teams/',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const SuperAdminOffencesIndexRoute = SuperAdminOffencesIndexRouteImport.update({
+  id: '/offences/',
+  path: '/offences/',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
+const SuperAdminOffenceCategoriesIndexRoute =
+  SuperAdminOffenceCategoriesIndexRouteImport.update({
+    id: '/offence-categories/',
+    path: '/offence-categories/',
+    getParentRoute: () => SuperAdminRoute,
+  } as any)
 const SuperAdminLocationsIndexRoute =
   SuperAdminLocationsIndexRouteImport.update({
     id: '/locations/',
@@ -161,15 +178,38 @@ const AgencyAdminLocationsIndexRoute =
     path: '/locations/',
     getParentRoute: () => AgencyAdminRoute,
   } as any)
+const SuperAdminUsersCreateRoute = SuperAdminUsersCreateRouteImport.update({
+  id: '/users/create',
+  path: '/users/create',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminTeamsCreateRoute = SuperAdminTeamsCreateRouteImport.update({
   id: '/teams/create',
   path: '/teams/create',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const SuperAdminOffencesCreateRoute =
+  SuperAdminOffencesCreateRouteImport.update({
+    id: '/offences/create',
+    path: '/offences/create',
+    getParentRoute: () => SuperAdminRoute,
+  } as any)
+const SuperAdminOffenceCategoriesCreateRoute =
+  SuperAdminOffenceCategoriesCreateRouteImport.update({
+    id: '/offence-categories/create',
+    path: '/offence-categories/create',
+    getParentRoute: () => SuperAdminRoute,
+  } as any)
 const SuperAdminLocationsCreateRoute =
   SuperAdminLocationsCreateRouteImport.update({
     id: '/locations/create',
     path: '/locations/create',
+    getParentRoute: () => SuperAdminRoute,
+  } as any)
+const SuperAdminAgenciesCreateRoute =
+  SuperAdminAgenciesCreateRouteImport.update({
+    id: '/agencies/create',
+    path: '/agencies/create',
     getParentRoute: () => SuperAdminRoute,
   } as any)
 const SuperAdminAgenciesIdRoute = SuperAdminAgenciesIdRouteImport.update({
@@ -209,13 +249,19 @@ export interface FileRoutesByFullPath {
   '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
+  '/super-admin/agencies/create': typeof SuperAdminAgenciesCreateRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
+  '/super-admin/offence-categories/create': typeof SuperAdminOffenceCategoriesCreateRoute
+  '/super-admin/offences/create': typeof SuperAdminOffencesCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/users/create': typeof SuperAdminUsersCreateRoute
   '/agency-admin/locations': typeof AgencyAdminLocationsIndexRoute
   '/agency-admin/teams': typeof AgencyAdminTeamsIndexRoute
   '/officer/reports': typeof OfficerReportsIndexRoute
   '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
+  '/super-admin/offence-categories': typeof SuperAdminOffenceCategoriesIndexRoute
+  '/super-admin/offences': typeof SuperAdminOffencesIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
   '/super-admin/users': typeof SuperAdminUsersIndexRoute
 }
@@ -237,13 +283,19 @@ export interface FileRoutesByTo {
   '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
+  '/super-admin/agencies/create': typeof SuperAdminAgenciesCreateRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
+  '/super-admin/offence-categories/create': typeof SuperAdminOffenceCategoriesCreateRoute
+  '/super-admin/offences/create': typeof SuperAdminOffencesCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/users/create': typeof SuperAdminUsersCreateRoute
   '/agency-admin/locations': typeof AgencyAdminLocationsIndexRoute
   '/agency-admin/teams': typeof AgencyAdminTeamsIndexRoute
   '/officer/reports': typeof OfficerReportsIndexRoute
   '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
+  '/super-admin/offence-categories': typeof SuperAdminOffenceCategoriesIndexRoute
+  '/super-admin/offences': typeof SuperAdminOffencesIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
   '/super-admin/users': typeof SuperAdminUsersIndexRoute
 }
@@ -269,13 +321,19 @@ export interface FileRoutesById {
   '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
+  '/super-admin/agencies/create': typeof SuperAdminAgenciesCreateRoute
   '/super-admin/locations/create': typeof SuperAdminLocationsCreateRoute
+  '/super-admin/offence-categories/create': typeof SuperAdminOffenceCategoriesCreateRoute
+  '/super-admin/offences/create': typeof SuperAdminOffencesCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
+  '/super-admin/users/create': typeof SuperAdminUsersCreateRoute
   '/agency-admin/locations/': typeof AgencyAdminLocationsIndexRoute
   '/agency-admin/teams/': typeof AgencyAdminTeamsIndexRoute
   '/officer/reports/': typeof OfficerReportsIndexRoute
   '/super-admin/agencies/': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations/': typeof SuperAdminLocationsIndexRoute
+  '/super-admin/offence-categories/': typeof SuperAdminOffenceCategoriesIndexRoute
+  '/super-admin/offences/': typeof SuperAdminOffencesIndexRoute
   '/super-admin/teams/': typeof SuperAdminTeamsIndexRoute
   '/super-admin/users/': typeof SuperAdminUsersIndexRoute
 }
@@ -302,13 +360,19 @@ export interface FileRouteTypes {
     | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
+    | '/super-admin/agencies/create'
     | '/super-admin/locations/create'
+    | '/super-admin/offence-categories/create'
+    | '/super-admin/offences/create'
     | '/super-admin/teams/create'
+    | '/super-admin/users/create'
     | '/agency-admin/locations'
     | '/agency-admin/teams'
     | '/officer/reports'
     | '/super-admin/agencies'
     | '/super-admin/locations'
+    | '/super-admin/offence-categories'
+    | '/super-admin/offences'
     | '/super-admin/teams'
     | '/super-admin/users'
   fileRoutesByTo: FileRoutesByTo
@@ -330,13 +394,19 @@ export interface FileRouteTypes {
     | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
+    | '/super-admin/agencies/create'
     | '/super-admin/locations/create'
+    | '/super-admin/offence-categories/create'
+    | '/super-admin/offences/create'
     | '/super-admin/teams/create'
+    | '/super-admin/users/create'
     | '/agency-admin/locations'
     | '/agency-admin/teams'
     | '/officer/reports'
     | '/super-admin/agencies'
     | '/super-admin/locations'
+    | '/super-admin/offence-categories'
+    | '/super-admin/offences'
     | '/super-admin/teams'
     | '/super-admin/users'
   id:
@@ -361,13 +431,19 @@ export interface FileRouteTypes {
     | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
+    | '/super-admin/agencies/create'
     | '/super-admin/locations/create'
+    | '/super-admin/offence-categories/create'
+    | '/super-admin/offences/create'
     | '/super-admin/teams/create'
+    | '/super-admin/users/create'
     | '/agency-admin/locations/'
     | '/agency-admin/teams/'
     | '/officer/reports/'
     | '/super-admin/agencies/'
     | '/super-admin/locations/'
+    | '/super-admin/offence-categories/'
+    | '/super-admin/offences/'
     | '/super-admin/teams/'
     | '/super-admin/users/'
   fileRoutesById: FileRoutesById
@@ -523,6 +599,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminTeamsIndexRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/super-admin/offences/': {
+      id: '/super-admin/offences/'
+      path: '/offences'
+      fullPath: '/super-admin/offences'
+      preLoaderRoute: typeof SuperAdminOffencesIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/offence-categories/': {
+      id: '/super-admin/offence-categories/'
+      path: '/offence-categories'
+      fullPath: '/super-admin/offence-categories'
+      preLoaderRoute: typeof SuperAdminOffenceCategoriesIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/locations/': {
       id: '/super-admin/locations/'
       path: '/locations'
@@ -558,6 +648,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgencyAdminLocationsIndexRouteImport
       parentRoute: typeof AgencyAdminRoute
     }
+    '/super-admin/users/create': {
+      id: '/super-admin/users/create'
+      path: '/users/create'
+      fullPath: '/super-admin/users/create'
+      preLoaderRoute: typeof SuperAdminUsersCreateRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/teams/create': {
       id: '/super-admin/teams/create'
       path: '/teams/create'
@@ -565,11 +662,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminTeamsCreateRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/super-admin/offences/create': {
+      id: '/super-admin/offences/create'
+      path: '/offences/create'
+      fullPath: '/super-admin/offences/create'
+      preLoaderRoute: typeof SuperAdminOffencesCreateRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/offence-categories/create': {
+      id: '/super-admin/offence-categories/create'
+      path: '/offence-categories/create'
+      fullPath: '/super-admin/offence-categories/create'
+      preLoaderRoute: typeof SuperAdminOffenceCategoriesCreateRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/locations/create': {
       id: '/super-admin/locations/create'
       path: '/locations/create'
       fullPath: '/super-admin/locations/create'
       preLoaderRoute: typeof SuperAdminLocationsCreateRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/agencies/create': {
+      id: '/super-admin/agencies/create'
+      path: '/agencies/create'
+      fullPath: '/super-admin/agencies/create'
+      preLoaderRoute: typeof SuperAdminAgenciesCreateRouteImport
       parentRoute: typeof SuperAdminRoute
     }
     '/super-admin/agencies/$id': {
@@ -634,10 +752,16 @@ const OfficerRouteWithChildren =
 interface SuperAdminRouteChildren {
   SuperAdminIndexRoute: typeof SuperAdminIndexRoute
   SuperAdminAgenciesIdRoute: typeof SuperAdminAgenciesIdRoute
+  SuperAdminAgenciesCreateRoute: typeof SuperAdminAgenciesCreateRoute
   SuperAdminLocationsCreateRoute: typeof SuperAdminLocationsCreateRoute
+  SuperAdminOffenceCategoriesCreateRoute: typeof SuperAdminOffenceCategoriesCreateRoute
+  SuperAdminOffencesCreateRoute: typeof SuperAdminOffencesCreateRoute
   SuperAdminTeamsCreateRoute: typeof SuperAdminTeamsCreateRoute
+  SuperAdminUsersCreateRoute: typeof SuperAdminUsersCreateRoute
   SuperAdminAgenciesIndexRoute: typeof SuperAdminAgenciesIndexRoute
   SuperAdminLocationsIndexRoute: typeof SuperAdminLocationsIndexRoute
+  SuperAdminOffenceCategoriesIndexRoute: typeof SuperAdminOffenceCategoriesIndexRoute
+  SuperAdminOffencesIndexRoute: typeof SuperAdminOffencesIndexRoute
   SuperAdminTeamsIndexRoute: typeof SuperAdminTeamsIndexRoute
   SuperAdminUsersIndexRoute: typeof SuperAdminUsersIndexRoute
 }
@@ -645,10 +769,17 @@ interface SuperAdminRouteChildren {
 const SuperAdminRouteChildren: SuperAdminRouteChildren = {
   SuperAdminIndexRoute: SuperAdminIndexRoute,
   SuperAdminAgenciesIdRoute: SuperAdminAgenciesIdRoute,
+  SuperAdminAgenciesCreateRoute: SuperAdminAgenciesCreateRoute,
   SuperAdminLocationsCreateRoute: SuperAdminLocationsCreateRoute,
+  SuperAdminOffenceCategoriesCreateRoute:
+    SuperAdminOffenceCategoriesCreateRoute,
+  SuperAdminOffencesCreateRoute: SuperAdminOffencesCreateRoute,
   SuperAdminTeamsCreateRoute: SuperAdminTeamsCreateRoute,
+  SuperAdminUsersCreateRoute: SuperAdminUsersCreateRoute,
   SuperAdminAgenciesIndexRoute: SuperAdminAgenciesIndexRoute,
   SuperAdminLocationsIndexRoute: SuperAdminLocationsIndexRoute,
+  SuperAdminOffenceCategoriesIndexRoute: SuperAdminOffenceCategoriesIndexRoute,
+  SuperAdminOffencesIndexRoute: SuperAdminOffencesIndexRoute,
   SuperAdminTeamsIndexRoute: SuperAdminTeamsIndexRoute,
   SuperAdminUsersIndexRoute: SuperAdminUsersIndexRoute,
 }

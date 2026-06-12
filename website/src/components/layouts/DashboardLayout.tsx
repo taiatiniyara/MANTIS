@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   User,
+  UserCog,
 } from "lucide-react";
 
 interface MenuItem {
@@ -44,9 +45,21 @@ const menuItems: MenuItem[] = [
     roles: ["Super Admin"],
   },
   {
+    label: "Teams",
+    path: "/super-admin/teams",
+    icon: Users,
+    roles: ["Super Admin"],
+  },
+  {
+    label: "Offences",
+    path: "/super-admin/offences",
+    icon: FileText,
+    roles: ["Super Admin"],
+  },
+  {
     label: "Users",
     path: "/super-admin/users",
-    icon: Users,
+    icon: UserCog,
     roles: ["Super Admin"],
   },
   {

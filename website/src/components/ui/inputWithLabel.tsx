@@ -31,10 +31,11 @@ export function SelectWithLabel(props: {
     <div className="space-y-2 w-full">
       <Label className="text-sm sm:text-base">{props.label}</Label>
       <select
-        className="border h-11 rounded shadow-xs w-full px-3 text-base bg-white"
+        className="border border-input h-11 rounded-md shadow-xs w-full px-3 text-base bg-white focus:outline-none focus:ring-2 focus:ring-ring/40"
         name={props.name}
+        defaultValue=""
       >
-        <option className="w-full">{`Select ${props.label}`}</option>
+        <option value="" disabled>{`Select ${props.label}`}</option>
         {props.options.map((option) => (
           <option
             key={option.value}
