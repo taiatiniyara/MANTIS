@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as OfficerRouteImport } from './routes/officer'
+import { Route as DevRouteImport } from './routes/dev'
 import { Route as AgencyAdminRouteImport } from './routes/agency-admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SuperAdminIndexRouteImport } from './routes/super-admin/index'
 import { Route as OfficerIndexRouteImport } from './routes/officer/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AgencyAdminIndexRouteImport } from './routes/agency-admin/index'
 import { Route as OfficerProfileRouteImport } from './routes/officer/profile'
 import { Route as DocsSearchAndFiltersRouteImport } from './routes/docs/search-and-filters'
@@ -23,6 +25,7 @@ import { Route as DocsRolesAndPermissionsRouteImport } from './routes/docs/roles
 import { Route as DocsMobileRouteImport } from './routes/docs/mobile'
 import { Route as DocsGettingStartedRouteImport } from './routes/docs/getting-started'
 import { Route as DocsCasesRouteImport } from './routes/docs/cases'
+import { Route as DevStylesRouteImport } from './routes/dev/styles'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
@@ -55,6 +58,11 @@ const OfficerRoute = OfficerRouteImport.update({
   path: '/officer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevRoute = DevRouteImport.update({
+  id: '/dev',
+  path: '/dev',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AgencyAdminRoute = AgencyAdminRouteImport.update({
   id: '/agency-admin',
   path: '/agency-admin',
@@ -79,6 +87,11 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DevIndexRoute = DevIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DevRoute,
 } as any)
 const AgencyAdminIndexRoute = AgencyAdminIndexRouteImport.update({
   id: '/',
@@ -114,6 +127,11 @@ const DocsCasesRoute = DocsCasesRouteImport.update({
   id: '/docs/cases',
   path: '/docs/cases',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DevStylesRoute = DevStylesRouteImport.update({
+  id: '/styles',
+  path: '/styles',
+  getParentRoute: () => DevRoute,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/auth/register',
@@ -231,11 +249,13 @@ const OfficerReportsIdRoute = OfficerReportsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agency-admin': typeof AgencyAdminRouteWithChildren
+  '/dev': typeof DevRouteWithChildren
   '/officer': typeof OfficerRouteWithChildren
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/dev/styles': typeof DevStylesRoute
   '/docs/cases': typeof DocsCasesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/mobile': typeof DocsMobileRoute
@@ -243,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
   '/agency-admin/': typeof AgencyAdminIndexRoute
+  '/dev/': typeof DevIndexRoute
   '/docs': typeof DocsIndexRoute
   '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
@@ -270,6 +291,7 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/dev/styles': typeof DevStylesRoute
   '/docs/cases': typeof DocsCasesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/mobile': typeof DocsMobileRoute
@@ -277,6 +299,7 @@ export interface FileRoutesByTo {
   '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
   '/agency-admin': typeof AgencyAdminIndexRoute
+  '/dev': typeof DevIndexRoute
   '/docs': typeof DocsIndexRoute
   '/officer': typeof OfficerIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
@@ -303,11 +326,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agency-admin': typeof AgencyAdminRouteWithChildren
+  '/dev': typeof DevRouteWithChildren
   '/officer': typeof OfficerRouteWithChildren
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/dev/styles': typeof DevStylesRoute
   '/docs/cases': typeof DocsCasesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/mobile': typeof DocsMobileRoute
@@ -315,6 +340,7 @@ export interface FileRoutesById {
   '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
   '/agency-admin/': typeof AgencyAdminIndexRoute
+  '/dev/': typeof DevIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
@@ -342,11 +368,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agency-admin'
+    | '/dev'
     | '/officer'
     | '/super-admin'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/dev/styles'
     | '/docs/cases'
     | '/docs/getting-started'
     | '/docs/mobile'
@@ -354,6 +382,7 @@ export interface FileRouteTypes {
     | '/docs/search-and-filters'
     | '/officer/profile'
     | '/agency-admin/'
+    | '/dev/'
     | '/docs'
     | '/officer/'
     | '/super-admin/'
@@ -381,6 +410,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/dev/styles'
     | '/docs/cases'
     | '/docs/getting-started'
     | '/docs/mobile'
@@ -388,6 +418,7 @@ export interface FileRouteTypes {
     | '/docs/search-and-filters'
     | '/officer/profile'
     | '/agency-admin'
+    | '/dev'
     | '/docs'
     | '/officer'
     | '/super-admin'
@@ -413,11 +444,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agency-admin'
+    | '/dev'
     | '/officer'
     | '/super-admin'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/dev/styles'
     | '/docs/cases'
     | '/docs/getting-started'
     | '/docs/mobile'
@@ -425,6 +458,7 @@ export interface FileRouteTypes {
     | '/docs/search-and-filters'
     | '/officer/profile'
     | '/agency-admin/'
+    | '/dev/'
     | '/docs/'
     | '/officer/'
     | '/super-admin/'
@@ -451,6 +485,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgencyAdminRoute: typeof AgencyAdminRouteWithChildren
+  DevRoute: typeof DevRouteWithChildren
   OfficerRoute: typeof OfficerRouteWithChildren
   SuperAdminRoute: typeof SuperAdminRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
@@ -478,6 +513,13 @@ declare module '@tanstack/react-router' {
       path: '/officer'
       fullPath: '/officer'
       preLoaderRoute: typeof OfficerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev': {
+      id: '/dev'
+      path: '/dev'
+      fullPath: '/dev'
+      preLoaderRoute: typeof DevRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agency-admin': {
@@ -514,6 +556,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/docs'
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dev/': {
+      id: '/dev/'
+      path: '/'
+      fullPath: '/dev/'
+      preLoaderRoute: typeof DevIndexRouteImport
+      parentRoute: typeof DevRoute
     }
     '/agency-admin/': {
       id: '/agency-admin/'
@@ -563,6 +612,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/docs/cases'
       preLoaderRoute: typeof DocsCasesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dev/styles': {
+      id: '/dev/styles'
+      path: '/styles'
+      fullPath: '/dev/styles'
+      preLoaderRoute: typeof DevStylesRouteImport
+      parentRoute: typeof DevRoute
     }
     '/auth/register': {
       id: '/auth/register'
@@ -730,6 +786,18 @@ const AgencyAdminRouteWithChildren = AgencyAdminRoute._addFileChildren(
   AgencyAdminRouteChildren,
 )
 
+interface DevRouteChildren {
+  DevStylesRoute: typeof DevStylesRoute
+  DevIndexRoute: typeof DevIndexRoute
+}
+
+const DevRouteChildren: DevRouteChildren = {
+  DevStylesRoute: DevStylesRoute,
+  DevIndexRoute: DevIndexRoute,
+}
+
+const DevRouteWithChildren = DevRoute._addFileChildren(DevRouteChildren)
+
 interface OfficerRouteChildren {
   OfficerProfileRoute: typeof OfficerProfileRoute
   OfficerIndexRoute: typeof OfficerIndexRoute
@@ -791,6 +859,7 @@ const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgencyAdminRoute: AgencyAdminRouteWithChildren,
+  DevRoute: DevRouteWithChildren,
   OfficerRoute: OfficerRouteWithChildren,
   SuperAdminRoute: SuperAdminRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,

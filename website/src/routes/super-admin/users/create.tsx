@@ -29,6 +29,7 @@ const ROLES: { value: Role; label: string }[] = [
   { value: "Officer", label: "Officer" },
   { value: "Government Official", label: "Government Official" },
   { value: "Citizen", label: "Citizen" },
+  { value: "Dev", label: "Developer" },
 ];
 
 function RouteComponent() {

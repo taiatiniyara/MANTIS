@@ -17,6 +17,7 @@ const DASHBOARD_ROLES: Role[] = [
   "Agency Admin",
   "Team Leader",
   "Officer",
+  "Dev",
 ];
 
 /**

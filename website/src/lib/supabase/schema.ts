@@ -71,7 +71,7 @@ export type NewTeam = typeof teams.$inferInsert;
 // Users (officers, supervisors, admins)
 // -----------------------------------------------------
 
-export type Role = "Super Admin" | "Agency Admin" | "Team Leader" | "Officer" | "Citizen" | "Government Official";
+export type Role = "Super Admin" | "Agency Admin" | "Team Leader" | "Officer" | "Citizen" | "Government Official" | "Dev";
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(), // Supabase auth.user.id
 
