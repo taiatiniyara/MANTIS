@@ -30,7 +30,7 @@
 -- agencies.type  →  AgencyType
 alter table public.agencies drop constraint if exists agencies_type_check;
 alter table public.agencies add constraint agencies_type_check
-  check (type in ('National','Municipal','Police')) not valid;
+  check (type in ('Authority','Municipality','Police')) not valid;
 
 -- users.role  →  Role   (RLS linchpin — keep in sync with rls.sql helpers)
 alter table public.users drop constraint if exists users_role_check;
@@ -57,7 +57,7 @@ alter table public.offences add constraint offences_severity_check
 -- NOT VALID tolerates them; clean them up before VALIDATE.
 alter table public.offences drop constraint if exists offences_agency_type_check;
 alter table public.offences add constraint offences_agency_type_check
-  check (agency_type in ('National','Municipal','Police')) not valid;
+  check (agency_type in ('Authority','Municipality','Police')) not valid;
 
 -- infringements.status  →  InfringementStatus
 alter table public.infringements drop constraint if exists infringements_status_check;
@@ -90,7 +90,7 @@ alter table public.appeals add constraint appeals_status_check
 --                        'Team Leader','Officer','Citizen','Government Official');
 --
 --    select id, agency_type from public.offences
---    where agency_type not in ('National','Municipal','Police');
+--    where agency_type not in ('Authority','Municipality','Police');
 --
 -- 2. Fix those rows (UPDATE ... set <col> = '<valid value>').
 --

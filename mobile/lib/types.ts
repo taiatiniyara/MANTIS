@@ -98,7 +98,7 @@ export type Database = {
 // Enums and Constants
 // -----------------------------------------------------
 
-export type AgencyType = "National" | "Municipal" | "Police";
+export type AgencyType = "Authority" | "Municipality" | "Police";
 
 export type Role =
   | "DEV Engineer"

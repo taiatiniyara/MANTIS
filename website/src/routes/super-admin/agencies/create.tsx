@@ -15,8 +15,8 @@ export const Route = createFileRoute("/super-admin/agencies/create")({
 });
 
 const AGENCY_TYPES = [
-  { value: "National", label: "National" },
-  { value: "Municipal", label: "Municipal" },
+  { value: "Authority", label: "Authority" },
+  { value: "Municipality", label: "Municipality" },
   { value: "Police", label: "Police" },
 ];
 

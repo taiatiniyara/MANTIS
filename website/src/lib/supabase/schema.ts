@@ -12,13 +12,13 @@ import {
 // Agencies (LTA, Police, Municipal Councils, etc.)
 // -----------------------------------------------------
 
-export type AgencyType = "National" | "Municipal" | "Police";
+export type AgencyType = "Authority" | "Municipality" | "Police";
 
 export const agencies = pgTable("agencies", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),          // e.g., "Suva City Council"
   code: text("code").notNull().unique(), // e.g., "SCC", "LTA", "FJPOL"
-  type: text("type").notNull().$type<AgencyType>(),          // national, municipal, police
+  type: text("type").notNull().$type<AgencyType>(),          // Authority, Municipality, Police
   created_at: timestamp("created_at").defaultNow(),
 });
 export type Agency = typeof agencies.$inferSelect;
