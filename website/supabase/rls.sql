@@ -422,6 +422,15 @@ create policy audit_logs_select on public.audit_logs
   for select to authenticated
   using (public.is_platform_admin());
 
+
+-- -----------------------------------------------------------------------------
+-- 12. Clean up helpers from the previous (two-tier) model.
+--     Safe here: all policies above now reference is_platform_admin /
+--     is_tenant_admin, so nothing depends on these anymore.
+-- -----------------------------------------------------------------------------
+drop function if exists public.is_super_admin();
+drop function if exists public.is_agency_admin();
+
 -- =============================================================================
 -- End of RLS policies
 -- =============================================================================
