@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
+import { ThemeEditor } from "@/components/ThemeEditor";
 
 export const Route = createFileRoute("/styling")({
   component: RouteComponent,
@@ -230,6 +231,9 @@ function RouteComponent() {
                 <code>mobile/constants/theme.ts</code>.
               </p>
             </header>
+
+            {/* Live theme editor (App Admin) */}
+            <ThemeEditor />
 
         {/* Divergence callout */}
         <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">

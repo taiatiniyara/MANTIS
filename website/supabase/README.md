@@ -11,6 +11,7 @@ Those live here and are applied separately.
 | `rls.sql` | Helper functions + `enable row level security` + policies for every table, encoding the two-tier authorization model. |
 | `constraints.sql` | `CHECK` constraints (`NOT VALID`) pinning closed-vocabulary columns (`users.role`, statuses, types, methods). Guards RLS correctness — apply after `rls.sql`. |
 | `seed-roles.sql` | Re-assigns the two existing super-users to the new top tiers (DEV Engineer + App Admin). Documents the **apply order** (rls → constraints → seed). |
+| `app-theme.sql` | Creates the `app_theme` table (single-row, app-wide design tokens) + RLS (everyone reads; App Admin / DEV Engineer write). Powers the in-app `/styling` editor. |
 
 ## Why this matters (read before skipping)
 

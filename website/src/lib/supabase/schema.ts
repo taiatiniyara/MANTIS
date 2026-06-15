@@ -278,6 +278,20 @@ export type NewAuditLog = typeof auditLogs.$inferInsert;
 export type OffenceCategory = typeof offenceCategories.$inferSelect;
 export type NewOffenceCategory = typeof offenceCategories.$inferInsert;
 
+// -----------------------------------------------------
+// App Theme — single-row, app-wide design tokens edited in-app by App Admin.
+// Read by everyone (themes the public site too); written by App Admin / DEV
+// Engineer. `tokens` maps CSS variable name -> value, e.g. {"--primary":"..."}.
+// -----------------------------------------------------
+export const appTheme = pgTable("app_theme", {
+  id: text("id").primaryKey().default("default"),
+  tokens: jsonb("tokens").notNull().$type<Record<string, string>>(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  updated_by: uuid("updated_by").references(() => users.id),
+});
+export type AppTheme = typeof appTheme.$inferSelect;
+export type NewAppTheme = typeof appTheme.$inferInsert;
+
 export const tables = {
   agencies,
   locations,
@@ -308,4 +322,5 @@ export const tableNames = {
   payments: "payments",
   appeals: "appeals",
   auditLogs: "audit_logs",
+  appTheme: "app_theme",
 };
