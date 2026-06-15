@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, MapPin } from "lucide-react";
 
-export const Route = createFileRoute("/agency-admin/teams/")({
+export const Route = createFileRoute("/tenant-admin/teams/")({
   component: RouteComponent,
 });
 

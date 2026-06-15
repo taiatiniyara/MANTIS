@@ -13,11 +13,12 @@ interface RoleProtectedRouteProps {
 // logged-in user who lands on a section they're not allowed into, back to
 // their own dashboard (falling back to the landing page for roles without one).
 const DASHBOARD_ROLES: Role[] = [
+  "DEV Engineer",
+  "App Admin",
   "Super Admin",
-  "Agency Admin",
+  "Tenant Admin",
   "Team Leader",
   "Officer",
-  "Dev",
 ];
 
 /**

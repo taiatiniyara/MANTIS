@@ -12,21 +12,39 @@ const roles: Array<{
   capabilities: string[];
 }> = [
   {
-    name: "Super Admin",
-    summary: "Full control of the platform for your organization.",
+    name: "DEV Engineer",
+    summary: "Top tier — full development rights, kept separate from admin functions.",
     capabilities: [
-      "Manage all agencies, users, and roles",
-      "Configure integrations and security policies",
+      "Full platform access",
+      "Developer tooling (reserved for future surfaces)",
+      "Registers App Admins",
+    ],
+  },
+  {
+    name: "App Admin",
+    summary: "Owns app-wide administration and presentation.",
+    capabilities: [
+      "Everything Super Admin can do",
+      "All app styling and generic text changes (in-app)",
+      "Registers Super Admins",
+    ],
+  },
+  {
+    name: "Super Admin",
+    summary: "Global platform management across all tenants.",
+    capabilities: [
+      "Manage all agencies, locations, offences, teams, and users",
+      "Adds Tenant Admins",
       "View and export all data",
     ],
   },
   {
-    name: "Agency Admin",
-    summary: "Runs an agency's setup, access, and reporting.",
+    name: "Tenant Admin",
+    summary: "Runs a single tenant's (agency's) setup and access.",
     capabilities: [
-      "Invite and remove users, assign roles",
-      "Create teams, locations, and templates",
-      "Review escalations and approve exports",
+      "Add, deactivate, and reset-password for users in their tenant",
+      "Create tenant-specific teams and locations",
+      "Scoped strictly to their own agency",
     ],
   },
   {
@@ -42,9 +60,9 @@ const roles: Array<{
     name: "Officer",
     summary: "Captures, updates, and completes assigned work.",
     capabilities: [
-      "Create and edit their own cases",
+      "Create and edit their own infringements",
       "Upload evidence and add comments",
-      "Collaborate via mentions and follow updates",
+      "Work primarily from the mobile app",
     ],
   },
 ];

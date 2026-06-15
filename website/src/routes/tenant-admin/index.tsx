@@ -6,7 +6,7 @@ import { useSupabaseQuery } from '@/hooks/useSupabaseQuery'
 import type { Team, Location, Infringement } from '@/lib/supabase/schema'
 import { Badge } from '@/components/ui/badge'
 
-export const Route = createFileRoute('/agency-admin/')({
+export const Route = createFileRoute('/tenant-admin/')({
   component: RouteComponent,
 })
 
@@ -190,7 +190,7 @@ function RouteComponent() {
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <div className="space-y-2 sm:space-y-3">
               <a
-                href="/agency-admin/teams"
+                href="/tenant-admin/teams"
                 className="block p-3 sm:p-4 rounded-lg border hover:bg-accent active:bg-accent/80 transition-colors touch-manipulation"
               >
                 <div className="flex items-center gap-3">
@@ -204,7 +204,7 @@ function RouteComponent() {
                 </div>
               </a>
               <a
-                href="/agency-admin/locations"
+                href="/tenant-admin/locations"
                 className="block p-3 sm:p-4 rounded-lg border hover:bg-accent active:bg-accent/80 transition-colors touch-manipulation"
               >
                 <div className="flex items-center gap-3">

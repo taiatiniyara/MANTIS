@@ -101,13 +101,14 @@ export type Database = {
 export type AgencyType = "National" | "Municipal" | "Police";
 
 export type Role =
+  | "DEV Engineer"
+  | "App Admin"
   | "Super Admin"
-  | "Agency Admin"
+  | "Tenant Admin"
   | "Team Leader"
   | "Officer"
   | "Citizen"
-  | "Government Official"
-  | "Dev";
+  | "Government Official";
 
 export type InfringementStatus = 
   | "draft"           // Created but not submitted

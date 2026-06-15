@@ -10,6 +10,25 @@ The website is the multi-agency admin/management portal. A design session walked
 the decision tree for turning the "Add-only" forms into a production/tender-grade
 admin surface, after discovering the database was wide open (RLS off).
 
+## Role hierarchy (revised 2026-06-12 — supersedes the two-tier model below)
+
+Five tiers, each provisioning the tier directly beneath it. Higher tiers are
+supersets (for now).
+
+| # | Role | Owns | Registers | Scope |
+|---|------|------|-----------|-------|
+| 1 | **DEV Engineer** | Full dev rights; *no* admin/styling exclusivity yet — reserved for future dev tooling. Kept separate from admin functions. | App Admins | Global |
+| 2 | **App Admin** | All global management screens **+ in-app styling & generic-text editing** (`/styling`) | Super Admins | Global |
+| 3 | **Super Admin** | Global management (agencies, locations, offences, teams, users) — today's privileges, retained | Tenant Admins | Global |
+| 4 | **Tenant Admin** *(renamed from Agency Admin)* | Tenant-scoped: add/deactivate user, reset password, tenant teams/locations | Users (own tenant) | One tenant |
+| 5 | **Users** | Officer, Team Leader, Citizen, Government Official | — | — |
+
+Implementation notes:
+- **RLS:** DEV Engineer / App Admin / Super Admin share identical full data access via `is_platform_admin()`. Their differences (styling, who-creates-whom) are app-layer, not RLS. Tenant Admin = `is_tenant_admin()` (renamed from `is_agency_admin`), still scoped by `agency_id` (tenant = agency).
+- **Routes:** `/super-admin` (global mgmt) allows all three platform admins; `/styling` allows DEV Engineer + App Admin; `/tenant-admin` (renamed from `/agency-admin`) allows Tenant Admin. `/app-admin` + `/dev-engineer` are login-landing redirects → `/super-admin`. The old `/dev` Design Reference moved to `/styling` (App-Admin-owned).
+- **Provisioning:** the Add-User role dropdown is limited to roles strictly below the creator's tier (`CREATABLE_ROLES`). Server-side enforcement lands with the Edge Function.
+- **SQL re-apply required:** `rls.sql` + `constraints.sql` changed; see `website/supabase/seed-roles.sql` for the apply order, then re-assign the two existing super-users to DEV Engineer + App Admin.
+
 ## Decisions
 
 | # | Decision | Resolution | Rationale |

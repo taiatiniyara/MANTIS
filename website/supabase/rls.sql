@@ -11,9 +11,12 @@
 --   Re-running is safe: every statement is idempotent (drop-if-exists + create).
 --
 -- MODEL (two-tier)
---   Super Admin   → full access to everything (platform operator)
---   Agency Admin  → manages only rows in their own agency_id
---   Officer / Team Leader → operational reads in their agency; create
+--   Platform admins (DEV Engineer / App Admin / Super Admin) → full access to
+--                   everything. They share identical data access; their
+--                   differences (styling ownership, who-creates-whom) live in
+--                   the app layer, not RLS.  → is_platform_admin()
+--   Tenant Admin  → manages only rows in their own agency_id (the tenant)
+--   Officer / Team Leader → operational reads in their tenant; create
 --                   infringements they own
 --   anon (no login) → NO access, except the small public reference reads
 --                   needed by the registration screen (agencies, teams)
@@ -52,7 +55,10 @@ as $$
   select agency_id from public.users where id = auth.uid();
 $$;
 
-create or replace function public.is_super_admin()
+-- Platform admins = the three global-admin tiers (DEV Engineer, App Admin,
+-- Super Admin). They share identical full data access; their differences
+-- (styling ownership, who-can-create-whom) are enforced in the app layer.
+create or replace function public.is_platform_admin()
 returns boolean
 language sql
 stable
@@ -60,12 +66,13 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role = 'Super Admin' from public.users where id = auth.uid()),
+    (select role in ('DEV Engineer', 'App Admin', 'Super Admin')
+       from public.users where id = auth.uid()),
     false
   );
 $$;
 
-create or replace function public.is_agency_admin()
+create or replace function public.is_app_admin()
 returns boolean
 language sql
 stable
@@ -73,7 +80,21 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role = 'Agency Admin' from public.users where id = auth.uid()),
+    (select role = 'App Admin' from public.users where id = auth.uid()),
+    false
+  );
+$$;
+
+-- Tenant Admin = the per-tenant (per-agency) admin (formerly "Agency Admin").
+create or replace function public.is_tenant_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select role = 'Tenant Admin' from public.users where id = auth.uid()),
     false
   );
 $$;
@@ -89,7 +110,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.is_super_admin()
+  select public.is_platform_admin()
       or exists (
         select 1 from public.infringements i
         where i.id = inf_id
@@ -100,8 +121,9 @@ $$;
 grant execute on function
   public.auth_role(),
   public.auth_agency_id(),
-  public.is_super_admin(),
-  public.is_agency_admin(),
+  public.is_platform_admin(),
+  public.is_app_admin(),
+  public.is_tenant_admin(),
   public.infringement_in_scope(uuid)
 to anon, authenticated;
 
@@ -135,8 +157,8 @@ create policy agencies_select on public.agencies
 drop policy if exists agencies_write on public.agencies;
 create policy agencies_write on public.agencies
   for all to authenticated
-  using (public.is_super_admin())
-  with check (public.is_super_admin());
+  using (public.is_platform_admin())
+  with check (public.is_platform_admin());
 
 
 -- -----------------------------------------------------------------------------
@@ -152,12 +174,12 @@ drop policy if exists teams_write on public.teams;
 create policy teams_write on public.teams
   for all to authenticated
   using (
-    public.is_super_admin()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    public.is_platform_admin()
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   )
   with check (
-    public.is_super_admin()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    public.is_platform_admin()
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   );
 
 
@@ -174,12 +196,12 @@ drop policy if exists locations_write on public.locations;
 create policy locations_write on public.locations
   for all to authenticated
   using (
-    public.is_super_admin()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    public.is_platform_admin()
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   )
   with check (
-    public.is_super_admin()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    public.is_platform_admin()
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   );
 
 
@@ -192,30 +214,30 @@ drop policy if exists users_select on public.users;
 create policy users_select on public.users
   for select to authenticated
   using (
-    public.is_super_admin()
+    public.is_platform_admin()
     or id = auth.uid()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   );
 
 drop policy if exists users_insert on public.users;
 create policy users_insert on public.users
   for insert to authenticated
-  with check (public.is_super_admin());
+  with check (public.is_platform_admin());
 
 drop policy if exists users_update on public.users;
 create policy users_update on public.users
   for update to authenticated
   using (
-    public.is_super_admin()
+    public.is_platform_admin()
     or id = auth.uid()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   )
   with check (
-    public.is_super_admin()
-    -- Agency Admin may edit users in their agency but cannot mint Super Admins
-    or (public.is_agency_admin()
+    public.is_platform_admin()
+    -- Tenant Admin may edit users in their tenant but cannot mint platform admins
+    or (public.is_tenant_admin()
         and agency_id = public.auth_agency_id()
-        and role <> 'Super Admin')
+        and role not in ('DEV Engineer', 'App Admin', 'Super Admin'))
     -- A user editing their own row cannot change their role or agency
     or (id = auth.uid()
         and role = public.auth_role()
@@ -225,7 +247,7 @@ create policy users_update on public.users
 drop policy if exists users_delete on public.users;
 create policy users_delete on public.users
   for delete to authenticated
-  using (public.is_super_admin());
+  using (public.is_platform_admin());
 
 
 -- -----------------------------------------------------------------------------
@@ -240,10 +262,10 @@ drop policy if exists drivers_cud on public.drivers;
 create policy drivers_cud on public.drivers
   for all to authenticated
   using (
-    public.auth_role() in ('Super Admin','Agency Admin','Team Leader','Officer')
+    public.auth_role() in ('DEV Engineer','App Admin','Super Admin','Tenant Admin','Team Leader','Officer')
   )
   with check (
-    public.auth_role() in ('Super Admin','Agency Admin','Team Leader','Officer')
+    public.auth_role() in ('DEV Engineer','App Admin','Super Admin','Tenant Admin','Team Leader','Officer')
   );
 
 drop policy if exists vehicles_select on public.vehicles;
@@ -254,10 +276,10 @@ drop policy if exists vehicles_cud on public.vehicles;
 create policy vehicles_cud on public.vehicles
   for all to authenticated
   using (
-    public.auth_role() in ('Super Admin','Agency Admin','Team Leader','Officer')
+    public.auth_role() in ('DEV Engineer','App Admin','Super Admin','Tenant Admin','Team Leader','Officer')
   )
   with check (
-    public.auth_role() in ('Super Admin','Agency Admin','Team Leader','Officer')
+    public.auth_role() in ('DEV Engineer','App Admin','Super Admin','Tenant Admin','Team Leader','Officer')
   );
 
 
@@ -272,8 +294,8 @@ create policy offence_categories_select on public.offence_categories
 drop policy if exists offence_categories_write on public.offence_categories;
 create policy offence_categories_write on public.offence_categories
   for all to authenticated
-  using (public.is_super_admin())
-  with check (public.is_super_admin());
+  using (public.is_platform_admin())
+  with check (public.is_platform_admin());
 
 
 -- -----------------------------------------------------------------------------
@@ -289,12 +311,12 @@ drop policy if exists offences_write on public.offences;
 create policy offences_write on public.offences
   for all to authenticated
   using (
-    public.is_super_admin()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    public.is_platform_admin()
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   )
   with check (
-    public.is_super_admin()
-    or (public.is_agency_admin() and agency_id = public.auth_agency_id())
+    public.is_platform_admin()
+    or (public.is_tenant_admin() and agency_id = public.auth_agency_id())
   );
 
 
@@ -305,7 +327,7 @@ drop policy if exists infringements_select on public.infringements;
 create policy infringements_select on public.infringements
   for select to authenticated
   using (
-    public.is_super_admin()
+    public.is_platform_admin()
     or agency_id = public.auth_agency_id()
   );
 
@@ -313,7 +335,7 @@ drop policy if exists infringements_insert on public.infringements;
 create policy infringements_insert on public.infringements
   for insert to authenticated
   with check (
-    public.is_super_admin()
+    public.is_platform_admin()
     or (agency_id = public.auth_agency_id() and officer_id = auth.uid())
   );
 
@@ -321,18 +343,18 @@ drop policy if exists infringements_update on public.infringements;
 create policy infringements_update on public.infringements
   for update to authenticated
   using (
-    public.is_super_admin()
+    public.is_platform_admin()
     or agency_id = public.auth_agency_id()
   )
   with check (
-    public.is_super_admin()
+    public.is_platform_admin()
     or agency_id = public.auth_agency_id()
   );
 
 drop policy if exists infringements_delete on public.infringements;
 create policy infringements_delete on public.infringements
   for delete to authenticated
-  using (public.is_super_admin());
+  using (public.is_platform_admin());
 
 
 -- -----------------------------------------------------------------------------
@@ -358,11 +380,11 @@ drop policy if exists payments_write on public.payments;
 create policy payments_write on public.payments
   for all to authenticated
   using (
-    public.is_super_admin()
+    public.is_platform_admin()
     or public.infringement_in_scope(infringement_id)
   )
   with check (
-    public.is_super_admin()
+    public.is_platform_admin()
     or public.infringement_in_scope(infringement_id)
   );
 
@@ -380,11 +402,11 @@ drop policy if exists appeals_update on public.appeals;
 create policy appeals_update on public.appeals
   for update to authenticated
   using (
-    public.is_super_admin()
+    public.is_platform_admin()
     or public.infringement_in_scope(infringement_id)
   )
   with check (
-    public.is_super_admin()
+    public.is_platform_admin()
     or public.infringement_in_scope(infringement_id)
   );
 
@@ -398,7 +420,7 @@ create policy appeals_update on public.appeals
 drop policy if exists audit_logs_select on public.audit_logs;
 create policy audit_logs_select on public.audit_logs
   for select to authenticated
-  using (public.is_super_admin());
+  using (public.is_platform_admin());
 
 -- =============================================================================
 -- End of RLS policies

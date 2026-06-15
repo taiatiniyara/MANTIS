@@ -16,6 +16,7 @@ import {
   X,
   User,
   UserCog,
+  Palette,
 } from "lucide-react";
 
 interface MenuItem {
@@ -25,66 +26,75 @@ interface MenuItem {
   roles: UserRole[];
 }
 
+// Global management screens — shared by the three platform-admin tiers.
+const PLATFORM_ADMIN: UserRole[] = ["DEV Engineer", "App Admin", "Super Admin"];
+
 const menuItems: MenuItem[] = [
   {
     label: "Dashboard",
     path: "/super-admin",
     icon: LayoutDashboard,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Locations",
     path: "/super-admin/locations",
     icon: MapPin,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Agencies",
     path: "/super-admin/agencies",
     icon: Building2,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Teams",
     path: "/super-admin/teams",
     icon: Users,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Offences",
     path: "/super-admin/offences",
     icon: FileText,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Users",
     path: "/super-admin/users",
     icon: UserCog,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
+  },
+  {
+    label: "Styling",
+    path: "/styling",
+    icon: Palette,
+    roles: ["DEV Engineer", "App Admin"],
   },
   {
     label: "Dashboard",
-    path: "/agency-admin",
+    path: "/tenant-admin",
     icon: LayoutDashboard,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Teams",
-    path: "/agency-admin/teams",
+    path: "/tenant-admin/teams",
     icon: Users,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Locations",
-    path: "/agency-admin/locations",
+    path: "/tenant-admin/locations",
     icon: MapPin,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Infringements",
-    path: "/agency-admin/reports",
+    path: "/tenant-admin/reports",
     icon: FileText,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Dashboard",

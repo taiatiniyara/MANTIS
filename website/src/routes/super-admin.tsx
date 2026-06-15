@@ -8,7 +8,7 @@ export const Route = createFileRoute("/super-admin")({
 
 function LayoutComponent() {
   return (
-    <RoleProtectedRoute allowedRoles={["Super Admin"]}>
+    <RoleProtectedRoute allowedRoles={["DEV Engineer", "App Admin", "Super Admin"]}>
       <DashboardLayout>
         <div className="p-4">
           <Outlet />

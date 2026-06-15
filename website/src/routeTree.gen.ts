@@ -9,26 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TenantAdminRouteImport } from './routes/tenant-admin'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
+import { Route as StylingRouteImport } from './routes/styling'
 import { Route as OfficerRouteImport } from './routes/officer'
-import { Route as DevRouteImport } from './routes/dev'
-import { Route as AgencyAdminRouteImport } from './routes/agency-admin'
+import { Route as DevEngineerRouteImport } from './routes/dev-engineer'
+import { Route as AppAdminRouteImport } from './routes/app-admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TenantAdminIndexRouteImport } from './routes/tenant-admin/index'
 import { Route as SuperAdminIndexRouteImport } from './routes/super-admin/index'
 import { Route as OfficerIndexRouteImport } from './routes/officer/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
-import { Route as DevIndexRouteImport } from './routes/dev/index'
-import { Route as AgencyAdminIndexRouteImport } from './routes/agency-admin/index'
 import { Route as OfficerProfileRouteImport } from './routes/officer/profile'
 import { Route as DocsSearchAndFiltersRouteImport } from './routes/docs/search-and-filters'
 import { Route as DocsRolesAndPermissionsRouteImport } from './routes/docs/roles-and-permissions'
 import { Route as DocsMobileRouteImport } from './routes/docs/mobile'
 import { Route as DocsGettingStartedRouteImport } from './routes/docs/getting-started'
 import { Route as DocsCasesRouteImport } from './routes/docs/cases'
-import { Route as DevStylesRouteImport } from './routes/dev/styles'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as TenantAdminTeamsIndexRouteImport } from './routes/tenant-admin/teams/index'
+import { Route as TenantAdminLocationsIndexRouteImport } from './routes/tenant-admin/locations/index'
 import { Route as SuperAdminUsersIndexRouteImport } from './routes/super-admin/users/index'
 import { Route as SuperAdminTeamsIndexRouteImport } from './routes/super-admin/teams/index'
 import { Route as SuperAdminOffencesIndexRouteImport } from './routes/super-admin/offences/index'
@@ -36,8 +38,6 @@ import { Route as SuperAdminOffenceCategoriesIndexRouteImport } from './routes/s
 import { Route as SuperAdminLocationsIndexRouteImport } from './routes/super-admin/locations/index'
 import { Route as SuperAdminAgenciesIndexRouteImport } from './routes/super-admin/agencies/index'
 import { Route as OfficerReportsIndexRouteImport } from './routes/officer/reports/index'
-import { Route as AgencyAdminTeamsIndexRouteImport } from './routes/agency-admin/teams/index'
-import { Route as AgencyAdminLocationsIndexRouteImport } from './routes/agency-admin/locations/index'
 import { Route as SuperAdminUsersCreateRouteImport } from './routes/super-admin/users/create'
 import { Route as SuperAdminTeamsCreateRouteImport } from './routes/super-admin/teams/create'
 import { Route as SuperAdminOffencesCreateRouteImport } from './routes/super-admin/offences/create'
@@ -48,9 +48,19 @@ import { Route as SuperAdminAgenciesIdRouteImport } from './routes/super-admin/a
 import { Route as OfficerReportsCreateRouteImport } from './routes/officer/reports/create'
 import { Route as OfficerReportsIdRouteImport } from './routes/officer/reports/$id'
 
+const TenantAdminRoute = TenantAdminRouteImport.update({
+  id: '/tenant-admin',
+  path: '/tenant-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SuperAdminRoute = SuperAdminRouteImport.update({
   id: '/super-admin',
   path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StylingRoute = StylingRouteImport.update({
+  id: '/styling',
+  path: '/styling',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OfficerRoute = OfficerRouteImport.update({
@@ -58,20 +68,25 @@ const OfficerRoute = OfficerRouteImport.update({
   path: '/officer',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevRoute = DevRouteImport.update({
-  id: '/dev',
-  path: '/dev',
+const DevEngineerRoute = DevEngineerRouteImport.update({
+  id: '/dev-engineer',
+  path: '/dev-engineer',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AgencyAdminRoute = AgencyAdminRouteImport.update({
-  id: '/agency-admin',
-  path: '/agency-admin',
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/app-admin',
+  path: '/app-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TenantAdminIndexRoute = TenantAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TenantAdminRoute,
 } as any)
 const SuperAdminIndexRoute = SuperAdminIndexRouteImport.update({
   id: '/',
@@ -87,16 +102,6 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const DevIndexRoute = DevIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DevRoute,
-} as any)
-const AgencyAdminIndexRoute = AgencyAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AgencyAdminRoute,
 } as any)
 const OfficerProfileRoute = OfficerProfileRouteImport.update({
   id: '/profile',
@@ -128,11 +133,6 @@ const DocsCasesRoute = DocsCasesRouteImport.update({
   path: '/docs/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevStylesRoute = DevStylesRouteImport.update({
-  id: '/styles',
-  path: '/styles',
-  getParentRoute: () => DevRoute,
-} as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/auth/register',
   path: '/auth/register',
@@ -148,6 +148,17 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TenantAdminTeamsIndexRoute = TenantAdminTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => TenantAdminRoute,
+} as any)
+const TenantAdminLocationsIndexRoute =
+  TenantAdminLocationsIndexRouteImport.update({
+    id: '/locations/',
+    path: '/locations/',
+    getParentRoute: () => TenantAdminRoute,
+  } as any)
 const SuperAdminUsersIndexRoute = SuperAdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -185,17 +196,6 @@ const OfficerReportsIndexRoute = OfficerReportsIndexRouteImport.update({
   path: '/reports/',
   getParentRoute: () => OfficerRoute,
 } as any)
-const AgencyAdminTeamsIndexRoute = AgencyAdminTeamsIndexRouteImport.update({
-  id: '/teams/',
-  path: '/teams/',
-  getParentRoute: () => AgencyAdminRoute,
-} as any)
-const AgencyAdminLocationsIndexRoute =
-  AgencyAdminLocationsIndexRouteImport.update({
-    id: '/locations/',
-    path: '/locations/',
-    getParentRoute: () => AgencyAdminRoute,
-  } as any)
 const SuperAdminUsersCreateRoute = SuperAdminUsersCreateRouteImport.update({
   id: '/users/create',
   path: '/users/create',
@@ -248,25 +248,25 @@ const OfficerReportsIdRoute = OfficerReportsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/agency-admin': typeof AgencyAdminRouteWithChildren
-  '/dev': typeof DevRouteWithChildren
+  '/app-admin': typeof AppAdminRoute
+  '/dev-engineer': typeof DevEngineerRoute
   '/officer': typeof OfficerRouteWithChildren
+  '/styling': typeof StylingRoute
   '/super-admin': typeof SuperAdminRouteWithChildren
+  '/tenant-admin': typeof TenantAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
-  '/dev/styles': typeof DevStylesRoute
   '/docs/cases': typeof DocsCasesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/mobile': typeof DocsMobileRoute
   '/docs/roles-and-permissions': typeof DocsRolesAndPermissionsRoute
   '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
-  '/agency-admin/': typeof AgencyAdminIndexRoute
-  '/dev/': typeof DevIndexRoute
   '/docs': typeof DocsIndexRoute
   '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/tenant-admin/': typeof TenantAdminIndexRoute
   '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
@@ -276,8 +276,6 @@ export interface FileRoutesByFullPath {
   '/super-admin/offences/create': typeof SuperAdminOffencesCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
   '/super-admin/users/create': typeof SuperAdminUsersCreateRoute
-  '/agency-admin/locations': typeof AgencyAdminLocationsIndexRoute
-  '/agency-admin/teams': typeof AgencyAdminTeamsIndexRoute
   '/officer/reports': typeof OfficerReportsIndexRoute
   '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
@@ -285,24 +283,27 @@ export interface FileRoutesByFullPath {
   '/super-admin/offences': typeof SuperAdminOffencesIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
   '/super-admin/users': typeof SuperAdminUsersIndexRoute
+  '/tenant-admin/locations': typeof TenantAdminLocationsIndexRoute
+  '/tenant-admin/teams': typeof TenantAdminTeamsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app-admin': typeof AppAdminRoute
+  '/dev-engineer': typeof DevEngineerRoute
+  '/styling': typeof StylingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
-  '/dev/styles': typeof DevStylesRoute
   '/docs/cases': typeof DocsCasesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/mobile': typeof DocsMobileRoute
   '/docs/roles-and-permissions': typeof DocsRolesAndPermissionsRoute
   '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
-  '/agency-admin': typeof AgencyAdminIndexRoute
-  '/dev': typeof DevIndexRoute
   '/docs': typeof DocsIndexRoute
   '/officer': typeof OfficerIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
+  '/tenant-admin': typeof TenantAdminIndexRoute
   '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
@@ -312,8 +313,6 @@ export interface FileRoutesByTo {
   '/super-admin/offences/create': typeof SuperAdminOffencesCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
   '/super-admin/users/create': typeof SuperAdminUsersCreateRoute
-  '/agency-admin/locations': typeof AgencyAdminLocationsIndexRoute
-  '/agency-admin/teams': typeof AgencyAdminTeamsIndexRoute
   '/officer/reports': typeof OfficerReportsIndexRoute
   '/super-admin/agencies': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations': typeof SuperAdminLocationsIndexRoute
@@ -321,29 +320,31 @@ export interface FileRoutesByTo {
   '/super-admin/offences': typeof SuperAdminOffencesIndexRoute
   '/super-admin/teams': typeof SuperAdminTeamsIndexRoute
   '/super-admin/users': typeof SuperAdminUsersIndexRoute
+  '/tenant-admin/locations': typeof TenantAdminLocationsIndexRoute
+  '/tenant-admin/teams': typeof TenantAdminTeamsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/agency-admin': typeof AgencyAdminRouteWithChildren
-  '/dev': typeof DevRouteWithChildren
+  '/app-admin': typeof AppAdminRoute
+  '/dev-engineer': typeof DevEngineerRoute
   '/officer': typeof OfficerRouteWithChildren
+  '/styling': typeof StylingRoute
   '/super-admin': typeof SuperAdminRouteWithChildren
+  '/tenant-admin': typeof TenantAdminRouteWithChildren
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
-  '/dev/styles': typeof DevStylesRoute
   '/docs/cases': typeof DocsCasesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/mobile': typeof DocsMobileRoute
   '/docs/roles-and-permissions': typeof DocsRolesAndPermissionsRoute
   '/docs/search-and-filters': typeof DocsSearchAndFiltersRoute
   '/officer/profile': typeof OfficerProfileRoute
-  '/agency-admin/': typeof AgencyAdminIndexRoute
-  '/dev/': typeof DevIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/officer/': typeof OfficerIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
+  '/tenant-admin/': typeof TenantAdminIndexRoute
   '/officer/reports/$id': typeof OfficerReportsIdRoute
   '/officer/reports/create': typeof OfficerReportsCreateRoute
   '/super-admin/agencies/$id': typeof SuperAdminAgenciesIdRoute
@@ -353,8 +354,6 @@ export interface FileRoutesById {
   '/super-admin/offences/create': typeof SuperAdminOffencesCreateRoute
   '/super-admin/teams/create': typeof SuperAdminTeamsCreateRoute
   '/super-admin/users/create': typeof SuperAdminUsersCreateRoute
-  '/agency-admin/locations/': typeof AgencyAdminLocationsIndexRoute
-  '/agency-admin/teams/': typeof AgencyAdminTeamsIndexRoute
   '/officer/reports/': typeof OfficerReportsIndexRoute
   '/super-admin/agencies/': typeof SuperAdminAgenciesIndexRoute
   '/super-admin/locations/': typeof SuperAdminLocationsIndexRoute
@@ -362,30 +361,32 @@ export interface FileRoutesById {
   '/super-admin/offences/': typeof SuperAdminOffencesIndexRoute
   '/super-admin/teams/': typeof SuperAdminTeamsIndexRoute
   '/super-admin/users/': typeof SuperAdminUsersIndexRoute
+  '/tenant-admin/locations/': typeof TenantAdminLocationsIndexRoute
+  '/tenant-admin/teams/': typeof TenantAdminTeamsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/agency-admin'
-    | '/dev'
+    | '/app-admin'
+    | '/dev-engineer'
     | '/officer'
+    | '/styling'
     | '/super-admin'
+    | '/tenant-admin'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
-    | '/dev/styles'
     | '/docs/cases'
     | '/docs/getting-started'
     | '/docs/mobile'
     | '/docs/roles-and-permissions'
     | '/docs/search-and-filters'
     | '/officer/profile'
-    | '/agency-admin/'
-    | '/dev/'
     | '/docs'
     | '/officer/'
     | '/super-admin/'
+    | '/tenant-admin/'
     | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
@@ -395,8 +396,6 @@ export interface FileRouteTypes {
     | '/super-admin/offences/create'
     | '/super-admin/teams/create'
     | '/super-admin/users/create'
-    | '/agency-admin/locations'
-    | '/agency-admin/teams'
     | '/officer/reports'
     | '/super-admin/agencies'
     | '/super-admin/locations'
@@ -404,24 +403,27 @@ export interface FileRouteTypes {
     | '/super-admin/offences'
     | '/super-admin/teams'
     | '/super-admin/users'
+    | '/tenant-admin/locations'
+    | '/tenant-admin/teams'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app-admin'
+    | '/dev-engineer'
+    | '/styling'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
-    | '/dev/styles'
     | '/docs/cases'
     | '/docs/getting-started'
     | '/docs/mobile'
     | '/docs/roles-and-permissions'
     | '/docs/search-and-filters'
     | '/officer/profile'
-    | '/agency-admin'
-    | '/dev'
     | '/docs'
     | '/officer'
     | '/super-admin'
+    | '/tenant-admin'
     | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
@@ -431,8 +433,6 @@ export interface FileRouteTypes {
     | '/super-admin/offences/create'
     | '/super-admin/teams/create'
     | '/super-admin/users/create'
-    | '/agency-admin/locations'
-    | '/agency-admin/teams'
     | '/officer/reports'
     | '/super-admin/agencies'
     | '/super-admin/locations'
@@ -440,28 +440,30 @@ export interface FileRouteTypes {
     | '/super-admin/offences'
     | '/super-admin/teams'
     | '/super-admin/users'
+    | '/tenant-admin/locations'
+    | '/tenant-admin/teams'
   id:
     | '__root__'
     | '/'
-    | '/agency-admin'
-    | '/dev'
+    | '/app-admin'
+    | '/dev-engineer'
     | '/officer'
+    | '/styling'
     | '/super-admin'
+    | '/tenant-admin'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
-    | '/dev/styles'
     | '/docs/cases'
     | '/docs/getting-started'
     | '/docs/mobile'
     | '/docs/roles-and-permissions'
     | '/docs/search-and-filters'
     | '/officer/profile'
-    | '/agency-admin/'
-    | '/dev/'
     | '/docs/'
     | '/officer/'
     | '/super-admin/'
+    | '/tenant-admin/'
     | '/officer/reports/$id'
     | '/officer/reports/create'
     | '/super-admin/agencies/$id'
@@ -471,8 +473,6 @@ export interface FileRouteTypes {
     | '/super-admin/offences/create'
     | '/super-admin/teams/create'
     | '/super-admin/users/create'
-    | '/agency-admin/locations/'
-    | '/agency-admin/teams/'
     | '/officer/reports/'
     | '/super-admin/agencies/'
     | '/super-admin/locations/'
@@ -480,14 +480,18 @@ export interface FileRouteTypes {
     | '/super-admin/offences/'
     | '/super-admin/teams/'
     | '/super-admin/users/'
+    | '/tenant-admin/locations/'
+    | '/tenant-admin/teams/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AgencyAdminRoute: typeof AgencyAdminRouteWithChildren
-  DevRoute: typeof DevRouteWithChildren
+  AppAdminRoute: typeof AppAdminRoute
+  DevEngineerRoute: typeof DevEngineerRoute
   OfficerRoute: typeof OfficerRouteWithChildren
+  StylingRoute: typeof StylingRoute
   SuperAdminRoute: typeof SuperAdminRouteWithChildren
+  TenantAdminRoute: typeof TenantAdminRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
@@ -501,11 +505,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tenant-admin': {
+      id: '/tenant-admin'
+      path: '/tenant-admin'
+      fullPath: '/tenant-admin'
+      preLoaderRoute: typeof TenantAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/super-admin': {
       id: '/super-admin'
       path: '/super-admin'
       fullPath: '/super-admin'
       preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/styling': {
+      id: '/styling'
+      path: '/styling'
+      fullPath: '/styling'
+      preLoaderRoute: typeof StylingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/officer': {
@@ -515,18 +533,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OfficerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev': {
-      id: '/dev'
-      path: '/dev'
-      fullPath: '/dev'
-      preLoaderRoute: typeof DevRouteImport
+    '/dev-engineer': {
+      id: '/dev-engineer'
+      path: '/dev-engineer'
+      fullPath: '/dev-engineer'
+      preLoaderRoute: typeof DevEngineerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agency-admin': {
-      id: '/agency-admin'
-      path: '/agency-admin'
-      fullPath: '/agency-admin'
-      preLoaderRoute: typeof AgencyAdminRouteImport
+    '/app-admin': {
+      id: '/app-admin'
+      path: '/app-admin'
+      fullPath: '/app-admin'
+      preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -535,6 +553,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/tenant-admin/': {
+      id: '/tenant-admin/'
+      path: '/'
+      fullPath: '/tenant-admin/'
+      preLoaderRoute: typeof TenantAdminIndexRouteImport
+      parentRoute: typeof TenantAdminRoute
     }
     '/super-admin/': {
       id: '/super-admin/'
@@ -556,20 +581,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/docs'
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/dev/': {
-      id: '/dev/'
-      path: '/'
-      fullPath: '/dev/'
-      preLoaderRoute: typeof DevIndexRouteImport
-      parentRoute: typeof DevRoute
-    }
-    '/agency-admin/': {
-      id: '/agency-admin/'
-      path: '/'
-      fullPath: '/agency-admin/'
-      preLoaderRoute: typeof AgencyAdminIndexRouteImport
-      parentRoute: typeof AgencyAdminRoute
     }
     '/officer/profile': {
       id: '/officer/profile'
@@ -613,13 +624,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsCasesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev/styles': {
-      id: '/dev/styles'
-      path: '/styles'
-      fullPath: '/dev/styles'
-      preLoaderRoute: typeof DevStylesRouteImport
-      parentRoute: typeof DevRoute
-    }
     '/auth/register': {
       id: '/auth/register'
       path: '/auth/register'
@@ -640,6 +644,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/tenant-admin/teams/': {
+      id: '/tenant-admin/teams/'
+      path: '/teams'
+      fullPath: '/tenant-admin/teams'
+      preLoaderRoute: typeof TenantAdminTeamsIndexRouteImport
+      parentRoute: typeof TenantAdminRoute
+    }
+    '/tenant-admin/locations/': {
+      id: '/tenant-admin/locations/'
+      path: '/locations'
+      fullPath: '/tenant-admin/locations'
+      preLoaderRoute: typeof TenantAdminLocationsIndexRouteImport
+      parentRoute: typeof TenantAdminRoute
     }
     '/super-admin/users/': {
       id: '/super-admin/users/'
@@ -689,20 +707,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/officer/reports'
       preLoaderRoute: typeof OfficerReportsIndexRouteImport
       parentRoute: typeof OfficerRoute
-    }
-    '/agency-admin/teams/': {
-      id: '/agency-admin/teams/'
-      path: '/teams'
-      fullPath: '/agency-admin/teams'
-      preLoaderRoute: typeof AgencyAdminTeamsIndexRouteImport
-      parentRoute: typeof AgencyAdminRoute
-    }
-    '/agency-admin/locations/': {
-      id: '/agency-admin/locations/'
-      path: '/locations'
-      fullPath: '/agency-admin/locations'
-      preLoaderRoute: typeof AgencyAdminLocationsIndexRouteImport
-      parentRoute: typeof AgencyAdminRoute
     }
     '/super-admin/users/create': {
       id: '/super-admin/users/create'
@@ -770,34 +774,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AgencyAdminRouteChildren {
-  AgencyAdminIndexRoute: typeof AgencyAdminIndexRoute
-  AgencyAdminLocationsIndexRoute: typeof AgencyAdminLocationsIndexRoute
-  AgencyAdminTeamsIndexRoute: typeof AgencyAdminTeamsIndexRoute
-}
-
-const AgencyAdminRouteChildren: AgencyAdminRouteChildren = {
-  AgencyAdminIndexRoute: AgencyAdminIndexRoute,
-  AgencyAdminLocationsIndexRoute: AgencyAdminLocationsIndexRoute,
-  AgencyAdminTeamsIndexRoute: AgencyAdminTeamsIndexRoute,
-}
-
-const AgencyAdminRouteWithChildren = AgencyAdminRoute._addFileChildren(
-  AgencyAdminRouteChildren,
-)
-
-interface DevRouteChildren {
-  DevStylesRoute: typeof DevStylesRoute
-  DevIndexRoute: typeof DevIndexRoute
-}
-
-const DevRouteChildren: DevRouteChildren = {
-  DevStylesRoute: DevStylesRoute,
-  DevIndexRoute: DevIndexRoute,
-}
-
-const DevRouteWithChildren = DevRoute._addFileChildren(DevRouteChildren)
-
 interface OfficerRouteChildren {
   OfficerProfileRoute: typeof OfficerProfileRoute
   OfficerIndexRoute: typeof OfficerIndexRoute
@@ -856,12 +832,30 @@ const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
   SuperAdminRouteChildren,
 )
 
+interface TenantAdminRouteChildren {
+  TenantAdminIndexRoute: typeof TenantAdminIndexRoute
+  TenantAdminLocationsIndexRoute: typeof TenantAdminLocationsIndexRoute
+  TenantAdminTeamsIndexRoute: typeof TenantAdminTeamsIndexRoute
+}
+
+const TenantAdminRouteChildren: TenantAdminRouteChildren = {
+  TenantAdminIndexRoute: TenantAdminIndexRoute,
+  TenantAdminLocationsIndexRoute: TenantAdminLocationsIndexRoute,
+  TenantAdminTeamsIndexRoute: TenantAdminTeamsIndexRoute,
+}
+
+const TenantAdminRouteWithChildren = TenantAdminRoute._addFileChildren(
+  TenantAdminRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AgencyAdminRoute: AgencyAdminRouteWithChildren,
-  DevRoute: DevRouteWithChildren,
+  AppAdminRoute: AppAdminRoute,
+  DevEngineerRoute: DevEngineerRoute,
   OfficerRoute: OfficerRouteWithChildren,
+  StylingRoute: StylingRoute,
   SuperAdminRoute: SuperAdminRouteWithChildren,
+  TenantAdminRoute: TenantAdminRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,

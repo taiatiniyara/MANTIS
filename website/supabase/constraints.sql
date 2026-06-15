@@ -36,8 +36,8 @@ alter table public.agencies add constraint agencies_type_check
 alter table public.users drop constraint if exists users_role_check;
 alter table public.users add constraint users_role_check
   check (role in (
-    'Super Admin','Agency Admin','Team Leader','Officer',
-    'Citizen','Government Official','Dev'
+    'DEV Engineer','App Admin','Super Admin','Tenant Admin',
+    'Team Leader','Officer','Citizen','Government Official'
   )) not valid;
 
 -- locations.type  →  LocationType

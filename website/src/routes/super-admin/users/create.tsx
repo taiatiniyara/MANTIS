@@ -8,6 +8,7 @@ import FormSubmission from "@/components/form";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   tableNames,
   type Agency,
@@ -22,18 +23,40 @@ export const Route = createFileRoute("/super-admin/users/create")({
   component: RouteComponent,
 });
 
-const ROLES: { value: Role; label: string }[] = [
-  { value: "Super Admin", label: "Super Admin" },
-  { value: "Agency Admin", label: "Agency Admin" },
-  { value: "Team Leader", label: "Team Leader" },
-  { value: "Officer", label: "Officer" },
-  { value: "Government Official", label: "Government Official" },
-  { value: "Citizen", label: "Citizen" },
-  { value: "Dev", label: "Developer" },
-];
+type RoleOption = { value: Role; label: string };
+
+// Provisioning chain: each tier may only create roles strictly below its own.
+const CREATABLE_ROLES: Partial<Record<Role, RoleOption[]>> = {
+  "DEV Engineer": [
+    { value: "App Admin", label: "App Admin" },
+    { value: "Super Admin", label: "Super Admin" },
+    { value: "Tenant Admin", label: "Tenant Admin" },
+    { value: "Team Leader", label: "Team Leader" },
+    { value: "Officer", label: "Officer" },
+    { value: "Government Official", label: "Government Official" },
+    { value: "Citizen", label: "Citizen" },
+  ],
+  "App Admin": [
+    { value: "Super Admin", label: "Super Admin" },
+    { value: "Tenant Admin", label: "Tenant Admin" },
+    { value: "Team Leader", label: "Team Leader" },
+    { value: "Officer", label: "Officer" },
+    { value: "Government Official", label: "Government Official" },
+    { value: "Citizen", label: "Citizen" },
+  ],
+  "Super Admin": [
+    { value: "Tenant Admin", label: "Tenant Admin" },
+    { value: "Team Leader", label: "Team Leader" },
+    { value: "Officer", label: "Officer" },
+    { value: "Government Official", label: "Government Official" },
+    { value: "Citizen", label: "Citizen" },
+  ],
+};
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { userMetadata } = useAuth();
+  const roleOptions = CREATABLE_ROLES[userMetadata?.role as Role] ?? [];
 
   const agencies = useSupabaseQuery<Agency>({
     queryKey: ["agencies"],
@@ -142,7 +165,7 @@ function RouteComponent() {
                 placeholder="At least 6 characters"
                 required
               />
-              <SelectWithLabel label="Role" name="role" options={ROLES} />
+              <SelectWithLabel label="Role" name="role" options={roleOptions} />
               <SelectWithLabel
                 label="Agency"
                 name="agency_id"

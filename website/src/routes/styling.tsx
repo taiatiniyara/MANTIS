@@ -10,8 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
 
-export const Route = createFileRoute("/dev/styles")({
+export const Route = createFileRoute("/styling")({
   component: RouteComponent,
 });
 
@@ -209,23 +211,25 @@ function RouteComponent() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        {/* Header */}
-        <header>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Design Reference
-            </h1>
-            <Badge variant="secondary">DEV only</Badge>
-          </div>
-          <p className="text-muted-foreground mt-2 max-w-3xl">
-            Design tokens and components from both MANTIS apps, side by side.
-            This route is restricted to the <code>Dev</code> role (other roles are
-            redirected). Mobile values are mirrored from{" "}
-            <code>mobile/constants/theme.ts</code>.
-          </p>
-        </header>
+    <RoleProtectedRoute allowedRoles={["DEV Engineer", "App Admin"]}>
+      <DashboardLayout>
+        <div className="min-h-full bg-background text-foreground">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+            {/* Header */}
+            <header>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Styling
+                </h1>
+                <Badge variant="secondary">App Admin</Badge>
+              </div>
+              <p className="text-muted-foreground mt-2 max-w-3xl">
+                App styling reference — design tokens and components from both
+                MANTIS apps, side by side. Managed by App Admin (also visible to
+                DEV Engineer). Mobile values are mirrored from{" "}
+                <code>mobile/constants/theme.ts</code>.
+              </p>
+            </header>
 
         {/* Divergence callout */}
         <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
@@ -428,7 +432,9 @@ function RouteComponent() {
             </div>
           </div>
         </section>
-      </div>
-    </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    </RoleProtectedRoute>
   );
 }
