@@ -86,8 +86,8 @@ alter table public.appeals add constraint appeals_status_check
 -- 1. Find rows that would violate a constraint, e.g.:
 --
 --    select id, role from public.users
---    where role not in ('Super Admin','Agency Admin','Team Leader','Officer',
---                        'Citizen','Government Official');
+--    where role not in ('DEV Engineer','App Admin','Super Admin','Tenant Admin',
+--                        'Team Leader','Officer','Citizen','Government Official');
 --
 --    select id, agency_type from public.offences
 --    where agency_type not in ('National','Municipal','Police');

@@ -168,8 +168,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [isMobileMenuOpen]);
 
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = "/";
+    // Attempt a clean sign-out, but never let a slow/failed network call leave
+    // the user stuck "logged in". Race it against a short timeout, then clear
+    // any Supabase session left in local storage and hard-redirect to the
+    // landing page regardless of the outcome.
+    try {
+      await Promise.race([
+        signOut(),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]);
+    } catch (error) {
+      console.error("Sign out error:", error);
+    } finally {
+      try {
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith("sb-"))
+          .forEach((key) => localStorage.removeItem(key));
+      } catch {
+        // localStorage may be unavailable; the redirect below still applies.
+      }
+      window.location.href = "/";
+    }
   };
 
   return (
