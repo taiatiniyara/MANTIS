@@ -15,6 +15,8 @@ import {
   Menu,
   X,
   User,
+  UserCog,
+  Palette,
 } from "lucide-react";
 
 interface MenuItem {
@@ -24,54 +26,75 @@ interface MenuItem {
   roles: UserRole[];
 }
 
+// Global management screens — shared by the three platform-admin tiers.
+const PLATFORM_ADMIN: UserRole[] = ["DEV Engineer", "App Admin", "Super Admin"];
+
 const menuItems: MenuItem[] = [
   {
     label: "Dashboard",
     path: "/super-admin",
     icon: LayoutDashboard,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Locations",
     path: "/super-admin/locations",
     icon: MapPin,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Agencies",
     path: "/super-admin/agencies",
     icon: Building2,
-    roles: ["Super Admin"],
+    roles: PLATFORM_ADMIN,
+  },
+  {
+    label: "Teams",
+    path: "/super-admin/teams",
+    icon: Users,
+    roles: PLATFORM_ADMIN,
+  },
+  {
+    label: "Offences",
+    path: "/super-admin/offences",
+    icon: FileText,
+    roles: PLATFORM_ADMIN,
   },
   {
     label: "Users",
     path: "/super-admin/users",
-    icon: Users,
-    roles: ["Super Admin"],
+    icon: UserCog,
+    roles: PLATFORM_ADMIN,
+  },
+  {
+    label: "Styling",
+    path: "/styling",
+    icon: Palette,
+    roles: ["DEV Engineer", "App Admin"],
   },
   {
     label: "Dashboard",
-    path: "/agency-admin",
+    path: "/tenant-admin",
     icon: LayoutDashboard,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Teams",
-    path: "/agency-admin/teams",
+    path: "/tenant-admin/teams",
     icon: Users,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Locations",
-    path: "/agency-admin/locations",
+    path: "/tenant-admin/locations",
     icon: MapPin,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Infringements",
-    path: "/agency-admin/reports",
+    path: "/tenant-admin/reports",
     icon: FileText,
-    roles: ["Agency Admin"],
+    roles: ["Tenant Admin"],
   },
   {
     label: "Dashboard",
@@ -145,8 +168,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [isMobileMenuOpen]);
 
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = "/";
+    // Attempt a clean sign-out, but never let a slow/failed network call leave
+    // the user stuck "logged in". Race it against a short timeout, then clear
+    // any Supabase session left in local storage and hard-redirect to the
+    // landing page regardless of the outcome.
+    try {
+      await Promise.race([
+        signOut(),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]);
+    } catch (error) {
+      console.error("Sign out error:", error);
+    } finally {
+      try {
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith("sb-"))
+          .forEach((key) => localStorage.removeItem(key));
+      } catch {
+        // localStorage may be unavailable; the redirect below still applies.
+      }
+      window.location.href = "/";
+    }
   };
 
   return (

@@ -98,14 +98,16 @@ export type Database = {
 // Enums and Constants
 // -----------------------------------------------------
 
-export type AgencyType = "National" | "Municipal" | "Police";
+export type AgencyType = "Authority" | "Municipality" | "Police";
 
-export type Role = 
-  | "Super Admin" 
-  | "Agency Admin" 
-  | "Team Leader" 
-  | "Officer" 
-  | "Citizen" 
+export type Role =
+  | "DEV Engineer"
+  | "App Admin"
+  | "Super Admin"
+  | "Tenant Admin"
+  | "Team Leader"
+  | "Officer"
+  | "Citizen"
   | "Government Official";
 
 export type InfringementStatus = 

@@ -12,7 +12,7 @@ import { Loader2, MapPin, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 
-export const Route = createFileRoute('/agency-admin/locations/')({
+export const Route = createFileRoute('/tenant-admin/locations/')({
   component: RouteComponent,
 })
 

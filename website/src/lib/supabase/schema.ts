@@ -12,13 +12,13 @@ import {
 // Agencies (LTA, Police, Municipal Councils, etc.)
 // -----------------------------------------------------
 
-export type AgencyType = "National" | "Municipal" | "Police";
+export type AgencyType = "Authority" | "Municipality" | "Police";
 
 export const agencies = pgTable("agencies", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),          // e.g., "Suva City Council"
   code: text("code").notNull().unique(), // e.g., "SCC", "LTA", "FJPOL"
-  type: text("type").notNull().$type<AgencyType>(),          // national, municipal, police
+  type: text("type").notNull().$type<AgencyType>(),          // Authority, Municipality, Police
   created_at: timestamp("created_at").defaultNow(),
 });
 export type Agency = typeof agencies.$inferSelect;
@@ -71,7 +71,15 @@ export type NewTeam = typeof teams.$inferInsert;
 // Users (officers, supervisors, admins)
 // -----------------------------------------------------
 
-export type Role = "Super Admin" | "Agency Admin" | "Team Leader" | "Officer" | "Citizen" | "Government Official";
+export type Role =
+  | "DEV Engineer"
+  | "App Admin"
+  | "Super Admin"
+  | "Tenant Admin"
+  | "Team Leader"
+  | "Officer"
+  | "Citizen"
+  | "Government Official";
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(), // Supabase auth.user.id
 
@@ -267,6 +275,23 @@ export const auditLogs = pgTable("audit_logs", {
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 
+export type OffenceCategory = typeof offenceCategories.$inferSelect;
+export type NewOffenceCategory = typeof offenceCategories.$inferInsert;
+
+// -----------------------------------------------------
+// App Theme — single-row, app-wide design tokens edited in-app by App Admin.
+// Read by everyone (themes the public site too); written by App Admin / DEV
+// Engineer. `tokens` maps CSS variable name -> value, e.g. {"--primary":"..."}.
+// -----------------------------------------------------
+export const appTheme = pgTable("app_theme", {
+  id: text("id").primaryKey().default("default"),
+  tokens: jsonb("tokens").notNull().$type<Record<string, string>>(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  updated_by: uuid("updated_by").references(() => users.id),
+});
+export type AppTheme = typeof appTheme.$inferSelect;
+export type NewAppTheme = typeof appTheme.$inferInsert;
+
 export const tables = {
   agencies,
   locations,
@@ -274,6 +299,8 @@ export const tables = {
   users,
   drivers,
   vehicles,
+  offenceCategories,
+  offences,
   infringements,
   evidenceFiles,
   payments,
@@ -288,9 +315,12 @@ export const tableNames = {
   users: "users",
   drivers: "drivers",
   vehicles: "vehicles",
+  offenceCategories: "offence_categories",
+  offences: "offences",
   infringements: "infringements",
   evidenceFiles: "evidence_files",
   payments: "payments",
   appeals: "appeals",
   auditLogs: "audit_logs",
+  appTheme: "app_theme",
 };
